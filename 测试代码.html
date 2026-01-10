@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教师视频俱乐部平台</title>
+    <!-- 引入图标库 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #1890ff;
+            --primary-light: #40a9ff;
+            --primary-dark: #096dd9;
+            --danger-color: #ff4d4f;
+            --warning-color: #faad14;
+            --success-color: #52c41a;
+            --text-main: #333;
+            --text-sub: #666;
+            --bg-light: #f5f7fa;
+            --border-color: #eee;
+            --card-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            --hover-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif; }
+        body { background-color: var(--bg-light); color: var(--text-main); height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
+
+        /* 通用组件 */
+        .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; transition: all 0.3s; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-primary { background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); color: white; box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(24, 144, 255, 0.4); opacity: 0.95; }
+        .btn-success { background: linear-gradient(135deg, var(--success-color), #389e0d); color: white; box-shadow: 0 4px 12px rgba(82, 196, 26, 0.3); }
+        .btn-outline { background-color: white; border: 2px solid var(--primary-color); color: var(--primary-color); }
+        .btn-outline:hover { background-color: rgba(24, 144, 255, 0.05); }
+        .btn-text { background: none; color: var(--primary-color); padding: 0; }
+        .btn-text:hover { color: var(--primary-dark); }
+        
+        /* 表单样式 */
+        .form-item { margin-bottom: 20px; }
+        .form-item label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-main); font-size: 14px; }
+        .form-item .required::after { content: " *"; color: var(--danger-color); }
+        .form-item input, .form-item select { 
+            width: 100%; 
+            padding: 12px 16px; 
+            border: 2px solid #e8e8e8; 
+            border-radius: 8px; 
+            font-size: 15px;
+            transition: all 0.3s;
+            background-color: white;
+        }
+        .form-item input:focus, .form-item select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.1);
+        }
+        .form-item input::placeholder {
+            color: #bfbfbf;
+        }
+        
+        .password-strength { height: 6px; margin-top: 8px; border-radius: 3px; background: #f0f0f0; overflow: hidden; position: relative; }
+        .password-strength-bar { height: 100%; width: 0; transition: width 0.3s ease; position: absolute; left: 0; top: 0; }
+        .strength-weak { background: linear-gradient(to right, #ff4d4f, #ff7875); }
+        .strength-medium { background: linear-gradient(to right, #faad14, #ffc53d); }
+        .strength-strong { background: linear-gradient(to right, #52c41a, #73d13d); }
+        
+        .error-message { color: var(--danger-color); font-size: 13px; margin-top: 6px; display: none; align-items: center; gap: 5px; }
+        .success-message { color: var(--success-color); font-size: 13px; margin-top: 6px; display: none; align-items: center; gap: 5px; }
+        
+        /* 布局控制 */
+        .page { display: none; flex: 1; flex-direction: column; }
+        .page.active { display: flex; }
+
+        /* 头部样式 */
+        .header { background: white; padding: 0 24px; height: 68px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 12px rgba(0,0,0,0.06); position: sticky; top: 0; z-index: 100; }
+        .header-left { font-size: 18px; font-weight: bold; display: flex; align-items: center; gap: 12px; }
+        .header-left .platform-name { color: var(--primary-color); font-size: 22px; font-weight: 700; background: linear-gradient(135deg, var(--primary-color), #722ed1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header-right { display: flex; align-items: center; gap: 20px; }
+        .user-info { display: flex; align-items: center; gap: 12px; padding: 4px 12px; border-radius: 20px; transition: background 0.3s; }
+        .user-info:hover { background-color: rgba(0, 0, 0, 0.02); }
+        .avatar { width: 40px; height: 40px; background: linear-gradient(135deg, var(--primary-color), #722ed1); border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden; color: white; font-weight: bold; font-size: 16px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+        
+        /* --- 登录页面 --- */
+        .login-container { 
+            display: flex; 
+            flex: 1; 
+            align-items: center; 
+            justify-content: center; 
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(24, 144, 255, 0.05) 0%, transparent 70%);
+            z-index: 0;
+        }
+        
+        .login-card { 
+            background: white; 
+            padding: 48px; 
+            border-radius: 20px; 
+            width: 480px; 
+            max-width: 90%; 
+            box-shadow: var(--card-shadow);
+            position: relative;
+            z-index: 1;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .login-card h2 { 
+            margin-bottom: 12px; 
+            color: var(--text-main); 
+            font-size: 28px;
+            font-weight: 700;
+            text-align: center;
+            background: linear-gradient(135deg, var(--primary-color), #722ed1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .login-card p { 
+            color: var(--text-sub); 
+            margin-bottom: 36px; 
+            text-align: center;
+            font-size: 15px;
+        }
+        
+        .role-selector { display: flex; gap: 16px; margin-bottom: 30px; }
+        .role-option { 
+            flex: 1; 
+            padding: 24px 16px; 
+            border: 2px solid #f0f0f0; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            transition: all 0.3s; 
+            text-align: center;
+            background: white;
+        }
+        .role-option:hover { 
+            border-color: var(--primary-light); 
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(24, 144, 255, 0.15);
+        }
+        .role-option.selected { 
+            border-color: var(--primary-color); 
+            background-color: rgba(24, 144, 255, 0.04);
+            box-shadow: 0 6px 16px rgba(24, 144, 255, 0.15);
+        }
+        .role-option i { 
+            font-size: 40px; 
+            margin-bottom: 12px; 
+            background: linear-gradient(135deg, var(--primary-color), #722ed1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .role-option h3 { 
+            margin-bottom: 8px; 
+            font-size: 16px;
+            color: var(--text-main);
+        }
+        .role-option p { 
+            font-size: 13px; 
+            margin: 0; 
+            color: var(--text-sub); 
+            line-height: 1.5;
+        }
+        
+        /* --- 注册页面 --- */
+        .register-container { 
+            display: flex; 
+            flex: 1; 
+            align-items: center; 
+            justify-content: center; 
+            background: linear-gradient(135deg, #f0f7ff 0%, #e6f7ff 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .register-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(114, 46, 209, 0.05) 0%, transparent 70%);
+            z-index: 0;
+        }
+        
+        .register-card { 
+            background: white; 
+            padding: 48px; 
+            border-radius: 20px; 
+            width: 520px; 
+            max-width: 90%; 
+            box-shadow: var(--card-shadow);
+            position: relative;
+            z-index: 1;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .register-card h2 { 
+            margin-bottom: 12px; 
+            font-size: 28px;
+            font-weight: 700;
+            text-align: center;
+            background: linear-gradient(135deg, #722ed1, var(--primary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .register-card p { 
+            color: var(--text-sub); 
+            margin-bottom: 36px; 
+            text-align: center;
+            font-size: 15px;
+        }
+        
+        /* --- 页面1: 我的俱乐部 --- */
+        .club-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); 
+            gap: 24px; 
+            padding: 32px; 
+        }
+        
+        .club-card { 
+            background: white; 
+            border-radius: 16px; 
+            padding: 24px; 
+            box-shadow: var(--card-shadow); 
+            transition: all 0.4s;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .club-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), #722ed1);
+        }
+        
+        .club-card:hover { 
+            transform: translateY(-8px); 
+            box-shadow: var(--hover-shadow);
+        }
+        
+        .club-card h3 { 
+            margin-bottom: 12px; 
+            font-size: 20px;
+            color: var(--text-main);
+            font-weight: 700;
+        }
+        
+        .club-tags { margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 8px; }
+        .tag { 
+            background: linear-gradient(135deg, #e6f7ff, #bae7ff); 
+            color: var(--primary-dark); 
+            padding: 4px 12px; 
+            border-radius: 20px; 
+            font-size: 13px; 
+            font-weight: 500;
+        }
+        
+        .club-actions { display: flex; gap: 12px; margin-top: 20px; }
+        
+        .empty-state { 
+            text-align: center; 
+            padding: 80px 20px; 
+            color: var(--text-sub);
+            grid-column: 1 / -1;
+        }
+        
+        .empty-state i { 
+            font-size: 64px; 
+            margin-bottom: 20px; 
+            color: #e8e8e8;
+            opacity: 0.7;
+        }
+        
+        .empty-state h3 {
+            font-size: 20px;
+            margin-bottom: 12px;
+            color: var(--text-sub);
+        }
+        
+        /* --- 页面2: 视频列表 --- */
+        .video-list { 
+            padding: 32px; 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); 
+            gap: 24px; 
+        }
+        
+        .video-card { 
+            background: white; 
+            border-radius: 16px; 
+            overflow: hidden; 
+            position: relative; 
+            cursor: pointer; 
+            box-shadow: var(--card-shadow);
+            transition: all 0.4s;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .video-card:hover { 
+            transform: translateY(-6px); 
+            box-shadow: var(--hover-shadow);
+        }
+        
+        .video-cover { 
+            height: 160px; 
+            background: linear-gradient(135deg, #333, #555); 
+            position: relative; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            color: white; 
+            overflow: hidden;
+        }
+        
+        .video-cover::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(24, 144, 255, 0.2), rgba(114, 46, 209, 0.2));
+        }
+        
+        .video-cover i { 
+            font-size: 48px; 
+            z-index: 1;
+            text-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .video-info { padding: 20px; }
+        .video-title { 
+            font-weight: 600; 
+            margin-bottom: 8px; 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis;
+            font-size: 16px;
+            color: var(--text-main);
+        }
+        
+        .video-meta { 
+            font-size: 13px; 
+            color: var(--text-sub); 
+            display: flex; 
+            justify-content: space-between;
+        }
+        
+        /* --- 页面3: 任务页 --- */
+        .task-page-container { padding: 32px; }
+        
+        /* 任务页头部样式 */
+        .task-page-header {
+            background: white;
+            padding: 28px;
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 32px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .task-page-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), #722ed1);
+        }
+        
+        .task-header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        
+        .task-header-left {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .task-video-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .task-video-info {
+            font-size: 15px;
+            color: var(--text-sub);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .task-permission-tag {
+            display: inline-block;
+            background: linear-gradient(135deg, #f6ffed, #d9f7be);
+            color: #389e0d;
+            font-size: 13px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            white-space: nowrap;
+            width: fit-content;
+            font-weight: 500;
+        }
+        
+        .task-list-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 24px;
+        }
+        
+        .task-card-item {
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            padding: 24px;
+            transition: all 0.4s ease;
+            position: relative;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            height: 240px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .task-card-item:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--hover-shadow);
+        }
+        
+        .task-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+        
+        .task-card-title {
+            font-weight: 700;
+            font-size: 18px;
+            color: var(--text-main);
+        }
+        
+        .task-card-status {
+            font-size: 13px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+        
+        .task-status-incomplete {
+            background: linear-gradient(135deg, #fafafa, #f0f0f0);
+            color: var(--text-sub);
+        }
+        
+        .task-status-complete {
+            background: linear-gradient(135deg, #f6ffed, #d9f7be);
+            color: #389e0d;
+        }
+        
+        .task-card-description {
+            font-size: 15px;
+            color: var(--text-sub);
+            margin-bottom: 20px;
+            flex-grow: 1;
+            line-height: 1.6;
+        }
+        
+        .task-card-actions {
+            margin-top: auto;
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+        }
+        
+        .action-buttons .btn {
+            flex: 1;
+            padding: 12px 16px;
+        }
+        
+        /* 通知消息 */
+        .task-notification {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            z-index: 1100;
+            max-width: 400px;
+            display: none;
+            animation: slideIn 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .task-notification.success {
+            background: linear-gradient(135deg, rgba(82, 196, 26, 0.95), rgba(56, 158, 13, 0.95));
+            color: white;
+            border: 1px solid rgba(82, 196, 26, 0.3);
+        }
+        
+        .task-notification.info {
+            background: linear-gradient(135deg, rgba(24, 144, 255, 0.95), rgba(9, 109, 217, 0.95));
+            color: white;
+            border: 1px solid rgba(24, 144, 255, 0.3);
+        }
+        
+        .task-notification.error {
+            background: linear-gradient(135deg, rgba(255, 77, 79, 0.95), rgba(207, 19, 34, 0.95));
+            color: white;
+            border: 1px solid rgba(255, 77, 79, 0.3);
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .task-header-content {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .task-video-title {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .task-list-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .task-card-actions {
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .role-selector {
+                flex-direction: column;
+            }
+            
+            .login-card, .register-card {
+                padding: 32px 24px;
+            }
+            
+            .club-grid, .video-list {
+                padding: 20px;
+            }
+        }
+        
+        /* 装饰元素 */
+        .floating-shape {
+            position: absolute;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(24, 144, 255, 0.1), rgba(114, 46, 209, 0.1));
+            z-index: 0;
+        }
+        
+        .shape-1 {
+            width: 200px;
+            height: 200px;
+            top: -100px;
+            left: -100px;
+        }
+        
+        .shape-2 {
+            width: 150px;
+            height: 150px;
+            bottom: -75px;
+            right: -75px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 登录页面 -->
+    <div id="page-login" class="page active">
+        <div class="login-container">
+            <div class="floating-shape shape-1"></div>
+            <div class="floating-shape shape-2"></div>
+            <div class="login-card">
+                <h2>教师视频俱乐部</h2>
+                <p>专业教师协作发展平台</p>
+                
+                <div class="form-item">
+                    <label class="required">姓名</label>
+                    <input type="text" id="login-name" placeholder="请输入您的姓名">
+                    <div class="error-message" id="login-name-error">
+                        <i class="fas fa-exclamation-circle"></i> 请输入姓名
+                    </div>
+                </div>
+                
+                <div class="form-item">
+                    <label class="required">密码</label>
+                    <input type="password" id="login-password" placeholder="请输入密码">
+                    <div class="error-message" id="login-password-error">
+                        <i class="fas fa-exclamation-circle"></i> 请输入密码
+                    </div>
+                </div>
+                
+                <div class="form-item">
+                    <label class="required">身份选择</label>
+                    <div class="role-selector">
+                        <div class="role-option selected" data-role="initiator" onclick="selectLoginRole('initiator')">
+                            <i class="fas fa-user-tie"></i>
+                            <h3>俱乐部发起人</h3>
+                            <p>创建和管理俱乐部，查看任务完成情况</p>
+                        </div>
+                        <div class="role-option" data-role="participant" onclick="selectLoginRole('participant')">
+                            <i class="fas fa-users"></i>
+                            <h3>俱乐部参与人</h3>
+                            <p>加入俱乐部，完成任务并标记完成</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 16px; margin-top: 10px;" onclick="login()">
+                    <i class="fas fa-sign-in-alt"></i> 登录
+                </button>
+                
+                <div style="margin-top: 28px; text-align: center; padding-top: 20px; border-top: 1px solid #f0f0f0;">
+                    <p style="font-size: 15px; color: #666;">还没有账号？</p>
+                    <button class="btn btn-outline" onclick="navTo('page-register')" style="margin-top: 8px; padding: 10px 24px;">
+                        <i class="fas fa-user-plus"></i> 立即注册
+                    </button>
+                </div>
+                
+                <div style="margin-top: 24px; font-size: 13px; color: #999; text-align: center;">
+                    <p style="margin-top: 8px; font-size: 12px;">测试账号：王老师/123456（发起人）李老师/123456（参与人）</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 注册页面 -->
+    <div id="page-register" class="page">
+        <div class="register-container">
+            <div class="floating-shape shape-1"></div>
+            <div class="floating-shape shape-2"></div>
+            <div class="register-card">
+                <h2>注册新账号</h2>
+                <p>创建您的教师视频俱乐部账号</p>
+                
+                <div class="form-item">
+                    <label class="required">姓名</label>
+                    <input type="text" id="register-name" placeholder="请输入您的姓名" oninput="checkRegisterName()">
+                    <div class="error-message" id="register-name-error">
+                        <i class="fas fa-exclamation-circle"></i> <span id="register-name-error-text">姓名不能为空</span>
+                    </div>
+                    <div class="success-message" id="register-name-success">
+                        <i class="fas fa-check-circle"></i> 姓名可用
+                    </div>
+                </div>
+                
+                <div class="form-item">
+                    <label class="required">密码</label>
+                    <input type="password" id="register-password" placeholder="请输入密码（至少6位）" oninput="checkPasswordStrength()">
+                    <div class="password-strength">
+                        <div class="password-strength-bar" id="password-strength-bar"></div>
+                    </div>
+                    <div class="error-message" id="register-password-error">
+                        <i class="fas fa-exclamation-circle"></i> 密码至少需要6位
+                    </div>
+                </div>
+                
+                <div class="form-item">
+                    <label class="required">确认密码</label>
+                    <input type="password" id="register-confirm-password" placeholder="请再次输入密码" oninput="checkPasswordMatch()">
+                    <div class="error-message" id="register-confirm-error">
+                        <i class="fas fa-exclamation-circle"></i> 两次输入的密码不一致
+                    </div>
+                    <div class="success-message" id="register-confirm-success">
+                        <i class="fas fa-check-circle"></i> 密码匹配
+                    </div>
+                </div>
+                
+                <div class="form-item">
+                    <label class="required">身份选择</label>
+                    <div class="role-selector">
+                        <div class="role-option selected" data-role="initiator" onclick="selectRegisterRole('initiator')">
+                            <i class="fas fa-user-tie"></i>
+                            <h3>俱乐部发起人</h3>
+                            <p>创建和管理俱乐部，查看任务完成情况</p>
+                        </div>
+                        <div class="role-option" data-role="participant" onclick="selectRegisterRole('participant')">
+                            <i class="fas fa-users"></i>
+                            <h3>俱乐部参与人</h3>
+                            <p>加入俱乐部，完成任务并标记完成</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 16px; margin-top: 10px;" onclick="register()">
+                    <i class="fas fa-user-plus"></i> 注册
+                </button>
+                
+                <div style="margin-top: 28px; text-align: center; padding-top: 20px; border-top: 1px solid #f0f0f0;">
+                    <p style="font-size: 15px; color: #666;">已有账号？</p>
+                    <button class="btn btn-outline" onclick="navTo('page-login')" style="margin-top: 8px; padding: 10px 24px;">
+                        <i class="fas fa-arrow-left"></i> 返回登录
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页面1：我的俱乐部 (首页) -->
+    <div id="page-home" class="page">
+        <div class="header">
+            <div class="header-left">
+                <span class="platform-name">教师视频俱乐部</span>
+                <span style="color: #999; font-weight: normal;"> | 我的俱乐部</span>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <div class="avatar" id="user-avatar">王</div>
+                    <span id="user-name-display">王老师</span>
+                    <button class="btn btn-text" onclick="logout()" style="margin-left: 10px;">退出</button>
+                </div>
+            </div>
+        </div>
+        <div class="club-grid" id="club-list">
+            <!-- 俱乐部卡片由JS生成 -->
+        </div>
+    </div>
+
+    <!-- 页面2：视频列表 -->
+    <div id="page-videos" class="page">
+        <div class="header">
+            <div class="header-left">
+                <button class="btn btn-text" onclick="navTo('page-home')" style="margin-right:10px;"><i class="fas fa-arrow-left"></i></button>
+                <span class="platform-name">教师视频俱乐部</span>
+                <span style="color: #999; font-weight: normal;"> | </span>
+                <span id="club-video-name">数学教研组</span>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <div class="avatar" id="video-user-avatar">王</div>
+                    <span id="video-user-name">王老师</span>
+                </div>
+            </div>
+        </div>
+        <div class="video-list" id="video-list">
+            <!-- 视频卡片由JS生成 -->
+        </div>
+    </div>
+
+    <!-- 页面3：任务页 -->
+    <div id="page-task" class="page">
+        <div class="header">
+            <div class="header-left">
+                <button class="btn btn-text" onclick="navTo('page-videos')" style="margin-right:10px;"><i class="fas fa-arrow-left"></i></button>
+                <span class="platform-name">教师视频俱乐部</span>
+                <span style="color: #999; font-weight: normal;"> | 视频任务管理</span>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <div class="avatar" id="task-user-avatar">李</div>
+                    <span id="task-user-name">李老师</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="task-page-container">
+            <!-- 任务页头部 -->
+            <div class="task-page-header">
+                <div class="task-header-content">
+                    <div class="task-header-left">
+                        <div class="task-video-title">
+                            <span style="font-size: 20px;">教师视频俱乐部</span>
+                            <span class="task-video-title-text" id="task-video-title">高中物理力学实验：牛顿第二定律验证</span>
+                            <span class="task-video-info" id="task-video-info">
+                                <i class="far fa-clock"></i> 视频时长：15分钟
+                            </span>
+                        </div>
+                        <div class="task-permission-tag">
+                            <i class="fas fa-user-check"></i> 参与俱乐部・任务完成系统
+                        </div>
+                    </div>
+                    <div class="header-right">
+                        <div class="user-info">
+                            <div class="avatar" id="task-page-avatar">李</div>
+                            <span id="task-user-display">李老师</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 任务列表 -->
+            <div class="task-list-container" id="taskList">
+                <!-- 任务卡片将通过JS动态添加 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 任务通知消息 -->
+    <div class="task-notification" id="taskNotification"></div>
+
+    <script>
+        // ================ 系统初始化 ================
+        let currentUser = {
+            name: "",
+            role: "",
+            id: null
+        };
+
+        let selectedLoginRole = "initiator";
+        let selectedRegisterRole = "initiator";
+
+        // 用户数据库 - 初始只有测试账号
+        let userDatabase = {
+            "王老师": { password: "123456", role: "initiator", id: 1 },
+            "李老师": { password: "123456", role: "participant", id: 2 }
+        };
+
+        // 俱乐部数据
+        let myClubs = [];
+        let clubVideos = {
+            101: [
+                { id: 1, title: "二次函数图像性质", uploader: "王老师", time: "2023-10-01", duration: "45:00" },
+                { id: 2, title: "勾股定理引入", uploader: "李老师", time: "2023-10-05", duration: "40:00" }
+            ]
+        };
+
+        // 任务数据
+        let videoTasks = {
+            1: [
+                { 
+                    id: 1, 
+                    title: "看视频任务", 
+                    type: "watch", 
+                    description: "观看完整视频《二次函数图像性质》", 
+                    status: "incomplete", 
+                    externalLink: "https://app.mediatrack.cn/projects/2009960971614818304/files",
+                    platformName: "分秒帧平台"
+                },
+                { 
+                    id: 2, 
+                    title: "研视频任务", 
+                    type: "research", 
+                    description: "完成教学反思与研讨笔记", 
+                    status: "incomplete", 
+                    externalLink: "https://shimo.im/space/2wAldmGZonhwbwAP",
+                    platformName: "石墨文档协同空间"
+                }
+            ]
+        };
+
+        let currentClubId = null;
+        let currentVideoId = null;
+        let isLoggedIn = false;
+
+        // ================ 核心函数 ================
+        function init() {
+            // 加载本地存储的用户数据
+            loadUserDatabase();
+            console.log("系统初始化完成，用户数据库:", Object.keys(userDatabase));
+            
+            // 默认显示登录页面
+            navTo('page-login');
+        }
+
+        // 修复：加载用户数据库
+        function loadUserDatabase() {
+            try {
+                const storedUsers = localStorage.getItem('teacherVideoClubUsers');
+                if (storedUsers) {
+                    const parsedUsers = JSON.parse(storedUsers);
+                    // 合并，但不覆盖默认用户
+                    userDatabase = { ...userDatabase, ...parsedUsers };
+                    console.log("从本地存储加载用户数据:", Object.keys(parsedUsers));
+                }
+            } catch (error) {
+                console.error("加载用户数据库失败:", error);
+            }
+        }
+
+        // 修复：保存用户数据库
+        function saveUserDatabase() {
+            try {
+                // 只保存非默认用户（即注册的用户）
+                const usersToSave = {};
+                for (const [name, data] of Object.entries(userDatabase)) {
+                    // 排除默认测试账号
+                    if (!["王老师", "李老师"].includes(name)) {
+                        usersToSave[name] = data;
+                    }
+                }
+                localStorage.setItem('teacherVideoClubUsers', JSON.stringify(usersToSave));
+                console.log("保存用户数据到本地存储:", Object.keys(usersToSave));
+            } catch (error) {
+                console.error("保存用户数据库失败:", error);
+            }
+        }
+
+        function navTo(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+        }
+
+        // ================ 登录功能 ================
+        function selectLoginRole(role) {
+            selectedLoginRole = role;
+            document.querySelectorAll('#page-login .role-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            document.querySelector(`#page-login .role-option[data-role="${role}"]`).classList.add('selected');
+        }
+
+        function validateLoginForm() {
+            const name = document.getElementById('login-name').value.trim();
+            const password = document.getElementById('login-password').value.trim();
+            let isValid = true;
+            
+            // 重置错误信息
+            document.getElementById('login-name-error').style.display = 'none';
+            document.getElementById('login-password-error').style.display = 'none';
+            
+            if (!name) {
+                document.getElementById('login-name-error').style.display = 'flex';
+                isValid = false;
+            }
+            
+            if (!password) {
+                document.getElementById('login-password-error').style.display = 'flex';
+                isValid = false;
+            }
+            
+            return { isValid, name, password };
+        }
+
+        function login() {
+            const { isValid, name, password } = validateLoginForm();
+            
+            if (!isValid) {
+                showTaskNotification('请填写完整的登录信息', 'error');
+                return;
+            }
+            
+            console.log("尝试登录:", name, "当前用户:", Object.keys(userDatabase));
+            
+            // 检查用户是否存在
+            if (!userDatabase[name]) {
+                showTaskNotification('用户不存在，请先注册', 'error');
+                // 清空表单
+                document.getElementById('login-name').value = '';
+                document.getElementById('login-password').value = '';
+                return;
+            }
+            
+            // 检查密码是否正确
+            if (userDatabase[name].password !== password) {
+                showTaskNotification('密码错误', 'error');
+                document.getElementById('login-password').value = '';
+                return;
+            }
+            
+            // 检查角色是否匹配
+            if (userDatabase[name].role !== selectedLoginRole) {
+                const roleText = userDatabase[name].role === 'initiator' ? '俱乐部发起人' : '俱乐部参与人';
+                showTaskNotification(`您的身份是${roleText}，请选择正确的身份`, 'error');
+                // 自动选择正确的角色
+                selectLoginRole(userDatabase[name].role);
+                return;
+            }
+            
+            // 登录成功
+            currentUser.name = name;
+            currentUser.role = userDatabase[name].role;
+            currentUser.id = userDatabase[name].id;
+            isLoggedIn = true;
+            
+            console.log("登录成功:", currentUser);
+            
+            // 根据角色加载俱乐部数据
+            loadUserClubs();
+            
+            // 更新用户显示
+            updateUserDisplay();
+            
+            // 显示登录成功消息
+            showTaskNotification(`欢迎回来，${name}老师！`, 'success');
+            
+            // 跳转到首页
+            renderHome();
+            navTo('page-home');
+        }
+
+        function loadUserClubs() {
+            if (currentUser.role === "participant") {
+                myClubs = [
+                    { id: 101, name: "初中数学教研组", tag: "数学", role: "member", desc: "探讨数学教学法", creator: "王老师", members: 12 }
+                ];
+            } else {
+                myClubs = [
+                    { id: 101, name: "初中数学教研组", tag: "数学", role: "owner", desc: "探讨数学教学法", creator: "王老师", members: 12 },
+                    { id: 102, name: "PBL项目式学习", tag: "教学法", role: "member", desc: "跨学科交流", creator: "张老师", members: 8 }
+                ];
+            }
+        }
+
+        function updateUserDisplay() {
+            document.getElementById('user-name-display').innerText = currentUser.name;
+            document.getElementById('video-user-name').innerText = currentUser.name;
+            document.getElementById('task-user-name').innerText = currentUser.name;
+            document.getElementById('task-user-display').innerText = currentUser.name;
+            
+            const firstChar = currentUser.name.charAt(0);
+            document.getElementById('user-avatar').innerText = firstChar;
+            document.getElementById('video-user-avatar').innerText = firstChar;
+            document.getElementById('task-user-avatar').innerText = firstChar;
+            document.getElementById('task-page-avatar').innerText = firstChar;
+        }
+
+        // ================ 注册功能 ================
+        function selectRegisterRole(role) {
+            selectedRegisterRole = role;
+            document.querySelectorAll('#page-register .role-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            document.querySelector(`#page-register .role-option[data-role="${role}"]`).classList.add('selected');
+        }
+
+        function checkRegisterName() {
+            const name = document.getElementById('register-name').value.trim();
+            const nameError = document.getElementById('register-name-error');
+            const nameErrorText = document.getElementById('register-name-error-text');
+            const nameSuccess = document.getElementById('register-name-success');
+            
+            if (!name) {
+                nameErrorText.textContent = '姓名不能为空';
+                nameError.style.display = 'flex';
+                nameSuccess.style.display = 'none';
+                return false;
+            }
+            
+            // 检查用户名是否已存在
+            if (userDatabase[name]) {
+                nameErrorText.textContent = '该用户名已存在';
+                nameError.style.display = 'flex';
+                nameSuccess.style.display = 'none';
+                return false;
+            }
+            
+            nameError.style.display = 'none';
+            nameSuccess.style.display = 'flex';
+            return true;
+        }
+
+        function checkPasswordStrength() {
+            const password = document.getElementById('register-password').value;
+            const strengthBar = document.getElementById('password-strength-bar');
+            const passwordError = document.getElementById('register-password-error');
+            
+            if (!password) {
+                strengthBar.style.width = '0';
+                passwordError.style.display = 'none';
+                return false;
+            }
+            
+            // 计算密码强度
+            let strength = 0;
+            if (password.length >= 6) strength += 1;
+            if (password.length >= 8) strength += 1;
+            if (/[a-z]/.test(password)) strength += 1;
+            if (/[A-Z]/.test(password)) strength += 1;
+            if (/[0-9]/.test(password)) strength += 1;
+            if (/[^a-zA-Z0-9]/.test(password)) strength += 1;
+            
+            // 设置强度条
+            let width = 0;
+            let className = '';
+            
+            if (strength <= 2) {
+                width = 33;
+                className = 'strength-weak';
+            } else if (strength <= 4) {
+                width = 66;
+                className = 'strength-medium';
+            } else {
+                width = 100;
+                className = 'strength-strong';
+            }
+            
+            strengthBar.style.width = width + '%';
+            strengthBar.className = 'password-strength-bar ' + className;
+            
+            // 显示/隐藏错误信息
+            passwordError.style.display = password.length > 0 && password.length < 6 ? 'flex' : 'none';
+            
+            return password.length >= 6;
+        }
+
+        function checkPasswordMatch() {
+            const password = document.getElementById('register-password').value;
+            const confirmPassword = document.getElementById('register-confirm-password').value;
+            const confirmError = document.getElementById('register-confirm-error');
+            const confirmSuccess = document.getElementById('register-confirm-success');
+            
+            if (!confirmPassword) {
+                confirmError.style.display = 'none';
+                confirmSuccess.style.display = 'none';
+                return false;
+            }
+            
+            if (password !== confirmPassword) {
+                confirmError.style.display = 'flex';
+                confirmSuccess.style.display = 'none';
+                return false;
+            }
+            
+            confirmError.style.display = 'none';
+            confirmSuccess.style.display = 'flex';
+            return true;
+        }
+
+        function validateRegisterForm() {
+            const nameValid = checkRegisterName();
+            const passwordValid = checkPasswordStrength();
+            const passwordMatch = checkPasswordMatch();
+            
+            return nameValid && passwordValid && passwordMatch;
+        }
+
+        function register() {
+            if (!validateRegisterForm()) {
+                showTaskNotification('请正确填写所有注册信息', 'error');
+                return;
+            }
+            
+            const name = document.getElementById('register-name').value.trim();
+            const password = document.getElementById('register-password').value;
+            
+            // 创建新用户
+            const newUserId = Object.keys(userDatabase).length + 1;
+            userDatabase[name] = {
+                password: password,
+                role: selectedRegisterRole,
+                id: newUserId
+            };
+            
+            console.log("注册新用户:", name, "角色:", selectedRegisterRole);
+            
+            // 保存到本地存储
+            saveUserDatabase();
+            
+            // 显示注册成功消息
+            showTaskNotification('注册成功！正在自动登录...', 'success');
+            
+            // 自动登录
+            setTimeout(() => {
+                // 设置当前用户
+                currentUser.name = name;
+                currentUser.role = selectedRegisterRole;
+                currentUser.id = newUserId;
+                isLoggedIn = true;
+                
+                // 根据角色加载俱乐部数据
+                loadUserClubs();
+                
+                // 更新用户显示
+                updateUserDisplay();
+                
+                // 跳转到首页
+                renderHome();
+                navTo('page-home');
+                
+                // 显示欢迎消息
+                showTaskNotification(`欢迎加入，${name}老师！`, 'success');
+            }, 1000);
+        }
+
+        // ================ 主页面功能 ================
+        function renderHome() {
+            const list = document.getElementById('club-list');
+            list.innerHTML = '';
+
+            if (myClubs.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-users"></i>
+                        <h3>暂无俱乐部</h3>
+                        <p>请联系管理员加入俱乐部</p>
+                    </div>
+                `;
+                return;
+            }
+
+            myClubs.forEach(club => {
+                const roleTag = club.role === 'owner' ? '<span class="tag" style="background: linear-gradient(135deg, #fff7e6, #ffe7ba); color: #d46b08;">创建者</span>' : '';
+                
+                list.innerHTML += `
+                    <div class="club-card">
+                        <h3>${club.name}</h3>
+                        <div class="club-tags">
+                            <span class="tag">${club.tag}</span>
+                            ${roleTag}
+                        </div>
+                        <p style="color:#666; font-size:14px; margin-bottom:12px; line-height:1.6;">${club.desc}</p>
+                        <div style="font-size:13px; color:#999; margin-bottom:16px; display: flex; align-items: center; gap: 16px;">
+                            <span><i class="fas fa-user"></i> 创建者：${club.creator}</span>
+                            <span><i class="fas fa-users"></i> 成员：${club.members}人</span>
+                        </div>
+                        <div class="club-actions">
+                            <button class="btn btn-primary" style="flex:1" onclick="enterVideoList(${club.id})">
+                                <i class="fas fa-play-circle"></i> 查看视频
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function enterVideoList(clubId) {
+            currentClubId = clubId;
+            const club = myClubs.find(c => c.id === clubId);
+            
+            if (!club) {
+                alert("俱乐部不存在");
+                return;
+            }
+            
+            document.getElementById('club-video-name').innerText = club.name;
+            renderVideoList();
+            navTo('page-videos');
+        }
+
+        function renderVideoList() {
+            const list = document.getElementById('video-list');
+            list.innerHTML = '';
+            const videos = clubVideos[currentClubId] || [];
+
+            if (videos.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-video"></i>
+                        <h3>暂无视频</h3>
+                        <p>该俱乐部暂无教学视频</p>
+                    </div>
+                `;
+                return;
+            }
+
+            videos.forEach(v => {
+                list.innerHTML += `
+                    <div class="video-card" onclick="enterTaskPage(${v.id})">
+                        <div class="video-cover">
+                            <i class="fas fa-play"></i>
+                        </div>
+                        <div class="video-info">
+                            <div class="video-title">${v.title}</div>
+                            <div class="video-meta">
+                                <span><i class="fas fa-user"></i> ${v.uploader}</span>
+                                <span><i class="far fa-calendar"></i> ${v.time}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function enterTaskPage(videoId) {
+            const videos = clubVideos[currentClubId] || [];
+            const video = videos.find(item => item.id === videoId);
+            
+            if (!video) {
+                alert("视频不存在");
+                return;
+            }
+            
+            currentVideoId = videoId;
+            
+            document.getElementById('task-video-title').innerText = video.title;
+            document.getElementById('task-video-info').innerHTML = `<i class="far fa-clock"></i> 视频时长：${video.duration}`;
+            
+            tasks = videoTasks[videoId] || [
+                { 
+                    id: 1, 
+                    title: "看视频任务", 
+                    type: "watch", 
+                    description: `观看完整视频《${video.title}》`, 
+                    status: "incomplete", 
+                    externalLink: "https://app.mediatrack.cn/projects/2009960971614818304/files",
+                    platformName: "分秒帧平台"
+                },
+                { 
+                    id: 2, 
+                    title: "研视频任务", 
+                    type: "research", 
+                    description: "完成教学反思与研讨笔记", 
+                    status: "incomplete", 
+                    externalLink: "https://shimo.im/space/2wAldmGZonhwbwAP",
+                    platformName: "石墨文档协同空间"
+                }
+            ];
+            
+            videoTasks[videoId] = tasks;
+            renderTasks();
+            navTo('page-task');
+        }
+
+        function renderTasks() {
+            const taskList = document.getElementById('taskList');
+            taskList.innerHTML = '';
+            
+            if (tasks.length === 0) {
+                taskList.innerHTML = '<p>该视频还没有任务。</p>';
+                return;
+            }
+            
+            tasks.forEach(task => {
+                const taskCard = document.createElement('div');
+                taskCard.className = 'task-card-item';
+                taskCard.setAttribute('data-id', task.id);
+                
+                const statusClass = task.status === 'complete' ? 'task-status-complete' : 'task-status-incomplete';
+                const statusText = task.status === 'complete' ? '已完成 <i class="fas fa-check"></i>' : '未完成';
+                
+                let actionButtons = '';
+                if (task.status === 'complete') {
+                    actionButtons = `<button class="btn btn-outline" disabled><i class="fas fa-check-circle"></i> 已完成</button>`;
+                } else {
+                    const platformIcon = task.type === 'watch' ? 'fas fa-video' : 'fas fa-file-alt';
+                    actionButtons = `
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" onclick="openExternalPlatform(${task.id})">
+                                <i class="${platformIcon}"></i> 前往${task.platformName}
+                            </button>
+                            <button class="btn btn-success" onclick="markTaskComplete(${task.id})">
+                                <i class="fas fa-check-circle"></i> 标记完成
+                            </button>
+                        </div>
+                    `;
+                }
+                
+                const platformInfo = task.type === 'watch' 
+                    ? '<div style="font-size:14px; color:#666; margin-top:8px; display: flex; align-items: center; gap: 6px;"><i class="fas fa-external-link-alt"></i> 将在分秒帧平台观看视频</div>'
+                    : '<div style="font-size:14px; color:#666; margin-top:8px; display: flex; align-items: center; gap: 6px;"><i class="fas fa-file-alt"></i> 将在石墨文档协同空间完成笔记</div>';
+                
+                taskCard.innerHTML = `
+                    <div class="task-card-header">
+                        <div class="task-card-title">${task.title}</div>
+                        <div class="task-card-status ${statusClass}">${statusText}</div>
+                    </div>
+                    <div class="task-card-description">
+                        ${task.description}
+                        ${platformInfo}
+                    </div>
+                    <div class="task-card-actions">
+                        ${actionButtons}
+                    </div>
+                `;
+                taskList.appendChild(taskCard);
+            });
+        }
+
+        function openExternalPlatform(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (task && task.externalLink) {
+                window.open(task.externalLink, '_blank');
+                const platformName = task.type === 'watch' ? '分秒帧平台' : '石墨文档协同空间';
+                showTaskNotification(`请在${platformName}完成任务后，返回此页面点击"标记完成"按钮`, 'info');
+            }
+        }
+
+        function markTaskComplete(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+            
+            const platformName = task.type === 'watch' ? '分秒帧平台' : '石墨文档协同空间';
+            const confirmMessage = task.type === 'watch' 
+                ? `确认已完成在${platformName}的视频观看任务？`
+                : `确认已完成在${platformName}的教研笔记任务？`;
+            
+            if (confirm(confirmMessage)) {
+                const taskIndex = tasks.findIndex(t => t.id === taskId);
+                if (taskIndex !== -1) {
+                    tasks[taskIndex].status = 'complete';
+                }
+                
+                videoTasks[currentVideoId] = tasks;
+                renderTasks();
+                
+                const completionMessage = task.type === 'watch' 
+                    ? '视频观看任务已标记为完成！'
+                    : '教研笔记任务已标记为完成！';
+                showTaskNotification(completionMessage, 'success');
+                checkAllTasksCompleted();
+            }
+        }
+
+        function checkAllTasksCompleted() {
+            const allComplete = tasks.every(task => task.status === 'complete');
+            if (allComplete) {
+                showTaskNotification('恭喜！您已完成该视频的所有任务！', 'success');
+            }
+        }
+
+        function showTaskNotification(message, type) {
+            const notification = document.getElementById('taskNotification');
+            notification.textContent = message;
+            notification.className = `task-notification ${type}`;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+
+        function logout() {
+            currentUser = { name: "", role: "", id: null };
+            isLoggedIn = false;
+            
+            document.getElementById('login-name').value = '';
+            document.getElementById('login-password').value = '';
+            document.getElementById('register-name').value = '';
+            document.getElementById('register-password').value = '';
+            document.getElementById('register-confirm-password').value = '';
+            
+            selectLoginRole('initiator');
+            selectRegisterRole('initiator');
+            
+            document.querySelectorAll('.error-message, .success-message').forEach(el => {
+                el.style.display = 'none';
+            });
+            
+            document.getElementById('password-strength-bar').style.width = '0';
+            
+            navTo('page-login');
+            showTaskNotification('已退出登录', 'info');
+        }
+
+        // 启动系统
+        init();
+    </script>
+</body>
+</html>
