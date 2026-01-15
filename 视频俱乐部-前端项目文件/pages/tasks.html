@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>任务管理 - 教师视频俱乐部</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div id="page-task" class="page active">
+        <div class="header">
+            <div class="header-left">
+                <button class="btn btn-text" onclick="goBackToHome()" style="margin-right:10px;">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <span class="platform-name">教师视频俱乐部</span>
+                <span style="color: #999; font-weight: normal;"> | 教学任务</span>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <div class="avatar" id="task-user-avatar">王</div>
+                    <span id="task-user-name">王老师</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="task-page-container">
+            <h3 style="margin: 20px 0; color: #333;">教学视频任务</h3>
+            
+            <!-- 任务列表容器 -->
+            <div class="task-list-container" id="taskList">
+                <!-- 这里会自动显示2个任务 -->
+            </div>
+        </div>
+    </div>
+
+<script>
+// ====== 最简单直接的解决方案 ======
+
+// 1. 固定任务数据（保证一定有）
+const FORCED_TASKS = [
+    { 
+        id: 1, 
+        title: "看视频任务", 
+        type: "watch", 
+        description: "观看完整教学视频", 
+        status: "incomplete", 
+        externalLink: "https://app.mediatrack.cn/projects/2009960971614818304/files",
+        platformName: "分秒帧平台"
+    },
+    { 
+        id: 2, 
+        title: "研视频任务", 
+        type: "research", 
+        description: "完成教学反思与研讨笔记", 
+        status: "incomplete", 
+        externalLink: "https://shimo.im/space/2wAldmGZonhwbwAP",
+        platformName: "石墨文档协同空间"
+    }
+];
+
+// 2. 页面加载后立即执行
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('任务页面加载完成 - 开始渲染任务');
+    
+    // 延迟一点确保DOM完全加载
+    setTimeout(renderTasksNow, 100);
+});
+
+// 3. 渲染任务的函数
+function renderTasksNow() {
+    console.log('开始渲染任务');
+    
+    const container = document.getElementById('taskList');
+    if (!container) {
+        console.error('任务容器没找到，等100ms再试');
+        setTimeout(renderTasksNow, 100);
+        return;
+    }
+    
+    // 无论如何都使用FORCED_TASKS
+    const tasksToShow = FORCED_TASKS;
+    console.log('显示任务数量:', tasksToShow.length);
+    
+    // 清空容器
+    container.innerHTML = '';
+    
+    // 生成HTML
+    tasksToShow.forEach(task => {
+        const taskCard = createTaskCard(task);
+        container.appendChild(taskCard);
+    });
+    
+    console.log('任务渲染完成！');
+}
+
+// 4. 创建任务卡片的函数
+function createTaskCard(task) {
+    const card = document.createElement('div');
+    card.className = 'task-card-item';
+    card.setAttribute('data-task-id', task.id);
+    
+    const statusClass = task.status === 'complete' ? 'task-status-complete' : 'task-status-incomplete';
+    const statusText = task.status === 'complete' ? '已完成 <i class="fas fa-check"></i>' : '未完成';
+    const platformIcon = task.type === 'watch' ? 'fas fa-video' : 'fas fa-file-alt';
+    
+    card.innerHTML = `
+        <div class="task-card-header">
+            <div class="task-card-title">${task.title}</div>
+            <div class="task-card-status ${statusClass}">${statusText}</div>
+        </div>
+        <div class="task-card-description">
+            ${task.description}
+            <div style="font-size:14px; color:#666; margin-top:8px;">
+                <i class="fas fa-external-link-alt"></i> 将在${task.platformName}完成
+            </div>
+        </div>
+        <div class="task-card-actions">
+            <button class="btn btn-primary" onclick="openPlatform(${task.id})">
+                <i class="${platformIcon}"></i> 前往${task.platformName}
+            </button>
+            <button class="btn btn-success" onclick="markTaskComplete(${task.id})">
+                <i class="fas fa-check-circle"></i> 标记完成
+            </button>
+        </div>
+    `;
+    
+    return card;
+}
+
+// 5. 简单的功能函数
+function openPlatform(taskId) {
+    const task = FORCED_TASKS.find(t => t.id === taskId);
+    if (task && task.externalLink) {
+        window.open(task.externalLink, '_blank');
+        showMessage(`请在${task.platformName}完成任务后，返回此页面点击"标记完成"`);
+    }
+}
+
+function markTaskComplete(taskId) {
+    const task = FORCED_TASKS.find(t => t.id === taskId);
+    if (!task) return;
+    
+    const confirmed = confirm(`确定要标记"${task.title}"为完成吗？`);
+    if (confirmed) {
+        task.status = 'complete';
+        
+        // 更新UI
+        const card = document.querySelector(`[data-task-id="${taskId}"]`);
+        if (card) {
+            const statusElement = card.querySelector('.task-card-status');
+            statusElement.className = 'task-card-status task-status-complete';
+            statusElement.innerHTML = '已完成 <i class="fas fa-check"></i>';
+            
+            // 禁用按钮
+            const buttons = card.querySelectorAll('.task-card-actions button');
+            buttons.forEach(btn => {
+                if (btn.textContent.includes('标记完成')) {
+                    btn.disabled = true;
+                    btn.className = 'btn btn-outline';
+                    btn.innerHTML = '<i class="fas fa-check-circle"></i> 已完成';
+                }
+            });
+        }
+        
+        showMessage('任务已标记为完成！', 'success');
+    }
+}
+
+function showMessage(message, type = 'info') {
+    // 创建消息元素
+    const msgDiv = document.createElement('div');
+    msgDiv.textContent = message;
+    msgDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'error' ? '#ff4d4f' : type === 'success' ? '#52c41a' : '#1890ff'};
+        color: white;
+        padding: 12px 20px;
+        border-radius: 6px;
+        z-index: 1000;
+        font-size: 14px;
+        max-width: 300px;
+    `;
+    
+    document.body.appendChild(msgDiv);
+    setTimeout(() => msgDiv.remove(), 3000);
+}
+
+// 6. 返回首页的函数
+function goBackToHome() {
+    if (window.App && window.App.navigateTo) {
+        window.App.navigateTo('home');
+    } else {
+        window.location.hash = 'home';
+    }
+}
+
+// 7. 确保函数全局可用
+window.openPlatform = openPlatform;
+window.markTaskComplete = markTaskComplete;
+window.goBackToHome = goBackToHome;
+</script>
+</body>
+</html>
