@@ -91,13 +91,13 @@ window.Clubs = {
             // 从API搜索俱乐部 - 适配新的API格式
             const response = await API.getAllClubs({ keyword: keyword });
             
-            if (response && response.code === 0 && Array.isArray(response.data)) {
+            if (response && response.code === 0 && response.data && Array.isArray(response.data.list)) {
                 // 过滤掉已加入的俱乐部
                 const joinedIds = this.myClubs.map(club => club.id);
-                const clubs = response.data.map(club => ({
+                const clubs = response.data.list.map(club => ({
                     id: club.clubId,
-                    name: club.clubName,
-                    creator: club.creatorName || '未知',
+                    name: club.name,
+                    creator: club.creatorId ? `ID:${club.creatorId}` : 'Unknown',
                     members: club.memberCount || 0,
                     tag: club.tag || '教研组',
                     description: club.description || ''
