@@ -59,14 +59,9 @@ const FORCED_TASKS = [
         platformName: "石墨文档协同空间"
     }
 ];
-
-// 2. 页面加载后立即执行
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('任务页面加载完成 - 开始渲染任务');
-    
-    // 延迟一点确保DOM完全加载
-    setTimeout(renderTasksNow, 100);
-});
+    console.log('任务页面脚本执行 - 开始渲染任务');
+    renderTasksNow();
+;
 
 // 3. 渲染任务的函数
 function renderTasksNow() {
