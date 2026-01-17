@@ -120,7 +120,15 @@ window.Tasks = {
             console.log('从API加载任务状态...');
             
             // 调用API获取任务列表
-            const result = await API.getTasks();
+            const clubId = Number(
+                (window.App && App.state && App.state.currentClubId) ||
+                (window.Clubs && Clubs.getCurrentClub && Clubs.getCurrentClub()?.id)
+            );
+            if (!Number.isInteger(clubId)) {
+                console.error('Missing valid clubId for tasks API.');
+                return null;
+            }
+            const result = await API.getTasks({ clubId });
             
             if (result && result.code === 0 && result.data) {
                 console.log('API返回任务数据:', result.data);
@@ -187,7 +195,15 @@ window.Tasks = {
     getTaskStatus: async function(taskId) {
         try {
             // 尝试从API获取最新状态
-            const result = await API.getTasks();
+            const clubId = Number(
+                (window.App && App.state && App.state.currentClubId) ||
+                (window.Clubs && Clubs.getCurrentClub && Clubs.getCurrentClub()?.id)
+            );
+            if (!Number.isInteger(clubId)) {
+                console.error('Missing valid clubId for tasks API.');
+                return "incomplete";
+            }
+            const result = await API.getTasks({ clubId });
             
             if (result && result.code === 0 && result.data) {
                 if (Array.isArray(result.data)) {

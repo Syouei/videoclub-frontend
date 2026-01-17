@@ -702,7 +702,7 @@ window.App = {
             if (result.success) {
                 Utils.showNotification(`成功加入${result.club.name}！`, 'success');
                 this.closeJoinClubModal();
-                this.enterTaskPage(); // 直接进入任务页面
+                this.enterTaskPage(clubId); // 直接进入任务页面
             } else {
                 Utils.showNotification(result.message || '加入俱乐部失败', 'error');
             }
@@ -750,7 +750,7 @@ window.App = {
             if (result.success) {
                 Utils.showNotification(`俱乐部"${name}"创建成功！`, 'success');
                 this.closeCreateClubModal();
-                this.enterTaskPage(); // 直接进入任务页面
+                this.enterTaskPage(result.club ? result.club.id : undefined); // 直接进入任务页面
             } else {
                 Utils.showNotification(result.message || '创建俱乐部失败', 'error');
             }
@@ -764,11 +764,24 @@ window.App = {
     // ================ 任务功能 ================
     
 // 进入任务页面
-enterTaskPage: async function() {
-    console.log('进入任务页面 - 强制设置任务数据');
+enterTaskPage: async function(clubId) {
+    console.log('进入任务页面 - 通过接口获取任务数据');
+
+    const parsedClubId = Number(clubId);
+    if (Number.isInteger(parsedClubId)) {
+        this.state.currentClubId = parsedClubId;
+        if (window.Clubs && Clubs.setCurrentClub) {
+            Clubs.setCurrentClub(parsedClubId);
+        }
+    } else if (!Number.isInteger(this.state.currentClubId)) {
+        const currentClub = window.Clubs && Clubs.getCurrentClub ? Clubs.getCurrentClub() : null;
+        if (currentClub && Number.isInteger(currentClub.id)) {
+            this.state.currentClubId = currentClub.id;
+        }
+    }
     
     // 1. 设置固定任务数据
-    const fixedTasks = [
+    /* const fixedTasks = [
         { 
             id: 1, 
             title: "看视频任务", 
@@ -787,15 +800,15 @@ enterTaskPage: async function() {
             externalLink: "https://shimo.im/space/2wAldmGZonhwbwAP",
             platformName: "石墨文档协同空间"
         }
-    ];
+    ]; */
     
     // 2. 直接保存到sessionStorage
-    sessionStorage.setItem('CURRENT_TASKS_FORCE', JSON.stringify(fixedTasks));
+    // sessionStorage.setItem('CURRENT_TASKS_FORCE', JSON.stringify(fixedTasks));
     
     // 3. 跳转到任务页面
     this.navigateTo('tasks');
     
-    console.log('任务数据已保存到sessionStorage');
+    // console.log('任务数据已保存到sessionStorage');
 },
     // 标记任务完成（与API文档完全对接）
     markTaskComplete: async function(taskId) {

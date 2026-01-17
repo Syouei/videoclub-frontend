@@ -442,9 +442,10 @@ window.API = {
      * 6.2 查询任务列表
      * @returns {Promise} {code, msg, data: Array<任务信息>}
      */
-    async getTasks() {
+    async getTasks(params = {}) {
         const endpoint = window.AppConfig.API_ENDPOINTS.GET_TASKS;
-        return await this.request(endpoint, 'GET');
+        const queryString = this.buildQueryString(params);
+        return await this.request(endpoint + queryString, 'GET');
     },
     
     /**

@@ -419,7 +419,7 @@ window.Clubs = {
                 </div>
                 ${club.description ? `<div style="font-size:14px; color:#666; margin-bottom:12px; line-height:1.5;">${club.description}</div>` : ''}
                 <div class="club-actions">
-            <button class="btn btn-primary" style="flex:1" onclick="window.App.enterTaskPage()">
+            <button class="btn btn-primary" style="flex:1" onclick="window.App.enterTaskPage(${club.id})">
                 <i class="fas fa-tasks"></i> 进入任务
             </button>
         </div>

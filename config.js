@@ -40,6 +40,7 @@ window.AppConfig = {
         DELETE_CLUB: '/clubs/{id}',
         
         // ================ 任务模块（需Token） ================
+        GET_TASKS: '/tasks',
         COMPLETE_TASK: '/tasks/{id}/complete'
     },
     
