@@ -680,3 +680,30 @@ body { background-color: var(--bg-light); color: var(--text-main); height: 100vh
     color: var(--text-sub);
     margin-bottom: 30px;
 }
+
+
+/* ====== 修复登录页底部空白问题 ====== */
+
+/* 1. 确保 HTML 和 Body 占满全屏 */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* 2. 确保应用容器占满全屏 */
+#app, #page-container {
+    height: 100%;
+}
+
+/* 3. 专门修复登录和注册页面的容器高度 */
+/* 这里的 #page-login 是 login.html 最外层 div 的 ID */
+#page-login .login-container,
+#page-register .register-container {
+    min-height: 100vh !important; /* 强制占满视口高度，不减去任何像素 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px; /* 防止手机端贴边 */
+    box-sizing: border-box;
+}
