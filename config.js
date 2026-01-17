@@ -1,7 +1,7 @@
 window.AppConfig = {
     // API基础URL - 修改为你后端的地址
     // 注意：API文档指定基础路径为 /api/v1
-    API_BASE_URL: 'http://localhost:3000/api/v1',
+    API_BASE_URL: 'http://videohub.rhuey.org/api/v1',
     
     // API端点配置（完全按照API文档）
     API_ENDPOINTS: {
@@ -20,12 +20,14 @@ window.AppConfig = {
         CHANGE_PASSWORD: '/users/me/password',
         // 3.4 获取我加入的俱乐部
         GET_MY_CLUBS: '/users/me/clubs',
+        // 3.5 获取用户公开详情
+        GET_USER_DETAIL: '/users/{id}',
         
         // ================ 俱乐部模块（需Token） ================
         // 4.1 创建俱乐部
         CREATE_CLUB: '/clubs',
         // 4.2 查询俱乐部列表
-        GET_ALL_CLUBS: '/clubs',  // 支持query参数：keyword, type, page, pageSize
+        GET_ALL_CLUBS: '/clubs',  // 支持query参数：keyword, page, pageSize
         // 4.3 查询俱乐部详情
         GET_CLUB_DETAIL: '/clubs/{id}',
         // 4.4 加入俱乐部

@@ -344,6 +344,11 @@ window.API = {
         const endpoint = window.AppConfig.API_ENDPOINTS.GET_MY_CLUBS;
         return await this.request(endpoint, 'GET');
     },
+
+    async getUserDetail(userId) {
+        const endpoint = window.AppConfig.API_ENDPOINTS.GET_USER_DETAIL;
+        return await this.request(endpoint, 'GET', { _pathParams: { id: userId } });
+    },
     
     // ================ 俱乐部模块（需Token） ================
     

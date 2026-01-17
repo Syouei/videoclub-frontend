@@ -8,6 +8,9 @@ window.Clubs = {
     
     // 当前选中的俱乐部
     currentClub: null,
+
+    // 用户名缓存
+    userNameCache: {},
     
     // 初始化俱乐部模块
     init: function() {
@@ -69,6 +72,28 @@ window.Clubs = {
             if (response && response.code === 0 && Array.isArray(response.data)) {
                 // 转换API返回的数据格式
                 this.myClubs = response.data.map(club => this.transformClubData(club));
+                
+                // 通过详情接口补全成员数量（我的俱乐部列表接口不返回memberCount）
+                const detailList = await Promise.all(this.myClubs.map(async club => {
+                    try {
+                        const detail = await this.getClubDetail(club.id);
+                        let creatorName = club.creator;
+                        if (detail && detail.creatorId) {
+                            creatorName = await this.getUserNameById(detail.creatorId);
+                        }
+                        if (detail) {
+                            const updatedClub = { ...club, creator: creatorName };
+                            if (typeof detail.memberCount === 'number') {
+                                updatedClub.members = detail.memberCount;
+                            }
+                            return updatedClub;
+                        }
+                    } catch (error) {
+                        console.warn('补全俱乐部成员数量失败:', club.id, error);
+                    }
+                    return club;
+                }));
+                this.myClubs = detailList;
                 this.saveClubsToStorage();
                 console.log('获取我的俱乐部成功:', this.myClubs);
                 return this.myClubs;
@@ -97,13 +122,22 @@ window.Clubs = {
                 const clubs = response.data.list.map(club => ({
                     id: club.clubId,
                     name: club.name,
-                    creator: club.creatorId ? `ID:${club.creatorId}` : 'Unknown',
+                    creatorId: club.creatorId,
+                    creator: club.creatorId ? `${club.creatorId}` : '未知',
                     members: club.memberCount || 0,
                     tag: club.tag || '教研组',
                     description: club.description || ''
                 }));
+
+                const clubsWithCreator = await Promise.all(clubs.map(async club => {
+                    if (club.creatorId) {
+                        const creatorName = await this.getUserNameById(club.creatorId);
+                        return { ...club, creator: creatorName };
+                    }
+                    return club;
+                }));
                 
-                return clubs.filter(club => !joinedIds.includes(club.id));
+                return clubsWithCreator.filter(club => !joinedIds.includes(club.id));
             } else {
                 console.warn('搜索俱乐部API返回格式不正确:', response);
                 return [];
@@ -272,6 +306,24 @@ window.Clubs = {
         }
         
         return null;
+    },
+
+    // 获取用户名（缓存）
+    getUserNameById: async function(userId) {
+        if (!userId) return '未知';
+        if (this.userNameCache[userId]) return this.userNameCache[userId];
+        try {
+            const response = await API.getUserDetail(userId);
+            if (response && response.code === 0 && response.data && response.data.username) {
+                this.userNameCache[userId] = response.data.username;
+                return response.data.username;
+            }
+        } catch (error) {
+            console.warn('获取用户详情失败:', userId, error);
+        }
+        const fallbackName = `ID:${userId}`;
+        this.userNameCache[userId] = fallbackName;
+        return fallbackName;
     },
     
     // 设置当前俱乐部
