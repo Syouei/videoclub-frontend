@@ -36,222 +36,432 @@
     </div>
 
 <script>
-// ====== 最简单直接的解决方案 ======
+    // ========== 0. 页面状态 ==========
+    let clubTaskList = [];
+    let taskPageInitialized = false;
+    let currentClubId = null;
+    let currentClubName = '';
 
-// 1. 固定任务数据（保证一定有）
-/* const FORCED_TASKS = [
-    { 
-        id: 1, 
-        title: "看视频任务", 
-        type: "watch", 
-        description: "观看完整教学视频", 
-        status: "incomplete", 
-        externalLink: "https://app.mediatrack.cn/projects/2009960971614818304/files",
-        platformName: "分秒帧平台"
-    },
-    { 
-        id: 2, 
-        title: "研视频任务", 
-        type: "research", 
-        description: "完成教学反思与研讨笔记", 
-        status: "incomplete", 
-        externalLink: "https://shimo.im/space/2wAldmGZonhwbwAP",
-        platformName: "石墨文档协同空间"
-    }
-]; */
-let currentTasks = [];
-    console.log('任务页面脚本执行 - 开始渲染任务');
-    renderTasksNow();
-;
+    // ========== 1. 页面加载后获取任务详情 ==========
+    async function initTaskPage() {
+        if (taskPageInitialized) return;
+        taskPageInitialized = true;
 
-// 3. 渲染任务的函数
-async function renderTasksNow() {
-    console.log('开始渲染任务');
-    
-    const container = document.getElementById('taskList');
-    if (!container) {
-        console.error('任务容器没找到，等100ms再试');
-        setTimeout(renderTasksNow, 100);
-        return;
-    }
-    
-    // 通过接口获取任务数据
-    let tasksToShow = [];
-    const clubId = Number(
-        (window.App && App.state && App.state.currentClubId) ||
-        (window.Clubs && Clubs.getCurrentClub && Clubs.getCurrentClub()?.id)
-    );
-    if (!Number.isInteger(clubId)) {
-        console.error('Missing valid clubId, skip task fetch.');
-        tasksToShow = [];
-        currentTasks = tasksToShow;
-        if (window.Tasks) {
-            Tasks.currentTasks = currentTasks;
-        }
-        console.log('Show task count:', tasksToShow.length);
-        container.innerHTML = '';
-        console.log('Task render done.');
-        return;
-    }
-
-    try {
-        const result = await API.getTasks({ clubId });
-        if (result && result.code === 0 && Array.isArray(result.data)) {
-            tasksToShow = result.data.map(apiTask => {
-                const type = apiTask.type || 'watch';
-                const platformName = type === 'watch' ? '分秒帧平台' : '石墨文档协同空间';
-                const externalLink = type === 'watch'
-                    ? 'https://app.mediatrack.cn/projects/2009960971614818304/files'
-                    : 'https://shimo.im/space/2wAldmGZonhwbwAP';
-
-                return {
-                    id: apiTask.taskId || apiTask.id,
-                    title: apiTask.title,
-                    type,
-                    description: apiTask.description,
-                    status: apiTask.status || 'incomplete',
-                    externalLink,
-                    platformName
-                };
-            });
-        }
-    } catch (error) {
-        console.error('通过接口获取任务失败:', error);
-    }
-    currentTasks = tasksToShow;
-    if (window.Tasks) {
-        Tasks.currentTasks = currentTasks;
-    }
-    console.log('显示任务数量:', tasksToShow.length);
-    
-    // 清空容器
-    container.innerHTML = '';
-    
-    // 生成HTML
-    tasksToShow.forEach(task => {
-        const taskCard = createTaskCard(task);
-        container.appendChild(taskCard);
-    });
-    
-    console.log('任务渲染完成！');
-}
-
-// 4. 创建任务卡片的函数
-function createTaskCard(task) {
-    const card = document.createElement('div');
-    card.className = 'task-card-item';
-    card.setAttribute('data-task-id', task.id);
-    
-    const statusClass = task.status === 'complete' ? 'task-status-complete' : 'task-status-incomplete';
-    const statusText = task.status === 'complete' ? '已完成 <i class="fas fa-check"></i>' : '未完成';
-    const platformIcon = task.type === 'watch' ? 'fas fa-video' : 'fas fa-file-alt';
-    
-    const completeButton = task.status === 'complete'
-        ? ''
-        : `<button class="btn btn-success" onclick="markTaskComplete(${task.id})">
-                <i class="fas fa-check-circle"></i> 标记完成
-            </button>`;
-
-    card.innerHTML = `
-        <div class="task-card-header">
-            <div class="task-card-title">${task.title}</div>
-            <div class="task-card-status ${statusClass}">${statusText}</div>
-        </div>
-        <div class="task-card-description">
-            ${task.description}
-            <div style="font-size:14px; color:#666; margin-top:8px;">
-                <i class="fas fa-external-link-alt"></i> 将在${task.platformName}完成
-            </div>
-        </div>
-        <div class="task-card-actions">
-            <button class="btn btn-primary" onclick="openPlatform(${task.id})">
-                <i class="${platformIcon}"></i> 前往${task.platformName}
-            </button>
-            ${completeButton}
-        </div>
-    `;
-    
-    return card;
-}
-
-// 5. 简单的功能函数
-function openPlatform(taskId) {
-    const task = currentTasks.find(t => t.id === taskId);
-    if (task && task.externalLink) {
-        window.open(task.externalLink, '_blank');
-        showMessage(`请在${task.platformName}完成任务后，返回此页面点击"标记完成"`);
-    }
-}
-
-function markTaskComplete(taskId) {
-    if (window.App && window.App.markTaskComplete) {
-        window.App.markTaskComplete(taskId);
-        return;
-    }
-
-    const task = currentTasks.find(t => t.id === taskId);
-    if (!task) return;
-    
-    const confirmed = confirm(`确定要标记"${task.title}"为完成吗？`);
-    if (confirmed) {
-        task.status = 'complete';
+        console.log('任务页面初始化');
         
-        // 更新UI
-        const card = document.querySelector(`[data-task-id="${taskId}"]`);
-        if (card) {
-            const statusElement = card.querySelector('.task-card-status');
-            statusElement.className = 'task-card-status task-status-complete';
-            statusElement.innerHTML = '已完成 <i class="fas fa-check"></i>';
+        // 更新用户显示
+        updateUserDisplay();
+        
+        // 拉取任务列表并显示子任务
+        await loadTasksAndDetail();
+    }
+    
+    document.addEventListener('DOMContentLoaded', initTaskPage);
+
+    // ========== 2. 更新用户显示 ==========
+    function updateUserDisplay() {
+        if (window.Auth && window.Auth.getUser()) {
+            const user = window.Auth.getUser();
+            const avatarElements = document.querySelectorAll('#task-user-avatar');
+            const nameElements = document.querySelectorAll('#task-user-name');
             
-            // 禁用按钮
-            const buttons = card.querySelectorAll('.task-card-actions button');
-            buttons.forEach(btn => {
-                if (btn.textContent.includes('标记完成')) {
-                    btn.disabled = true;
-                    btn.className = 'btn btn-outline';
-                    btn.innerHTML = '<i class="fas fa-check-circle"></i> 已完成';
-                }
+            avatarElements.forEach(element => {
+                if (element) element.textContent = user.name.charAt(0);
+            });
+            nameElements.forEach(element => {
+                if (element) element.textContent = user.name;
             });
         }
+    }
+
+    // ========== 3. 从URL获取任务ID ==========
+    function getTaskIdFromURL() {
+        // 方法1：从hash参数获取
+        const hash = window.location.hash;
+        const params = new URLSearchParams(hash.split('?')[1]);
+        let taskId = params.get('taskId');
         
-        showMessage('任务已标记为完成！', 'success');
+        // 方法2：从App状态获取
+        if (!taskId && window.App && window.App.state && window.App.state.currentTaskId) {
+            taskId = window.App.state.currentTaskId;
+        }
+        
+        // 方法3：从Tasks模块获取
+        if (!taskId && window.Tasks && window.Tasks.currentTaskDetail) {
+            taskId = window.Tasks.currentTaskDetail.taskInfo.taskId;
+        }
+        
+        console.log('获取到的任务ID:', taskId);
+        return taskId ? parseInt(taskId) : null;
     }
-}
 
-function showMessage(message, type = 'info') {
-    // 创建消息元素
-    const msgDiv = document.createElement('div');
-    msgDiv.textContent = message;
-    msgDiv.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: ${type === 'error' ? '#ff4d4f' : type === 'success' ? '#52c41a' : '#1890ff'};
-        color: white;
-        padding: 12px 20px;
-        border-radius: 6px;
-        z-index: 1000;
-        font-size: 14px;
-        max-width: 300px;
-    `;
-    
-    document.body.appendChild(msgDiv);
-    setTimeout(() => msgDiv.remove(), 3000);
-}
+    // ========== 3.1 获取俱乐部ID（任务列表查询用） ==========
+    function getClubIdFromContext() {
+        const hash = window.location.hash;
+        const params = new URLSearchParams(hash.split('?')[1]);
+        let clubId = params.get('clubId');
+        
+        if (!clubId && window.App && window.App.state && window.App.state.currentClubId) {
+            clubId = window.App.state.currentClubId;
+        }
+        
+        if (!clubId && window.Clubs && window.Clubs.getCurrentClub) {
+            const currentClub = window.Clubs.getCurrentClub();
+            if (currentClub) {
+                clubId = currentClub.id || currentClub.clubId;
+                currentClubName = currentClub.name || '';
+            }
+        }
 
-// 6. 返回首页的函数
-function goBackToHome() {
-    if (window.App && window.App.navigateTo) {
-        window.App.navigateTo('home');
-    } else {
-        window.location.hash = 'home';
+        if (!clubId && window.Utils) {
+            const savedClub = Utils.getFromStorage('current_club');
+            if (savedClub) {
+                clubId = savedClub.id || savedClub.clubId;
+                currentClubName = savedClub.name || '';
+            }
+        }
+        
+        if (clubId) {
+            currentClubId = parseInt(clubId);
+        }
+        
+        return currentClubId;
     }
-}
 
-// 7. 确保函数全局可用
-window.openPlatform = openPlatform;
-window.markTaskComplete = markTaskComplete;
-window.goBackToHome = goBackToHome;
+    // ========== 4. 先拉取任务列表，再加载任务详情 ==========
+    async function loadTasksAndDetail() {
+        try {
+            const clubId = getClubIdFromContext();
+            if (!clubId) {
+                showMessage('无法获取俱乐部信息', 'error');
+                goBackToHome();
+                return;
+            }
+
+            if (!window.API || !API.getTasks) {
+                throw new Error('任务接口不可用');
+            }
+
+            const listResult = await API.getTasks(clubId);
+            if (listResult && listResult.code === 0 && Array.isArray(listResult.data)) {
+                clubTaskList = listResult.data;
+                console.log('已获取任务列表', clubTaskList.length);
+            } else {
+                clubTaskList = [];
+                console.warn('任务列表为空或格式不正确');
+            }
+
+            let taskId = getTaskIdFromURL();
+            if (!taskId && clubTaskList.length > 0) {
+                taskId = clubTaskList[0].taskId || clubTaskList[0].id;
+            }
+
+            if (!taskId) {
+                showMessage('暂无可用任务', 'warning');
+                return;
+            }
+
+            await loadTaskDetail(taskId);
+        } catch (error) {
+            console.error('加载任务列表或详情失败:', error);
+            showMessage('加载任务失败: ' + error.message, 'error');
+        }
+    }
+
+    // ========== 5. 加载任务详情 ==========
+    async function loadTaskDetail(taskId) {
+        try {
+            showMessage('正在加载任务...', 'info');
+            
+            // 确保Tasks模块已加载
+            if (!window.Tasks) {
+                throw new Error('任务模块未加载');
+            }
+            
+            // 获取任务详情
+            const taskDetail = await Tasks.getTaskDetail(taskId);
+            const taskInfo = taskDetail?.taskInfo || taskDetail;
+            
+            if (!taskInfo) {
+                throw new Error('获取任务详情失败');
+            }
+
+            if (taskInfo.clubId) {
+                currentClubId = taskInfo.clubId;
+            }
+            if (!currentClubName && window.Clubs && Array.isArray(window.Clubs.myClubs)) {
+                const found = window.Clubs.myClubs.find(c => c.id === currentClubId || c.clubId === currentClubId);
+                if (found) currentClubName = found.name || '';
+            }
+            
+            // 仅使用接口文档的 subTasks 字段
+            const mergedTask = {
+                ...taskInfo,
+                subTasks: Array.isArray(taskInfo.subTasks) ? taskInfo.subTasks : []
+            };
+            
+            // 显示任务详情
+            displayTaskDetail(mergedTask);
+            
+        } catch (error) {
+            console.error('加载任务详情失败:', error);
+            showMessage('加载任务失败: ' + error.message, 'error');
+            
+            // 如果失败，3秒后返回
+            setTimeout(() => {
+                goBackToHome();
+            }, 3000);
+        }
+    }
+
+    // ========== 6. 显示任务详情和子任务 ==========
+    function displayTaskDetail(taskInfo) {
+        console.log('显示任务详情:', taskInfo);
+        
+        // 更新页面标题
+        const titleElement = document.querySelector('.task-page-container h3');
+        if (titleElement && taskInfo.title) {
+            titleElement.textContent = taskInfo.title;
+        }
+        
+        // 显示子任务
+        displaySubTasks(taskInfo);
+    }
+
+    // ========== 7. 显示子任务 ==========
+    function displaySubTasks(taskInfo) {
+        const taskListContainer = document.getElementById('taskList');
+        
+        if (!taskListContainer) {
+            console.error('找不到任务列表容器');
+            return;
+        }
+
+        // 兼容不同字段命名
+        const subTasks = Array.isArray(taskInfo.subTasks)
+            ? taskInfo.subTasks
+            : Array.isArray(taskInfo.subtasks)
+                ? taskInfo.subtasks
+                : [];
+
+        // 清空容器
+        taskListContainer.innerHTML = '';
+
+        if (!subTasks || subTasks.length === 0) {
+            taskListContainer.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-tasks"></i>
+                    <h3>暂无子任务</h3>
+                    <p>该任务还没有子任务</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // 显示每个子任务
+        subTasks.forEach((subTask, index) => {
+            // 判断子任务类型
+            const isWatchTask = subTask.type === 'watch';
+            const statusClass = subTask.status === 'completed' ? 'task-status-complete' : 'task-status-incomplete';
+            const statusText = subTask.status === 'completed' ? '已完成 <i class="fas fa-check"></i>' : '未完成';
+            const subtaskId = subTask.subtaskId || subTask.id;
+            const description = subTask.description || '';
+            
+            // 根据任务类型设置平台信息
+            const platformInfo = isWatchTask 
+                ? '<div style="font-size:14px; color:#666; margin-top:8px; display: flex; align-items: center; gap: 6px;"><i class="fas fa-external-link-alt"></i> 请在分秒帧平台观看视频</div>'
+                : '<div style="font-size:14px; color:#666; margin-top:8px; display: flex; align-items: center; gap: 6px;"><i class="fas fa-file-alt"></i> 请在石墨文档协同空间完成笔记</div>';
+            
+            // 创建子任务卡片
+            const taskCardHTML = `
+                <div class="task-card-item" data-subtask-id="${subtaskId}" data-task-id="${taskInfo.taskId}">
+                    <div class="task-card-header">
+                        <div class="task-card-title">${subTask.title}</div>
+                        <div class="task-card-status ${statusClass}">${statusText}</div>
+                    </div>
+                    <div class="task-card-description">
+                        ${description}
+                        ${platformInfo}
+                        ${subTask.status === 'completed' && subTask.submission ? `
+                        <div style="font-size:12px; color:#52c41a; margin-top:4px; padding:8px; background:rgba(82,196,26,0.1); border-radius:4px;">
+                            <i class="fas fa-check-circle"></i> 
+                            已完成于: ${formatDate(subTask.submission.completedAt)}
+                        </div>
+                        ` : ''}
+                    </div>
+                    <div class="task-card-actions">
+                        <!-- 前往平台按钮 -->
+                        <button class="btn btn-primary" onclick="goToPlatform(${subtaskId})">
+                            <i class="${isWatchTask ? 'fas fa-video' : 'fas fa-file-alt'}"></i> 
+                            前往${isWatchTask ? '分秒帧平台' : '石墨文档协同空间'}
+                        </button>
+                        
+                        <!-- 标记完成按钮（未完成时才显示） -->
+                        ${subTask.status !== 'completed' ? `
+                        <button class="btn btn-success" onclick="completeSubTask(${taskInfo.taskId}, ${subtaskId}, ${isWatchTask ? 'false' : 'true'})">
+                            <i class="fas fa-check-circle"></i> 标记完成
+                        </button>
+                        ` : `
+                        <button class="btn btn-outline" disabled>
+                            <i class="fas fa-check-circle"></i> 已完成
+                        </button>
+                        `}
+                    </div>
+                </div>
+            `;
+            
+            taskListContainer.innerHTML += taskCardHTML;
+        });
+        
+        console.log('子任务显示完成，共', subTasks.length, '个子任务');
+    }
+
+    // ========== 8. 跳转到平台 ==========
+    function goToPlatform(subtaskId) {
+        // 根据子任务ID确定平台
+        let externalLink = '';
+        let platformName = '';
+        
+        // 这里可以根据实际情况设置不同的链接
+        // 假设subtaskId 1是看视频，2是研视频
+        if (subtaskId === 1) {
+            externalLink = 'https://app.mediatrack.cn/projects/2009960971614818304/files';
+            platformName = '分秒帧平台';
+        } else {
+            externalLink = 'https://shimo.im/space/2wAldmGZonhwbwAP';
+            platformName = '石墨文档协同空间';
+        }
+        
+        console.log('打开平台链接:', externalLink);
+        window.open(externalLink, '_blank');
+        
+        // 提示用户
+        const message = `请在${platformName}完成任务后，返回此页面点击"标记完成"按钮`;
+        showMessage(message, 'info');
+    }
+
+    // ========== 9. 完成子任务 ==========
+    async function completeSubTask(taskId, subtaskId, isResearchTask = false) {
+        console.log('完成子任务:', { taskId, subtaskId, isResearchTask });
+        
+        // 准备确认信息
+        const platformName = subtaskId === 1 ? '分秒帧平台' : '石墨文档协同空间';
+        let confirmMessage = '';
+        let researchNotes = '';
+        
+        if (isResearchTask) {
+            // 研视频任务需要输入笔记
+            researchNotes = prompt('请输入您的教研笔记内容（必填）：');
+            if (!researchNotes || !researchNotes.trim()) {
+                showMessage('请输入教研笔记内容', 'error');
+                return;
+            }
+            confirmMessage = `请确认：\n\n✅ 已在 ${platformName} 完成教研笔记\n✅ 笔记内容已提交\n\n确定标记为已完成吗？`;
+        } else {
+            confirmMessage = `请确认：\n\n✅ 已在 ${platformName} 完整观看视频\n✅ 视频研讨已完成\n\n确定标记为已完成吗？`;
+        }
+        
+        if (!confirm(confirmMessage)) {
+            showMessage('请先前往平台完成任务', 'info');
+            return;
+        }
+        
+        try {
+            showMessage('正在提交任务...', 'info');
+            
+            // 准备提交数据
+            const completionData = {};
+            if (isResearchTask) {
+                completionData.researchNotes = researchNotes;
+            }
+            
+            // 调用API提交子任务
+            const result = await Tasks.completeSubTask(taskId, subtaskId, completionData);
+            
+            if (result.success) {
+                showMessage('任务提交成功！', 'success');
+                
+                // 重新加载任务详情
+                setTimeout(async () => {
+                    await loadTaskDetail(taskId);
+                }, 1000);
+            } else {
+                showMessage(result.message || '提交任务失败', 'error');
+            }
+        } catch (error) {
+            console.error('完成子任务失败:', error);
+            showMessage('提交任务失败: ' + error.message, 'error');
+        }
+    }
+
+    // ========== 10. 格式化日期 ==========
+    function formatDate(dateString) {
+        if (!dateString) return '刚刚';
+        const date = new Date(dateString);
+        return date.toLocaleString('zh-CN', {
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    // ========== 11. 显示消息 ==========
+    function showMessage(message, type = 'info') {
+        if (window.Utils && window.Utils.showNotification) {
+            window.Utils.showNotification(message, type);
+            return;
+        }
+        
+        // 简单的通知实现
+        const notification = document.createElement('div');
+        notification.textContent = message;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'error' ? '#ff4d4f' : type === 'success' ? '#52c41a' : '#1890ff'};
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            z-index: 1000;
+            font-size: 14px;
+            max-width: 300px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        `;
+        
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 3000);
+    }
+
+    // ========== 12. 返回视频页 ==========
+    function goBackToHome() {
+        const clubId = currentClubId || getClubIdFromContext();
+        const clubName = currentClubName;
+        const targetHash = clubId ? `video?clubId=${clubId}${clubName ? `&clubName=${encodeURIComponent(clubName)}` : ''}` : 'home';
+
+        if (window.App && window.App.navigateToWithParams && clubId) {
+            window.App.navigateToWithParams('video', { clubId, clubName });
+            return;
+        }
+
+        if (window.App && window.App.navigateTo && !clubId) {
+            window.App.navigateTo('home');
+            return;
+        }
+
+        window.location.hash = targetHash;
+    }
+
+    // ========== 13. 确保函数在全局可用 ==========
+    window.goToPlatform = goToPlatform;
+    window.completeSubTask = completeSubTask;
+    window.goBackToHome = goBackToHome;
+    window.initTaskPage = initTaskPage;
+
+    // 立即尝试初始化（兼容 SPA 动态加载）
+    initTaskPage();
 </script>
+
 </body>
 </html>

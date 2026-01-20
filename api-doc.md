@@ -34,6 +34,10 @@
   | password | string | 是   | 密码，6-20               |
   | role     | string | 否   | 角色：`teacher` / `user` |
 
+- **说明**：当未传 `type` 时，系统会自动生成两个子任务（继承父任务 videoId）：
+  1. `watch` 子任务：标题“看视频任务”，描述“前往分秒帧平台观看完整教学视频”
+  2. `research` 子任务：标题“研视频任务”，描述“前往石墨文档完成教学反思与研讨笔记”
+
 - **响应示例（成功）**
 
 ```json
@@ -320,11 +324,11 @@
 - **认证要求**：登录
 - **查询参数**
 
-  | 参数名   | 类型   | 必填 | 说明                      |
-  | -------- | ------ | ---- | ------------------------- |
-  | keyword  | string | 否   | 搜索关键词（名称/标签）   |
-  | page     | number | 否   | 页码，默认 1              |
-  | pageSize | number | 否   | 每页数量，默认 20         |
+  | 参数名   | 类型   | 必填 | 说明                  |
+  | -------- | ------ | ---- | --------------------- |
+  | keyword  | string | 否   | 搜索关键词（名称/id） |
+  | page     | number | 否   | 页码，默认 1          |
+  | pageSize | number | 否   | 每页数量，默认 20     |
 
 - **响应示例（成功）**
 
@@ -719,9 +723,13 @@
   | ----------- | ------ | ---- | -------------------- |
   | clubId      | number | 是   | 俱乐部 ID            |
   | videoId     | number | 否   | 关联视频 ID          |
-  | type        | string | 是   | `watch` / `research` |
+  | type        | string | 否   | `watch` / `research` / `all`，默认 `all` |
   | title       | string | 是   | 标题                 |
   | description | string | 否   | 描述                 |
+
+- **说明**：当未传 `type` 时，系统会自动生成两个子任务（继承父任务 videoId）：
+  1. `watch` 子任务：标题“看视频任务”，描述“前往分秒帧平台观看完整教学视频”
+  2. `research` 子任务：标题“研视频任务”，描述“前往石墨文档完成教学反思与研讨笔记”
 
 - **响应示例（成功）**
 
@@ -735,22 +743,23 @@
     "videoId": 5001,
     "type": "watch",
     "title": "观看示例视频",
-    "description": "完成观看"
+    "description": "完成观看",
+    "createdAt": "2026-01-17T12:00:00.000Z"
   }
 }
 ```
 
 ------
 
-#### 7.2 提交任务
+#### 7.2 提交子任务
 
-- **接口名称**：提交任务
-- **接口描述**：提交任务完成记录及附件/笔记
-- **接口路径**：`/tasks/{id}/complete`
+- **接口名称**：提交子任务
+- **接口描述**：提交子任务完成记录及附件/笔记
+- **接口路径**：`/tasks/{taskId}/subtasks/{subtaskId}/complete`
 - **请求方法**：POST
 - **请求头**：`Content-Type: application/json`，`Authorization: Bearer {Token}`
 - **认证要求**：登录
-- **路径参数**：`id`（任务 ID）
+- **路径参数**：`taskId`（任务 ID），`subtaskId`（子任务 ID）
 - **请求体**
 
   | 参数名        | 类型   | 必填 | 说明                                          |
@@ -766,7 +775,7 @@
   "msg": "任务已提交",
   "data": {
     "completionId": 8001,
-    "taskId": 7001,
+    "subtaskId": 1,
     "userId": 1001,
     "researchNotes": "学习要点",
     "attachmentUrl": null,
@@ -780,7 +789,7 @@
 #### 7.3 任务列表
 
 - **接口名称**：任务列表
-- **接口描述**：查询俱乐部任务并返回我的完成状态
+- **接口描述**：查询俱乐部任务并返回子任务完成汇总
 - **接口路径**：`/tasks`
 - **请求方法**：GET
 - **请求头**：`Authorization: Bearer {Token}`
@@ -803,13 +812,21 @@
       "type": "watch",
       "title": "观看示例视频",
       "description": "完成观看",
+      "createdAt": "2026-01-17T12:00:00.000Z",
       "video": {
         "videoId": 5001,
         "title": "示例视频",
         "coverUrl": null,
         "duration": 120
       },
-      "status": "incomplete"
+      "subtaskSummary": {
+        "total": 2,
+        "completed": 1,
+        "byType": {
+          "watch": { "status": "completed" },
+          "research": { "status": "incompleted" }
+        }
+      }
     }
   ]
 }
@@ -820,12 +837,12 @@
 #### 7.4 任务详情
 
 - **接口名称**：任务详情
-- **接口描述**：获取任务详情及当前用户提交状态
-- **接口路径**：`/tasks/{id}`
+- **接口描述**：获取任务详情及当前用户子任务提交情况
+- **接口路径**：`/tasks/{taskId}`
 - **请求方法**：GET
 - **请求头**：`Authorization: Bearer {Token}`
 - **认证要求**：登录
-- **路径参数**：`id`（任务 ID）
+- **路径参数**：`taskId`（任务 ID）
 - **响应示例（成功）**
 
 ```json
@@ -837,18 +854,39 @@
       "taskId": 7001,
       "clubId": 3001,
       "videoId": 5001,
-      "type": "watch",
+      "type": "all",
       "title": "观看示例视频",
       "description": "完成观看",
+      "createdAt": "2026-01-17T12:00:00.000Z",
       "video": {
         "videoId": 5001,
         "title": "示例视频",
         "coverUrl": null,
         "duration": 120
-      }
-    },
-    "myStatus": "incomplete",
-    "mySubmission": null
+      },
+      "subTasks": [
+        {
+          "subtaskId": 9001,
+          "type": "watch",
+          "title": "固定子任务标题-观看",
+          "description": "固定子任务描述-观看",
+          "status": "completed",
+          "submission": {
+            "researchNotes": "观看笔记...",
+            "attachmentUrl": null,
+            "completedAt": "2026-01-19T13:00:00Z"
+          }
+        },
+        {
+          "subtaskId": 9002,
+          "type": "research",
+          "title": "固定子任务标题-研读",
+          "description": "固定子任务描述-研读",
+          "status": "incompleted",
+          "submission": null
+        }
+      ]
+    }
   }
 }
 ```

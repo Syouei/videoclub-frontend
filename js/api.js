@@ -427,36 +427,58 @@ window.API = {
     },
     
     // ================ 任务模块（需Token） ================
+
+/**
+ * 7.1 发布任务
+ * @param {object} taskData - 任务数据 {clubId, videoId, type, title, description}
+ * @returns {Promise} {code, msg, data: {taskId}}
+ */
+async createTask(taskData) {
+    const endpoint = window.AppConfig.API_ENDPOINTS.CREATE_TASK;
     
-    /**
-     * 6.1 发布任务
-     * @param {object} taskData - 任务数据 {clubId, videoId, type, title, description}
-     * @returns {Promise} {code, msg, data: {taskId}}
-     */
-    async createTask(taskData) {
-        const endpoint = window.AppConfig.API_ENDPOINTS.CREATE_TASK;
-        return await this.request(endpoint, 'POST', taskData);
-    },
+    // 强制使用正确的参数结构
+    const requestData = {
+        clubId: parseInt(taskData.clubId),
+        title: taskData.title,
+        description: taskData.description || '',
+        type: 'all'  // ⚠️ 硬编码为 'all'
+    };
     
-    /**
-     * 6.2 查询任务列表
-     * @returns {Promise} {code, msg, data: Array<任务信息>}
-     */
-    async getTasks(params = {}) {
-        const endpoint = window.AppConfig.API_ENDPOINTS.GET_TASKS;
-        const queryString = this.buildQueryString(params);
-        return await this.request(endpoint + queryString, 'GET');
-    },
+    console.log('发送到后端的最终数据:', requestData);
     
-    /**
-     * 6.3 提交/完成任务
-     * @param {number} taskId - 任务ID
-     * @param {object} completionData - 完成数据 {researchNotes, attachmentUrl}
-     * @returns {Promise} {code, msg, data: null}
-     */
-    async completeTask(taskId, completionData = {}) {
-        const endpoint = window.AppConfig.API_ENDPOINTS.COMPLETE_TASK;
-        const data = { ...completionData, _pathParams: { id: taskId } };
-        return await this.request(endpoint, 'POST', data);
-    }
+    return await this.request(endpoint, 'POST', requestData);
+},
+
+/**
+ * 7.3 任务列表
+ * @param {number} clubId - 俱乐部ID
+ * @returns {Promise} {code, msg, data: Array<任务信息>}
+ */
+async getTasks(clubId) {
+    const endpoint = window.AppConfig.API_ENDPOINTS.GET_TASKS;
+    const queryString = this.buildQueryString({ clubId });
+    return await this.request(endpoint + queryString, 'GET');
+},
+
+/**
+ * 7.4 任务详情
+ * @param {number} taskId - 任务ID
+ * @returns {Promise} {code, msg, data: {taskInfo}}
+ */
+async getTaskDetail(taskId) {
+    const endpoint = '/tasks/{id}';
+    return await this.request(endpoint, 'GET', { _pathParams: { id: taskId } });
+},
+
+/**
+ * 7.2 提交子任务
+ * @param {number} taskId - 任务ID
+ * @param {number} subtaskId - 子任务ID (1:看视频, 2:研视频)
+ * @param {object} completionData - 完成数据 {researchNotes, attachmentUrl}
+ * @returns {Promise} {code, msg, data: null}
+ */
+async completeSubTask(taskId, subtaskId, completionData = {}) {
+    const endpoint = `/tasks/${taskId}/subtasks/${subtaskId}/complete`;
+    return await this.request(endpoint, 'POST', completionData);
+}
 };

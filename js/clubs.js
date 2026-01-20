@@ -326,32 +326,86 @@ window.Clubs = {
         return fallbackName;
     },
     
-    // 设置当前俱乐部
-    setCurrentClub: function(clubId) {
-        console.log('设置当前俱乐部，ID:', clubId);
+    isClubCreator: function(clubId) {
+        console.log('检查用户是否是俱乐部创建者，俱乐部ID:', clubId);
         
-        if (typeof clubId === 'object') {
-            // 如果是对象，直接设置为当前俱乐部
-            this.currentClub = clubId;
-        } else {
-            // 如果是ID，从我的俱乐部列表中查找
-            this.currentClub = this.myClubs.find(c => c.id === clubId);
-            
-            // 如果没找到，尝试获取详情
-            if (!this.currentClub) {
-                console.log('本地未找到俱乐部，尝试获取详情');
-                this.getClubDetail(clubId).then(clubDetail => {
-                    if (clubDetail) {
-                        this.currentClub = this.transformClubData(clubDetail);
-                    }
-                });
-            }
+        // 1. 确保用户已登录
+        if (!window.Auth || !window.Auth.isLoggedIn()) {
+            console.log('用户未登录');
+            return false;
         }
         
-        console.log('当前俱乐部:', this.currentClub);
-        return this.currentClub;
+        // 2. 在 myClubs 中查找该俱乐部
+        const club = this.myClubs.find(c => c.id === clubId);
+        if (!club) {
+            console.log('未在 myClubs 中找到俱乐部');
+            return false;
+        }
+        
+        // 3. 检查 memberRole 是否是 'manager'（创建者）
+        // 注意：根据你的代码，创建者的角色是 'manager'
+        const isCreator = club.memberRole === 'manager';
+        
+        console.log(`俱乐部: ${club.name}, 用户角色: ${club.memberRole || 'unknown'}, 是否是创建者: ${isCreator}`);
+        return isCreator;
     },
+
+   // 设置当前俱乐部
+setCurrentClub: function(clubId) {
+    console.log('设置当前俱乐部，ID:', clubId);
     
+    // 如果 clubId 是数字，从我的俱乐部列表中查找
+    if (typeof clubId === 'number' || (typeof clubId === 'string' && !isNaN(clubId))) {
+        const id = parseInt(clubId);
+        
+        // 从 myClubs 中查找
+        const foundClub = this.myClubs.find(c => {
+            // 检查所有可能的ID属性
+            return c.id === id || c.clubId === id || c.clubID === id;
+        });
+        
+        if (foundClub) {
+            this.currentClub = foundClub;
+            console.log('从myClubs找到俱乐部:', this.currentClub);
+        } else {
+            // 如果没有找到，创建一个临时俱乐部对象
+            console.log('本地未找到俱乐部，创建临时对象');
+            this.currentClub = {
+                id: id,
+                clubId: id, // 确保有 clubId 属性
+                name: '临时俱乐部',
+                creator: '未知',
+                members: 0,
+                tag: '临时',
+                description: ''
+            };
+        }
+    } else if (typeof clubId === 'object') {
+        // 如果是对象，直接设置为当前俱乐部
+        this.currentClub = clubId;
+        console.log('直接设置俱乐部对象:', this.currentClub);
+    }
+    
+    // 确保有必要的属性
+    if (this.currentClub) {
+        // 确保有 id 和 clubId 属性
+        if (!this.currentClub.id && this.currentClub.clubId) {
+            this.currentClub.id = this.currentClub.clubId;
+        }
+        if (!this.currentClub.clubId && this.currentClub.id) {
+            this.currentClub.clubId = this.currentClub.id;
+        }
+        
+        console.log('最终设置的当前俱乐部:', this.currentClub);
+        
+        // 保存到本地存储，确保跨页面访问
+        if (window.Utils) {
+            Utils.saveToStorage('current_club', this.currentClub);
+        }
+    }
+    
+    return this.currentClub;
+},
     // 获取当前俱乐部
     getCurrentClub: function() {
         return this.currentClub;
@@ -406,6 +460,8 @@ window.Clubs = {
         
         // 标签显示
         const tagBadge = club.tag ? `<span class="tag" style="background: linear-gradient(135deg, #f0f0f0, #e0e0e0); color: #666;">${club.tag}</span>` : '';
+        
+        // =============== 重点修改这里：按钮的 onclick 事件 ===============
         container.innerHTML += `
             <div class="club-card">
                 <h3>${club.name}</h3>
@@ -419,10 +475,12 @@ window.Clubs = {
                 </div>
                 ${club.description ? `<div style="font-size:14px; color:#666; margin-bottom:12px; line-height:1.5;">${club.description}</div>` : ''}
                 <div class="club-actions">
-            <button class="btn btn-primary" style="flex:1" onclick="window.App.enterTaskPage(${club.id})">
-                <i class="fas fa-tasks"></i> 进入任务
-            </button>
-        </div>
+                    <!-- 修改前：onclick="window.App.enterTaskPage(${club.id})" -->
+                    <!-- 修改后：onclick="goToVideoPage(${club.id})" -->
+                    <button class="btn btn-primary" style="flex:1" onclick="goToVideoPage(${club.id})">
+                        <i class="fas fa-video"></i> 查看任务
+                    </button>
+                </div>
             </div>
         `;
     });

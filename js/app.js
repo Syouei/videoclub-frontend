@@ -766,49 +766,23 @@ window.App = {
 // 进入任务页面
 enterTaskPage: async function(clubId) {
     console.log('进入任务页面 - 通过接口获取任务数据');
-
-    const parsedClubId = Number(clubId);
-    if (Number.isInteger(parsedClubId)) {
-        this.state.currentClubId = parsedClubId;
+    
+    // 保存俱乐部ID
+    if (Number.isInteger(clubId)) {
+        this.state.currentClubId = clubId;
         if (window.Clubs && Clubs.setCurrentClub) {
-            Clubs.setCurrentClub(parsedClubId);
-        }
-    } else if (!Number.isInteger(this.state.currentClubId)) {
-        const currentClub = window.Clubs && Clubs.getCurrentClub ? Clubs.getCurrentClub() : null;
-        if (currentClub && Number.isInteger(currentClub.id)) {
-            this.state.currentClubId = currentClub.id;
+            Clubs.setCurrentClub(clubId);
         }
     }
     
-    // 1. 设置固定任务数据
-    /* const fixedTasks = [
-        { 
-            id: 1, 
-            title: "看视频任务", 
-            type: "watch", 
-            description: "观看完整教学视频", 
-            status: "incomplete", 
-            externalLink: "https://app.mediatrack.cn/projects/2009960971614818304/files",
-            platformName: "分秒帧平台"
-        },
-        { 
-            id: 2, 
-            title: "研视频任务", 
-            type: "research", 
-            description: "完成教学反思与研讨笔记", 
-            status: "incomplete", 
-            externalLink: "https://shimo.im/space/2wAldmGZonhwbwAP",
-            platformName: "石墨文档协同空间"
-        }
-    ]; */
-    
-    // 2. 直接保存到sessionStorage
-    // sessionStorage.setItem('CURRENT_TASKS_FORCE', JSON.stringify(fixedTasks));
-    
-    // 3. 跳转到任务页面
-    this.navigateTo('tasks');
-    
-    // console.log('任务数据已保存到sessionStorage');
+    // 跳转到视频页面（创建/查看任务）
+    this.navigateTo('video');
+},
+
+// 标记任务完成（删除或保留为空，因为现在在tasks.html中处理）
+markTaskComplete: async function(taskId) {
+    console.log('markTaskComplete被调用，但现在的逻辑在tasks.html中处理');
+    // 这个函数现在可以留空或删除，因为逻辑已经在tasks.html中实现
 },
     // 标记任务完成（与API文档完全对接）
     markTaskComplete: async function(taskId) {
@@ -973,6 +947,21 @@ enterTaskPage: async function(clubId) {
         }
     },
     
+    enterVideoPage: function(clubId) {
+        console.log('App.enterVideoPage 被调用，俱乐部ID:', clubId);
+        
+        // 设置当前俱乐部
+        if (window.Clubs && window.Clubs.setCurrentClub) {
+            window.Clubs.setCurrentClub(clubId);
+        }
+        
+        // 更新App状态
+        this.state.currentClubId = clubId;
+        
+        // 跳转到视频页面
+        this.navigateTo('video');
+    },
+
     // 登出
     logout: function() {
         if (!confirm('确定要退出登录吗？')) {

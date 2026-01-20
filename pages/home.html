@@ -139,6 +139,40 @@
                 });
             }
         });
+        
+    window.goToVideoPage = function(clubId) {
+    console.log('跳转到视频页面，俱乐部ID:', clubId);
+    
+    // 确保clubId是数字
+    const parsedClubId = parseInt(clubId);
+    
+    // 方法1：直接使用 Clubs 模块设置当前俱乐部
+    if (window.Clubs && window.Clubs.setCurrentClub) {
+        // 先查找俱乐部对象
+        const club = window.Clubs.myClubs.find(c => c.id === parsedClubId);
+        if (club) {
+            window.Clubs.setCurrentClub(club); // 传递完整的俱乐部对象
+        } else {
+            window.Clubs.setCurrentClub(parsedClubId); // 传递ID
+        }
+    }
+    
+    // 方法2：使用备用方法跳转
+    console.log('跳转到视频页面');
+    
+    // 直接跳转到视频页面，并传递俱乐部ID和俱乐部名称
+    if (window.Clubs && window.Clubs.myClubs) {
+        const club = window.Clubs.myClubs.find(c => c.id === parsedClubId);
+        if (club) {
+            // 传递俱乐部名称和ID
+            window.location.hash = `video?clubId=${parsedClubId}&clubName=${encodeURIComponent(club.name)}`;
+        } else {
+            window.location.hash = `video?clubId=${parsedClubId}`;
+        }
+    } else {
+        window.location.hash = `video?clubId=${parsedClubId}`;
+    }
+};
     </script>
 </body>
 </html>

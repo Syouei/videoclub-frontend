@@ -40,8 +40,10 @@ window.AppConfig = {
         DELETE_CLUB: '/clubs/{id}',
         
         // ================ 任务模块（需Token） ================
+        CREATE_TASK: '/tasks',
         GET_TASKS: '/tasks',
-        COMPLETE_TASK: '/tasks/{id}/complete'
+        GET_TASK_DETAIL: '/tasks/{id}',
+        COMPLETE_SUBTASK: '/tasks/{taskId}/subtasks/{subtaskId}/complete'
     },
     
     // 本地存储键名（保持不变）
@@ -57,6 +59,7 @@ window.AppConfig = {
         LOGIN: 'pages/login.html',
         REGISTER: 'pages/register.html',
         HOME: 'pages/home.html',
+        VIDEO: 'pages/video.html', 
         TASKS: 'pages/tasks.html'  
     },
     
