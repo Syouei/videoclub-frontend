@@ -779,90 +779,13 @@ enterTaskPage: async function(clubId) {
     this.navigateTo('video');
 },
 
-// 标记任务完成（删除或保留为空，因为现在在tasks.html中处理）
+    // 标记任务完成（现在逻辑在tasks.html中处理，这里留空）
 markTaskComplete: async function(taskId) {
-    console.log('markTaskComplete被调用，但现在的逻辑在tasks.html中处理');
-    // 这个函数现在可以留空或删除，因为逻辑已经在tasks.html中实现
+    console.log('任务完成逻辑在tasks.html中处理，这里仅作为兼容接口');
+    // 什么都不做，逻辑已移动到tasks.html
 },
-    // 标记任务完成（与API文档完全对接）
-    markTaskComplete: async function(taskId) {
-        console.log('标记任务完成，任务ID:', taskId);
-        
-        // 获取任务信息
-        let task;
-        if (window.Tasks && window.Tasks.currentTasks) {
-            task = Tasks.currentTasks.find(t => t.id === taskId);
-        }
-        
-        if (!task) {
-            Utils.showNotification('任务不存在', 'error');
-            return;
-        }
-        
-        const platformName = task.type === 'watch' ? '分秒帧平台' : '石墨文档协同空间';
-        
-        // 根据任务类型显示不同的确认信息
-        let confirmMessage = '';
-        let requireNotes = false;
-        
-        if (task.type === 'watch') {
-            confirmMessage = `请确认：\n\n✅ 已在 ${platformName} 完整观看视频\n✅ 视频研讨已完成\n\n如果还未完成，请点击"取消"先前往平台观看视频。\n\n确定标记为已完成吗？`;
-            requireNotes = false;
-        } else if (task.type === 'research') {
-            confirmMessage = `请确认：\n\n✅ 已在 ${platformName} 完成教研笔记\n✅ 笔记内容已提交\n\n如果还未完成，请点击"取消"先前往平台完成笔记。\n\n确定标记为已完成吗？`;
-            requireNotes = true;
-        }
-        
-        if (!confirm(confirmMessage)) {
-            Utils.showNotification('请先前往平台完成任务', 'info');
-            return;
-        }
-        
-        // 准备提交数据（根据API文档格式）
-        const completionData = {};
-        
-        if (requireNotes) {
-            // 如果是研视频任务，需要笔记内容（根据API文档）
-            const researchNotes = prompt('请输入您的教研笔记内容（必填）：');
-            if (researchNotes && researchNotes.trim()) {
-                completionData.researchNotes = researchNotes.trim();
-            } else {
-                Utils.showNotification('请输入教研笔记内容', 'error');
-                return;
-            }
-        }
-        
-        try {
-            // 显示加载状态
-            Utils.showNotification('正在提交任务完成状态...', 'info');
-            
-            // 调用Tasks模块的方法来更新状态并保存到API
-            const result = await Tasks.updateTaskStatus(taskId, 'complete', completionData);
-            
-            if (result.success) {
-                // 更新UI显示
-                this.updateTaskUI(taskId, 'complete');
-                
-                const completionMessage = task.type === 'watch' 
-                    ? '视频观看任务已标记为完成！'
-                    : '教研笔记任务已标记为完成！';
-                
-                Utils.showNotification(completionMessage, 'success');
-                
-                // 检查是否所有任务都完成了
-                if (Tasks.areAllTasksCompleted()) {
-                    Utils.showNotification('🎉 恭喜！您已完成该视频的所有任务！', 'success');
-                }
-            } else {
-                Utils.showNotification(result.message || '标记任务完成失败', 'error');
-            }
-            
-        } catch (error) {
-            console.error('标记任务完成失败:', error);
-            Utils.showNotification('标记任务完成失败: ' + error.message, 'error');
-        }
-    },
     
+
     // 更新任务UI显示
     updateTaskUI: function(taskId, status) {
         console.log('更新任务UI，任务ID:', taskId, '状态:', status);
@@ -999,6 +922,7 @@ markTaskComplete: async function(taskId) {
         Utils.showNotification(message, type);
     }
 };
+
 
 // 应用初始化
 document.addEventListener('DOMContentLoaded', function() {

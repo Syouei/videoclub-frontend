@@ -298,14 +298,14 @@
                         
                         <!-- 标记完成按钮（未完成时才显示） -->
                         ${subTask.status !== 'completed' ? `
-                        <button class="btn btn-success" onclick="completeSubTask(${taskInfo.taskId}, ${subtaskId}, ${isWatchTask ? 'false' : 'true'})">
-                            <i class="fas fa-check-circle"></i> 标记完成
-                        </button>
-                        ` : `
-                        <button class="btn btn-outline" disabled>
-                            <i class="fas fa-check-circle"></i> 已完成
-                        </button>
-                        `}
+                         <button class="btn btn-success" onclick="completeSubTask(${taskInfo.taskId}, ${subtaskId})">
+                                 <i class="fas fa-check-circle"></i> 标记完成
+</button>
+` : `
+<button class="btn btn-outline" disabled>
+    <i class="fas fa-check-circle"></i> 已完成
+</button>
+`}
                     </div>
                 </div>
             `;
@@ -317,13 +317,37 @@
     }
 
     // ========== 8. 跳转到平台 ==========
-    function goToPlatform(subtaskId) {
-        // 根据子任务ID确定平台
-        let externalLink = '';
-        let platformName = '';
-        
-        // 这里可以根据实际情况设置不同的链接
-        // 假设subtaskId 1是看视频，2是研视频
+function goToPlatform(subtaskId) {
+    // 根据子任务ID找到对应的子任务信息
+    const taskCards = document.querySelectorAll('.task-card-item');
+    let targetTaskCard = null;
+    
+    // 查找包含当前subtaskId的任务卡片
+    for (const card of taskCards) {
+        const cardSubtaskId = card.getAttribute('data-subtask-id');
+        if (cardSubtaskId && parseInt(cardSubtaskId) === subtaskId) {
+            targetTaskCard = card;
+            break;
+        }
+    }
+    
+    let externalLink = '';
+    let platformName = '';
+    
+    // 检查是否为看视频任务（通过卡片内的图标判断）
+    if (targetTaskCard) {
+        const watchIcon = targetTaskCard.querySelector('.fa-video');
+        if (watchIcon) {
+            // 看视频任务 - 分秒帧平台
+            externalLink = 'https://app.mediatrack.cn/projects/2009960971614818304/files';
+            platformName = '分秒帧平台';
+        } else {
+            // 研视频任务 - 石墨文档
+            externalLink = 'https://shimo.im/space/2wAldmGZonhwbwAP';
+            platformName = '石墨文档协同空间';
+        }
+    } else {
+        // 如果没有找到任务卡片，使用原来的逻辑作为fallback
         if (subtaskId === 1) {
             externalLink = 'https://app.mediatrack.cn/projects/2009960971614818304/files';
             platformName = '分秒帧平台';
@@ -331,68 +355,94 @@
             externalLink = 'https://shimo.im/space/2wAldmGZonhwbwAP';
             platformName = '石墨文档协同空间';
         }
-        
-        console.log('打开平台链接:', externalLink);
-        window.open(externalLink, '_blank');
-        
-        // 提示用户
-        const message = `请在${platformName}完成任务后，返回此页面点击"标记完成"按钮`;
-        showMessage(message, 'info');
     }
+    
+    console.log('打开平台链接:', externalLink);
+    window.open(externalLink, '_blank');
+    
+    // 提示用户
+    const message = `请在${platformName}完成任务后，返回此页面点击"标记完成"按钮`;
+    showMessage(message, 'info');
+}
 
     // ========== 9. 完成子任务 ==========
-    async function completeSubTask(taskId, subtaskId, isResearchTask = false) {
-        console.log('完成子任务:', { taskId, subtaskId, isResearchTask });
-        
-        // 准备确认信息
-        const platformName = subtaskId === 1 ? '分秒帧平台' : '石墨文档协同空间';
-        let confirmMessage = '';
-        let researchNotes = '';
-        
-        if (isResearchTask) {
-            // 研视频任务需要输入笔记
-            researchNotes = prompt('请输入您的教研笔记内容（必填）：');
-            if (!researchNotes || !researchNotes.trim()) {
-                showMessage('请输入教研笔记内容', 'error');
-                return;
-            }
-            confirmMessage = `请确认：\n\n✅ 已在 ${platformName} 完成教研笔记\n✅ 笔记内容已提交\n\n确定标记为已完成吗？`;
-        } else {
-            confirmMessage = `请确认：\n\n✅ 已在 ${platformName} 完整观看视频\n✅ 视频研讨已完成\n\n确定标记为已完成吗？`;
-        }
-        
-        if (!confirm(confirmMessage)) {
-            showMessage('请先前往平台完成任务', 'info');
-            return;
-        }
-        
-        try {
-            showMessage('正在提交任务...', 'info');
-            
-            // 准备提交数据
-            const completionData = {};
-            if (isResearchTask) {
-                completionData.researchNotes = researchNotes;
-            }
-            
-            // 调用API提交子任务
-            const result = await Tasks.completeSubTask(taskId, subtaskId, completionData);
-            
-            if (result.success) {
-                showMessage('任务提交成功！', 'success');
-                
-                // 重新加载任务详情
-                setTimeout(async () => {
-                    await loadTaskDetail(taskId);
-                }, 1000);
-            } else {
-                showMessage(result.message || '提交任务失败', 'error');
-            }
-        } catch (error) {
-            console.error('完成子任务失败:', error);
-            showMessage('提交任务失败: ' + error.message, 'error');
+async function completeSubTask(taskId, subtaskId, isResearchTask = false) {
+    console.log('完成子任务:', { taskId, subtaskId, isResearchTask });
+    
+    // 根据子任务ID找到对应的子任务信息
+    const taskCards = document.querySelectorAll('.task-card-item');
+    let targetTaskCard = null;
+    
+    // 查找包含当前subtaskId的任务卡片
+    for (const card of taskCards) {
+        const cardSubtaskId = card.getAttribute('data-subtask-id');
+        if (cardSubtaskId && parseInt(cardSubtaskId) === subtaskId) {
+            targetTaskCard = card;
+            break;
         }
     }
+    
+    // 根据任务卡片判断是否为研视频任务
+    let actualIsResearchTask = isResearchTask;
+    let platformName = '';
+    
+    if (targetTaskCard) {
+        // 检查是否为看视频任务（通过卡片内的图标判断）
+        const watchIcon = targetTaskCard.querySelector('.fa-video');
+        if (watchIcon) {
+            // 看视频任务 - 分秒帧平台
+            actualIsResearchTask = false;
+            platformName = '分秒帧平台';
+        } else {
+            // 研视频任务 - 石墨文档
+            actualIsResearchTask = true;
+            platformName = '石墨文档协同空间';
+        }
+    } else {
+        // 如果没有找到任务卡片，使用传入的参数
+        platformName = subtaskId === 1 ? '分秒帧平台' : '石墨文档协同空间';
+    }
+    
+    // 准备确认信息
+    let confirmMessage = '';
+    
+    if (actualIsResearchTask) {
+        // 研视频任务
+        confirmMessage = `请确认：\n\n✅ 已在 ${platformName} 完成教研笔记\n✅ 笔记内容已提交\n\n确定标记为已完成吗？`;
+    } else {
+        // 看视频任务
+        confirmMessage = `请确认：\n\n✅ 已在 ${platformName} 完整观看视频\n✅ 视频研讨已完成\n\n确定标记为已完成吗？`;
+    }
+    
+    if (!confirm(confirmMessage)) {
+        showMessage('请先前往平台完成任务', 'info');
+        return;
+    }
+    
+    try {
+        showMessage('正在提交任务...', 'info');
+        
+        // 准备提交数据
+        const completionData = {};
+        
+        // 调用API提交子任务
+        const result = await Tasks.completeSubTask(taskId, subtaskId, completionData);
+        
+        if (result.success) {
+            showMessage('任务提交成功！', 'success');
+            
+            // 重新加载任务详情
+            setTimeout(async () => {
+                await loadTaskDetail(taskId);
+            }, 1000);
+        } else {
+            showMessage(result.message || '提交任务失败', 'error');
+        }
+    } catch (error) {
+        console.error('完成子任务失败:', error);
+        showMessage('提交任务失败: ' + error.message, 'error');
+    }
+}
 
     // ========== 10. 格式化日期 ==========
     function formatDate(dateString) {
