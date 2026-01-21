@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的俱乐部 - 教师视频俱乐部</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div id="page-home" class="page active">
+        <div class="header">
+            <div class="header-left">
+                <span class="platform-name">教师视频俱乐部</span>
+                <span style="color: #999; font-weight: normal;"> | 我的俱乐部</span>
+            </div>
+            <div class="header-right">
+                <!-- 搜索和创建俱乐部按钮 -->
+                <div style="display: flex; gap: 10px; margin-right: 15px;">
+                    <button class="btn btn-outline btn-sm" onclick="window.App.openJoinClubModal()">
+                        <i class="fas fa-search"></i> 搜索俱乐部
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="window.App.openCreateClubModal()">
+                        <i class="fas fa-plus"></i> 创建俱乐部
+                    </button>
+                </div>
+                
+                <div class="user-info">
+                    <div class="avatar" id="user-avatar">王</div>
+                    <span id="user-name-display">王老师</span>
+                    <button class="btn btn-text" onclick="window.App.logout()" style="margin-left: 10px;">退出</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="club-grid" id="club-list">
+            <!-- 俱乐部卡片将由JS动态生成 -->
+            <div class="empty-state">
+                <i class="fas fa-users"></i>
+                <h3>加载中...</h3>
+                <p>正在加载俱乐部列表</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 搜索俱乐部模态框 -->
+    <div id="join-club-modal" class="modal-overlay" style="display: none;">
+        <div class="modal">
+            <h3 style="margin-bottom: 24px;">搜索并加入俱乐部</h3>
+            <div class="form-item">
+                <label>搜索俱乐部</label>
+                <input type="text" id="search-club-input" placeholder="输入俱乐部名称或ID...">
+            </div>
+            <div style="text-align:right; margin-bottom: 20px;">
+                <button class="btn btn-primary" onclick="window.App.searchClubs()">搜索</button>
+            </div>
+            <div id="search-results" style="max-height: 300px; overflow-y: auto;">
+                <div style="text-align: center; color: #999; padding: 40px 20px;">
+                    <i class="fas fa-search" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                    <p>输入关键词搜索俱乐部</p>
+                </div>
+            </div>
+            <div style="text-align:right; margin-top: 20px;">
+                <button class="btn btn-outline" onclick="window.App.closeJoinClubModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 创建俱乐部模态框 -->
+    <!-- home.html 中的创建俱乐部模态框 -->
+<div id="create-club-modal" class="modal-overlay" style="display: none;">
+    <div class="modal">
+        <h3 style="margin-bottom: 24px;">创建新俱乐部</h3>
+        <div class="form-item">
+            <label class="required">俱乐部名称</label>
+            <input type="text" id="new-club-name" placeholder="请输入俱乐部名称">
+        </div>
+        <div class="form-item">
+            <label>标签</label>
+            <input type="text" id="new-club-tag" placeholder="教研组" value="教研组">
+        </div>
+        <div class="form-item">
+            <label>简介</label>
+            <textarea id="new-club-description" placeholder="请输入俱乐部简介" rows="3"></textarea>
+        </div>
+        <div style="text-align:right; margin-top: 24px;">
+            <button class="btn btn-outline" onclick="window.App.closeCreateClubModal()">取消</button>
+            <button class="btn btn-primary" onclick="window.App.createNewClub()">创建俱乐部</button>
+        </div>
+    </div>
+</div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('首页加载完成');
+            
+            // 更新用户信息
+            if (window.Auth && window.Auth.getUser()) {
+                const user = window.Auth.getUser();
+                console.log('当前用户:', user);
+                
+                const nameElements = document.querySelectorAll('#user-name-display');
+                const avatarElements = document.querySelectorAll('#user-avatar');
+                
+                nameElements.forEach(element => {
+                    if (element) element.textContent = user.name;
+                });
+                
+                avatarElements.forEach(element => {
+                    if (element) element.textContent = user.name.charAt(0);
+                });
+            }
+            
+            // 页面加载后自动加载俱乐部列表
+            if (window.App && window.App.renderHome) {
+                setTimeout(() => {
+                    console.log('调用App.renderHome');
+                    window.App.renderHome();
+                }, 100);
+            }
+            
+            // 点击模态框外部关闭
+            const joinModal = document.getElementById('join-club-modal');
+            const createModal = document.getElementById('create-club-modal');
+            
+            if (joinModal) {
+                joinModal.addEventListener('click', function(event) {
+                    if (event.target === joinModal) {
+                        window.App.closeJoinClubModal();
+                    }
+                });
+            }
+            
+            if (createModal) {
+                createModal.addEventListener('click', function(event) {
+                    if (event.target === createModal) {
+                        window.App.closeCreateClubModal();
+                    }
+                });
+            }
+        });
+        
+    window.goToVideoPage = function(clubId) {
+    console.log('跳转到视频页面，俱乐部ID:', clubId);
+    
+    // 确保clubId是数字
+    const parsedClubId = parseInt(clubId);
+    
+    // 方法1：直接使用 Clubs 模块设置当前俱乐部
+    if (window.Clubs && window.Clubs.setCurrentClub) {
+        // 先查找俱乐部对象
+        const club = window.Clubs.myClubs.find(c => c.id === parsedClubId);
+        if (club) {
+            window.Clubs.setCurrentClub(club); // 传递完整的俱乐部对象
+        } else {
+            window.Clubs.setCurrentClub(parsedClubId); // 传递ID
+        }
+    }
+    
+    // 方法2：使用备用方法跳转
+    console.log('跳转到视频页面');
+    
+    // 直接跳转到视频页面，并传递俱乐部ID和俱乐部名称
+    if (window.Clubs && window.Clubs.myClubs) {
+        const club = window.Clubs.myClubs.find(c => c.id === parsedClubId);
+        if (club) {
+            // 传递俱乐部名称和ID
+            window.location.hash = `video?clubId=${parsedClubId}&clubName=${encodeURIComponent(club.name)}`;
+        } else {
+            window.location.hash = `video?clubId=${parsedClubId}`;
+        }
+    } else {
+        window.location.hash = `video?clubId=${parsedClubId}`;
+    }
+};
+// 全局函数，确保在俱乐部卡片中可用
+window.openEditClubModal = function(clubId) {
+    if (window.Clubs && window.Clubs.openEditClubModal) {
+        window.Clubs.openEditClubModal(clubId);
+    }
+};
+
+window.confirmDeleteClub = function(clubId) {
+    if (window.Clubs && window.Clubs.confirmDeleteClub) {
+        window.Clubs.confirmDeleteClub(clubId);
+    }
+};
+
+window.quitClub = function(clubId) {
+    if (window.Clubs && window.Clubs.quitClub) {
+        window.Clubs.quitClub(clubId);
+    }
+};
+    </script>
+</body>
+</html>
