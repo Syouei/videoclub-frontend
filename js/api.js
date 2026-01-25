@@ -480,5 +480,45 @@ async getTaskDetail(taskId) {
 async completeSubTask(taskId, subtaskId, completionData = {}) {
     const endpoint = `/tasks/${taskId}/subtasks/${subtaskId}/complete`;
     return await this.request(endpoint, 'POST', completionData);
+},
+
+/**
+ * 7.5 修改任务
+ * @param {number} taskId - 任务ID
+ * @param {object} taskData - 更新的任务数据 {title, description, videoId}
+ * @returns {Promise} {code, msg, data: null}
+ */
+async updateTask(taskId, taskData) {
+    // 获取配置中的端点
+    const baseEndpoint = window.AppConfig.API_ENDPOINTS.UPDATE_TASK;
+    
+    // 手动替换 :id 为实际taskId
+    const endpoint = baseEndpoint.replace(':id', taskId);
+    
+    // 确保videoId是数字（如果有的话）
+    const requestData = { ...taskData };
+    if (requestData.videoId) {
+        requestData.videoId = parseInt(requestData.videoId);
+    }
+    
+    console.log('修改任务请求:', { endpoint, requestData });
+    return await this.request(endpoint, 'PATCH', requestData);
+},
+
+/**
+ * 7.6 删除任务
+ * @param {number} taskId - 任务ID
+ * @returns {Promise} {code, msg, data: null}
+ */
+async deleteTask(taskId) {
+    // 获取配置中的端点
+    const baseEndpoint = window.AppConfig.API_ENDPOINTS.DELETE_TASK;
+    
+    // 手动替换 :id 为实际taskId
+    const endpoint = baseEndpoint.replace(':id', taskId);
+    
+    console.log('删除任务请求:', endpoint);
+    return await this.request(endpoint, 'DELETE');
 }
+
 };

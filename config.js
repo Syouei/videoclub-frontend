@@ -38,12 +38,16 @@ window.AppConfig = {
         UPDATE_CLUB: '/clubs/{id}',
         // 4.7 解散俱乐部
         DELETE_CLUB: '/clubs/{id}',
+        // 归档俱乐部 
+        ARCHIVE_CLUB: '/clubs/{id}/archive',
         
         // ================ 任务模块（需Token） ================
         CREATE_TASK: '/tasks',
         GET_TASKS: '/tasks',
         GET_TASK_DETAIL: '/tasks/{id}',
-        COMPLETE_SUBTASK: '/tasks/{taskId}/subtasks/{subtaskId}/complete'
+        COMPLETE_SUBTASK: '/tasks/{taskId}/subtasks/{subtaskId}/complete',
+        UPDATE_TASK: '/tasks/:id',      // 7.5 修改任务
+        DELETE_TASK: '/tasks/:id',      // 7.6 删除任务
     },
     
     // 本地存储键名（保持不变）
@@ -60,8 +64,34 @@ window.AppConfig = {
         REGISTER: 'pages/register.html',
         HOME: 'pages/home.html',
         VIDEO: 'pages/video.html', 
-        TASKS: 'pages/tasks.html'  
+        TASKS: 'pages/tasks.html' ,
+         PROFILE: 'pages/profile.html'  // 新增
     },
+
+    // 修改用户信息字段配置，使用API文档的字段名：
+USER_INFO_FIELDS: {
+    required: ['realname', 'gender', 'age', 'school', 'phone', 'email'],
+    optional: ['studentId', 'job', 'signature'],
+    genders: [
+        { value: 'male', label: '男' },
+        { value: 'female', label: '女' },
+        { value: 'other', label: '其他' },
+        { value: 'secret', label: '保密' }
+    ],
+    jobs: [
+        { value: 'student', label: '学生' },
+        { value: 'teacher', label: '教师' }
+    ]
+},
+
+// 添加资料完成度配置：
+USER_PROFILE_COMPLETION: {
+    thresholds: {
+        basic: 60,
+        medium: 80,
+        complete: 95
+    }
+},
     
     // 固定任务配置（新增）
     FIXED_TASKS: {
@@ -82,6 +112,17 @@ window.AppConfig = {
             platformName: "石墨文档协同空间"
         }
     },
+    
+    // ================ 埋点分析配置 ================
+    
+    // 分析功能开关
+    ANALYTICS_ENABLED: true,
+    
+    // 分析服务器端点（可根据需要配置）
+    ANALYTICS_ENDPOINT: 'https://analytics.teachervideoclub.com/events',
+    
+    // 隐私政策版本
+    PRIVACY_VERSION: '2026-01',
     
     // 响应超时时间（毫秒）
     REQUEST_TIMEOUT: 10000,

@@ -434,6 +434,12 @@ async function completeSubTask(taskId, subtaskId, isResearchTask = false) {
             // 重新加载任务详情
             setTimeout(async () => {
                 await loadTaskDetail(taskId);
+                
+                // ========== 新增：通知视频页面更新 ==========
+                if (window.parent && window.parent.videoPageInitialized) {
+                    // 如果视频页面已初始化，刷新任务列表
+                    window.parent.loadVideoTasks && window.parent.loadVideoTasks();
+                }
             }, 1000);
         } else {
             showMessage(result.message || '提交任务失败', 'error');

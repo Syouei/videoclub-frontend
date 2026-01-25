@@ -24,6 +24,15 @@ window.Auth = {
             if (userData && token) {
                 this.currentUser = userData;
                 console.log('[Auth] 从本地存储加载用户:', this.currentUser.username);
+                
+                // 记录用户登录事件（埋点）
+                if (Utils.isPrivacyAgreed()) {
+                    Utils.sendPrivacyEvent('user_login', {
+                        loginType: 'auto',
+                        userId: userData.userId
+                    });
+                }
+                
                 return true;
             }
         } catch (error) {
@@ -39,36 +48,52 @@ window.Auth = {
      * @returns {boolean} 是否保存成功
      */
     saveUserToStorage: function(userInfo, accessToken) {
-        try {
-            // API返回的userInfo结构：{userId, username, role, avatarUrl}
-            // 我们存储时需要添加一个显示用的name字段
-            const userData = {
-                // API原始字段
-                userId: userInfo.userId,
-                username: userInfo.username,
-                role: userInfo.role || 'user',
-                avatarUrl: userInfo.avatarUrl,
-                
-                // 前端显示字段（兼容旧代码）
-                name: userInfo.username, // 使用username作为显示名称
-                id: userInfo.userId      // 兼容旧代码中的id字段
-            };
+    try {
+        // API返回的userInfo结构：{userId, username, role, avatarUrl}
+        const userData = {
+            // API原始字段
+            userId: userInfo.userId,
+            username: userInfo.username,
+            role: userInfo.role || 'user',
+            avatarUrl: userInfo.avatarUrl,
             
-            Utils.saveToStorage(AppConfig.STORAGE_KEYS.USER_INFO, userData);
-            Utils.saveToStorage(AppConfig.STORAGE_KEYS.USER_TOKEN, accessToken);
+            // 前端显示字段
+            name: userInfo.username,
+            id: userInfo.userId,
             
-            this.currentUser = userData;
-            console.log('[Auth] 保存用户信息:', userInfo.username);
-            
-            // 立即更新UI显示
-            this.updateUserDisplay();
-            
-            return true;
-        } catch (error) {
-            console.error('[Auth] 保存用户信息失败:', error);
-            return false;
+            // 个人资料（如果有的话）
+            profile: userInfo.profile || null
+        };
+        
+        Utils.saveToStorage(AppConfig.STORAGE_KEYS.USER_INFO, userData);
+        Utils.saveToStorage(AppConfig.STORAGE_KEYS.USER_TOKEN, accessToken);
+        
+        this.currentUser = userData;
+        console.log('[Auth] 保存用户信息:', userInfo.username);
+        
+        // 同时初始化Profile模块
+        if (window.Profile && window.Profile.init) {
+            window.Profile.init();
         }
-    },
+        
+        // 立即更新UI显示
+        this.updateUserDisplay();
+        
+        // 记录用户登录成功事件
+        if (Utils.isPrivacyAgreed()) {
+            Utils.sendPrivacyEvent('user_login', {
+                loginType: 'manual',
+                userId: userInfo.userId,
+                username: userInfo.username
+            });
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('[Auth] 保存用户信息失败:', error);
+        return false;
+    }
+},
     
     /**
      * 清除用户信息（登出）
@@ -76,6 +101,14 @@ window.Auth = {
      */
     clearUserStorage: function() {
         try {
+            // 记录用户登出事件（埋点）
+            if (Utils.isPrivacyAgreed() && this.currentUser) {
+                Utils.sendPrivacyEvent('user_logout', {
+                    userId: this.currentUser.userId,
+                    username: this.currentUser.username
+                });
+            }
+            
             Utils.removeFromStorage(AppConfig.STORAGE_KEYS.USER_INFO);
             Utils.removeFromStorage(AppConfig.STORAGE_KEYS.USER_TOKEN);
             this.currentUser = null;
@@ -387,5 +420,161 @@ window.Auth = {
             console.error('[Auth] 登出失败:', error);
             return false;
         }
+    },
+    
+    /**
+     * 检查隐私协议状态
+     * @returns {boolean} 是否已同意隐私协议
+     */
+    isPrivacyAgreed: function() {
+        return Utils.isPrivacyAgreed();
+    },
+
+    /**
+ * 获取用户个人资料
+ * @returns {object} 个人资料数据
+ */
+getUserProfile: function() {
+    if (!this.currentUser) {
+        return null;
     }
+    
+    // 优先从用户信息中获取
+    if (this.currentUser.profile) {
+        return this.currentUser.profile;
+    }
+    
+    // 如果没有，尝试从Profile模块获取
+    if (window.Profile && window.Profile.getUserProfile) {
+        const profile = window.Profile.getUserProfile();
+        if (profile) {
+            // 保存到用户信息中
+            this.currentUser.profile = profile;
+            return profile;
+        }
+    }
+    
+    return null;
+},
+
+/**
+ * 更新用户个人资料
+ * @param {object} profileData - 个人资料数据
+ * @returns {boolean} 是否更新成功
+ */
+updateUserProfile: function(profileData) {
+    if (!this.currentUser) {
+        console.warn('[Auth] 无法更新个人资料：当前用户为空');
+        return false;
+    }
+    
+    try {
+        // 合并个人资料
+        const currentProfile = this.getUserProfile() || {};
+        const updatedProfile = {
+            ...currentProfile,
+            ...profileData,
+            updatedAt: new Date().toISOString()
+        };
+        
+        // 保存到用户信息中
+        this.currentUser.profile = updatedProfile;
+        
+        // 保存到本地存储
+        Utils.saveToStorage(AppConfig.STORAGE_KEYS.USER_INFO, this.currentUser);
+        
+        // 如果Profile模块存在，也保存到那里
+        if (window.Profile && window.Profile.saveUserProfile) {
+            window.Profile.saveUserProfile(updatedProfile);
+        }
+        
+        console.log('[Auth] 用户个人资料更新成功');
+        return true;
+        
+    } catch (error) {
+        console.error('[Auth] 更新个人资料失败:', error);
+        return false;
+    }
+},
+
+/**
+ * 检查个人资料完成度
+ * @returns {number} 完成度百分比
+ */
+getProfileCompletion: function() {
+    if (!this.currentUser) {
+        return 0;
+    }
+    
+    // 如果Profile模块存在，使用它的计算方法
+    if (window.Profile && window.Profile.calculateCompletion) {
+        return window.Profile.calculateCompletion();
+    }
+    
+    // 否则，使用简单计算方法
+    const profile = this.getUserProfile();
+    if (!profile) {
+        return 0;
+    }
+    
+    const requiredFields = AppConfig.USER_INFO_FIELDS?.required || 
+                          ['realName', 'gender', 'age', 'school', 'phone', 'email'];
+    
+    let completedCount = 0;
+    
+    requiredFields.forEach(field => {
+        if (profile[field] && profile[field].toString().trim() !== '') {
+            completedCount++;
+        }
+    });
+    
+    const percentage = Math.round((completedCount / requiredFields.length) * 100);
+    return percentage;
+},
+
+/**
+ * 获取用户真实姓名
+ * @returns {string} 真实姓名
+ */
+getRealName: function() {
+    const profile = this.getUserProfile();
+    return profile?.realName || this.getDisplayName();
+},
+
+/**
+ * 获取用户邮箱
+ * @returns {string} 邮箱地址
+ */
+getUserEmail: function() {
+    const profile = this.getUserProfile();
+    return profile?.email || '';
+},
+
+/**
+ * 获取用户手机号
+ * @returns {string} 手机号
+ */
+getUserPhone: function() {
+    const profile = this.getUserProfile();
+    return profile?.phone || '';
+},
+
+/**
+ * 获取用户学校
+ * @returns {string} 学校名称
+ */
+getUserSchool: function() {
+    const profile = this.getUserProfile();
+    return profile?.school || '';
+},
+
+/**
+ * 检查是否已完善个人资料
+ * @returns {boolean} 是否已完善
+ */
+isProfileComplete: function() {
+    const completion = this.getProfileCompletion();
+    const threshold = AppConfig.USER_PROFILE_COMPLETION?.thresholds?.basic || 60;
+    return completion >= threshold;
+}
 };

@@ -25,19 +25,12 @@ window.Tasks = {
             throw new Error('俱乐部ID和任务标题是必填项');
         }
         
-        // 根据API文档，type是可选字段，默认值为 'all'
-        // 必须确保type是有效的值之一：watch / research / all
         const apiData = {
             clubId: taskData.clubId,
             title: taskData.title,
             description: taskData.description || '',
-            type: 'all'  // 明确设置默认值，确保符合API要求
+            type: 'all'
         };
-        
-        // 如果有 videoId，也要加上
-        if (taskData.videoId) {
-            apiData.videoId = taskData.videoId;
-        }
         
         console.log('发送给API的任务数据:', apiData);
         
@@ -47,7 +40,6 @@ window.Tasks = {
         console.log('API创建任务响应:', result);
         
         if (result && result.code === 0) {
-            // 任务创建成功
             const createdTask = {
                 taskId: result.data.taskId,
                 clubId: taskData.clubId,
@@ -62,6 +54,13 @@ window.Tasks = {
                 success: true,
                 message: '任务创建成功',
                 task: createdTask
+            };
+        } else if (result && result.code === 403) {
+            // 权限错误（HTTP 403 Forbidden）
+            return {
+                success: false,
+                message: '权限不足：只有俱乐部管理员可以创建任务',
+                code: 'PERMISSION_DENIED'
             };
         } else {
             console.error('API返回错误:', result);
@@ -194,5 +193,99 @@ window.Tasks = {
      */
     getCurrentTaskDetail: function() {
         return this.currentTaskDetail;
+    },
+
+    /**
+ * 7.5 修改任务
+ * @param {number} taskId - 任务ID
+ * @param {object} taskData - 更新的任务数据
+ * @returns {Promise} 修改结果
+ */
+updateTask: async function(taskId, taskData) {
+    console.log('修改任务，任务ID:', taskId, '数据:', taskData);
+    
+    try {
+        // 调用API修改任务
+        const result = await API.updateTask(taskId, taskData);
+        
+        if (result && result.code === 0) {
+            console.log('任务修改成功');
+            return {
+                success: true,
+                message: '任务修改成功'
+            };
+        } else {
+            console.error('API返回错误:', result);
+            return {
+                success: false,
+                message: result?.msg || '修改任务失败'
+            };
+        }
+    } catch (error) {
+        console.error('修改任务失败:', error);
+        return {
+            success: false,
+            message: error.message || '修改任务失败'
+        };
     }
+},
+
+/**
+ * 7.6 删除任务
+ * @param {number} taskId - 任务ID
+ * @returns {Promise} 删除结果
+ */
+deleteTask: async function(taskId) {
+    console.log('删除任务，任务ID:', taskId);
+    
+    try {
+        // 调用API删除任务
+        const result = await API.deleteTask(taskId);
+        
+        if (result && result.code === 0) {
+            console.log('任务删除成功');
+            return {
+                success: true,
+                message: '任务删除成功'
+            };
+        } else {
+            console.error('API返回错误:', result);
+            return {
+                success: false,
+                message: result?.msg || '删除任务失败'
+            };
+        }
+    } catch (error) {
+        console.error('删除任务失败:', error);
+        return {
+            success: false,
+            message: error.message || '删除任务失败'
+        };
+    }
+},
+/**
+ * 检查任务是否已完成（两个子任务都完成）
+ * @param {number} taskId - 任务ID
+ * @returns {Promise<boolean>} 是否已完成
+ */
+isTaskCompleted: async function(taskId) {
+    try {
+        const taskDetail = await this.getTaskDetail(taskId);
+        
+        if (!taskDetail || !taskDetail.taskInfo || !Array.isArray(taskDetail.taskInfo.subTasks)) {
+            return false;
+        }
+        
+        const subTasks = taskDetail.taskInfo.subTasks;
+        const watchTask = subTasks.find(st => st.type === 'watch');
+        const researchTask = subTasks.find(st => st.type === 'research');
+        
+        // 两个子任务都必须完成
+        return watchTask && watchTask.status === 'completed' && 
+               researchTask && researchTask.status === 'completed';
+    } catch (error) {
+        console.error('检查任务完成状态失败:', error);
+        return false;
+    }
+}
 };

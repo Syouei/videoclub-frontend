@@ -204,5 +204,167 @@ window.Utils = {
             console.error('清空本地存储失败:', error);
             return false;
         }
+    },
+    
+    // ================ 隐私相关功能 ================
+    
+    // 检查隐私协议是否已同意
+    isPrivacyAgreed: function() {
+        const privacyData = this.getFromStorage('privacy_agreed');
+        return !!(privacyData && privacyData.agreed);
+    },
+    
+    // 获取隐私协议同意时间
+    getPrivacyAgreementTime: function() {
+        const privacyData = this.getFromStorage('privacy_agreed');
+        return privacyData ? privacyData.agreedAt : null;
+    },
+    
+    // 获取隐私协议版本
+    getPrivacyVersion: function() {
+        const privacyData = this.getFromStorage('privacy_agreed');
+        return privacyData ? privacyData.version : null;
+    },
+    
+    // 撤回隐私协议同意
+    withdrawPrivacyAgreement: function() {
+        try {
+            // 保留用户ID但标记为撤回同意
+            const privacyData = this.getFromStorage('privacy_agreed') || {};
+            const updatedData = {
+                ...privacyData,
+                agreed: false,
+                withdrawnAt: new Date().toISOString(),
+                previousAgreement: privacyData.agreedAt
+            };
+            
+            this.saveToStorage('privacy_agreed', updatedData);
+            
+            // 触发存储事件，让其他页面知道
+            window.dispatchEvent(new StorageEvent('storage', {
+                key: 'privacy_agreed',
+                newValue: JSON.stringify(updatedData)
+            }));
+            
+            console.log('[隐私] 隐私协议同意已撤回');
+            return true;
+        } catch (error) {
+            console.error('[隐私] 撤回隐私协议同意失败:', error);
+            return false;
+        }
+    },
+    
+    // 导出用户数据
+    exportUserData: function() {
+        try {
+            const userData = {
+                userInfo: this.getFromStorage(AppConfig.STORAGE_KEYS.USER_INFO),
+                clubsData: this.getFromStorage(AppConfig.STORAGE_KEYS.CLUBS_CACHE),
+                tasksData: this.getFromStorage(AppConfig.STORAGE_KEYS.TASKS_CACHE),
+                privacyData: this.getFromStorage('privacy_agreed'),
+                exportDate: new Date().toISOString()
+            };
+            
+            // 转换为JSON字符串
+            const jsonData = JSON.stringify(userData, null, 2);
+            
+            // 创建下载链接
+            const blob = new Blob([jsonData], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `teacher-video-club-data-${new Date().getTime()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            console.log('[隐私] 用户数据导出成功');
+            return true;
+        } catch (error) {
+            console.error('[隐私] 导出用户数据失败:', error);
+            return false;
+        }
+    },
+    
+    // 删除用户数据
+    deleteUserData: function() {
+        if (!confirm('确定要删除所有本地用户数据吗？此操作不可撤销。')) {
+            return false;
+        }
+        
+        try {
+            // 清除所有用户相关数据
+            this.removeFromStorage(AppConfig.STORAGE_KEYS.USER_TOKEN);
+            this.removeFromStorage(AppConfig.STORAGE_KEYS.USER_INFO);
+            this.removeFromStorage(AppConfig.STORAGE_KEYS.CLUBS_CACHE);
+            this.removeFromStorage(AppConfig.STORAGE_KEYS.TASKS_CACHE);
+            
+            // 保留隐私协议记录但标记为已删除
+            const privacyData = this.getFromStorage('privacy_agreed') || {};
+            const updatedPrivacyData = {
+                ...privacyData,
+                dataDeletedAt: new Date().toISOString(),
+                dataDeleted: true
+            };
+            this.saveToStorage('privacy_agreed', updatedPrivacyData);
+            
+            // 触发存储事件
+            window.dispatchEvent(new StorageEvent('storage', {
+                key: 'privacy_agreed',
+                newValue: JSON.stringify(updatedPrivacyData)
+            }));
+            
+            console.log('[隐私] 用户数据已删除');
+            return true;
+        } catch (error) {
+            console.error('[隐私] 删除用户数据失败:', error);
+            return false;
+        }
+    },
+    
+    // 发送隐私事件到服务器（埋点）
+    sendPrivacyEvent: function(eventName, eventData = {}) {
+        if (!this.isPrivacyAgreed()) {
+            console.log('[埋点] 隐私协议未同意，不发送事件');
+            return;
+        }
+        
+        const user = window.Auth ? window.Auth.getUser() : null;
+        
+        const eventPayload = {
+            event: eventName,
+            timestamp: new Date().toISOString(),
+            userId: user ? user.userId : 'anonymous',
+            sessionId: this.getSessionId(),
+            data: eventData
+        };
+        
+        console.log('[埋点] 隐私事件:', eventPayload);
+        
+        // 在实际应用中，这里应该发送到分析服务器
+        /*
+        if (window.AppConfig.ANALYTICS_ENABLED) {
+            fetch(window.AppConfig.ANALYTICS_ENDPOINT, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(eventPayload)
+            }).catch(error => {
+                console.error('[埋点] 发送隐私事件失败:', error);
+            });
+        }
+        */
+    },
+    
+    // 生成会话ID
+    getSessionId: function() {
+        let sessionId = this.getFromStorage('session_id');
+        if (!sessionId) {
+            sessionId = this.generateId();
+            this.saveToStorage('session_id', sessionId);
+        }
+        return sessionId;
     }
 };

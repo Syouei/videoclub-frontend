@@ -86,6 +86,11 @@ window.Clubs = {
                             if (typeof detail.memberCount === 'number') {
                                 updatedClub.members = detail.memberCount;
                             }
+                            // 添加状态信息
+                            if (detail.status) {
+                                updatedClub.status = detail.status;
+                                updatedClub.archived = detail.status === 'archived';
+                            }
                             return updatedClub;
                         }
                     } catch (error) {
@@ -117,18 +122,23 @@ window.Clubs = {
             const response = await API.getAllClubs({ keyword: keyword });
             
             if (response && response.code === 0 && response.data && Array.isArray(response.data.list)) {
-                // 过滤掉已加入的俱乐部
+                // 过滤掉已加入的俱乐部和已归档的俱乐部
                 const joinedIds = this.myClubs.map(club => club.id);
-                const clubs = response.data.list.map(club => ({
-                    id: club.clubId,
-                    name: club.name,
-                    creatorId: club.creatorId,
-                    creator: club.creatorId ? `${club.creatorId}` : '未知',
-                    members: club.memberCount || 0,
-                    tag: club.tag || '教研组',
-                    description: club.description || ''
-                }));
-
+                
+                const clubs = response.data.list
+                    .filter(club => !club.archived && club.status !== 'archived') // 过滤已归档
+                    .map(club => ({
+                        id: club.clubId,
+                        name: club.name,
+                        creatorId: club.creatorId,
+                        creator: club.creatorId ? `${club.creatorId}` : '未知',
+                        members: club.memberCount || 0,
+                        tag: club.tag || '教研组',
+                        description: club.description || '',
+                        status: club.status || 'active',
+                        archived: club.archived || false
+                    }));
+                
                 const clubsWithCreator = await Promise.all(clubs.map(async club => {
                     if (club.creatorId) {
                         const creatorName = await this.getUserNameById(club.creatorId);
@@ -148,6 +158,7 @@ window.Clubs = {
             const joinedIds = this.myClubs.map(club => club.id);
             return this.allClubs.filter(club => {
                 if (joinedIds.includes(club.id)) return false;
+                if (club.archived || club.status === 'archived') return false; // 过滤本地归档
                 return club.name.includes(keyword) || 
                        club.tag.includes(keyword) || 
                        club.id.toString().includes(keyword);
@@ -178,6 +189,8 @@ window.Clubs = {
                     const newClub = this.transformClubData(clubDetail);
                     newClub.memberRole = 'manager'; // 创建者自动成为manager
                     newClub.joinTime = new Date().toISOString();
+                    newClub.status = 'active';
+                    newClub.archived = false;
                     
                     // 添加到我的俱乐部列表
                     this.myClubs.push(newClub);
@@ -217,18 +230,31 @@ window.Clubs = {
         return {
             id: backendClub.clubId || backendClub.id,
             name: backendClub.clubName || backendClub.name,
-            role: backendClub.memberRole || 'member',
+            memberRole: backendClub.memberRole || 'member', // 统一使用 memberRole
             creator: backendClub.creatorName || backendClub.creator || '未知',
             members: backendClub.memberCount || backendClub.members || 1,
             tag: backendClub.tag || '',
             description: backendClub.description || '',
-            joinTime: backendClub.joinTime || new Date().toISOString()
+            joinTime: backendClub.joinTime || new Date().toISOString(),
+            status: backendClub.status || 'active',
+            archived: backendClub.archived || backendClub.status === 'archived'
         };
     },
     
     // 加入俱乐部
     joinClub: async function(clubId) {
+        // 先获取俱乐部详情，检查是否已归档
         try {
+            const clubDetail = await this.getClubDetail(clubId);
+            
+            if (clubDetail && (clubDetail.archived || clubDetail.status === 'archived')) {
+                Utils.showNotification('该俱乐部已归档，无法加入', 'error');
+                return {
+                    success: false,
+                    message: '该俱乐部已归档，无法加入'
+                };
+            }
+            
             console.log('加入俱乐部，ID:', clubId);
             
             // 调用API加入俱乐部
@@ -301,7 +327,9 @@ window.Clubs = {
                 creatorName: club.creator,
                 memberCount: club.members,
                 tag: club.tag,
-                description: club.description
+                description: club.description,
+                status: club.status || 'active',
+                archived: club.archived || false
             };
         }
         
@@ -326,7 +354,7 @@ window.Clubs = {
         return fallbackName;
     },
     
-    isClubCreator: function(clubId) {
+    isClubCreator: async function(clubId) {
         console.log('检查用户是否是俱乐部创建者，俱乐部ID:', clubId);
         
         // 1. 确保用户已登录
@@ -335,77 +363,93 @@ window.Clubs = {
             return false;
         }
         
-        // 2. 在 myClubs 中查找该俱乐部
-        const club = this.myClubs.find(c => c.id === clubId);
+        // 2. 从 myClubs 中查找俱乐部
+        const club = this.myClubs.find(c => {
+            const cid = c.id || c.clubId || c.clubID;
+            return parseInt(cid) === parseInt(clubId);
+        });
+        
         if (!club) {
-            console.log('未在 myClubs 中找到俱乐部');
+            console.log('本地未找到俱乐部，尝试从API获取详情');
+            try {
+                const clubDetail = await this.getClubDetail(clubId);
+                if (clubDetail && clubDetail.creatorId) {
+                    const currentUser = window.Auth.getUser();
+                    return currentUser && currentUser.userId === clubDetail.creatorId;
+                }
+            } catch (error) {
+                console.warn('从API获取俱乐部详情失败:', error);
+            }
             return false;
         }
         
-        // 3. 检查 memberRole 是否是 'manager'（创建者）
-        // 注意：根据你的代码，创建者的角色是 'manager'
-        const isCreator = club.memberRole === 'manager';
+        // 3. 检查角色 - 根据API文档，创建者的角色是 'manager'
+        const userRole = club.memberRole || club.role;
+        const isCreator = userRole === 'manager';
         
-        console.log(`俱乐部: ${club.name}, 用户角色: ${club.memberRole || 'unknown'}, 是否是创建者: ${isCreator}`);
+        console.log(`俱乐部: ${club.name}, 用户角色: ${userRole}, 是否是创建者: ${isCreator}`);
         return isCreator;
     },
 
-   // 设置当前俱乐部
-setCurrentClub: function(clubId) {
-    console.log('设置当前俱乐部，ID:', clubId);
+    // 设置当前俱乐部
+    setCurrentClub: function(clubId) {
+        console.log('设置当前俱乐部，ID:', clubId);
+        
+        // 如果 clubId 是数字，从我的俱乐部列表中查找
+        if (typeof clubId === 'number' || (typeof clubId === 'string' && !isNaN(clubId))) {
+            const id = parseInt(clubId);
+            
+            // 从 myClubs 中查找
+            const foundClub = this.myClubs.find(c => {
+                // 检查所有可能的ID属性
+                return c.id === id || c.clubId === id || c.clubID === id;
+            });
+            
+            if (foundClub) {
+                this.currentClub = foundClub;
+                console.log('从myClubs找到俱乐部:', this.currentClub);
+            } else {
+                // 如果没有找到，创建一个临时俱乐部对象
+                console.log('本地未找到俱乐部，创建临时对象');
+                this.currentClub = {
+                    id: id,
+                    clubId: id, // 确保有 clubId 属性
+                    name: '临时俱乐部',
+                    creator: '未知',
+                    members: 0,
+                    tag: '临时',
+                    description: '',
+                    status: 'active',
+                    archived: false
+                };
+            }
+        } else if (typeof clubId === 'object') {
+            // 如果是对象，直接设置为当前俱乐部
+            this.currentClub = clubId;
+            console.log('直接设置俱乐部对象:', this.currentClub);
+        }
+        
+        // 确保有必要的属性
+        if (this.currentClub) {
+            // 确保有 id 和 clubId 属性
+            if (!this.currentClub.id && this.currentClub.clubId) {
+                this.currentClub.id = this.currentClub.clubId;
+            }
+            if (!this.currentClub.clubId && this.currentClub.id) {
+                this.currentClub.clubId = this.currentClub.id;
+            }
+            
+            console.log('最终设置的当前俱乐部:', this.currentClub);
+            
+            // 保存到本地存储，确保跨页面访问
+            if (window.Utils) {
+                Utils.saveToStorage('current_club', this.currentClub);
+            }
+        }
+        
+        return this.currentClub;
+    },
     
-    // 如果 clubId 是数字，从我的俱乐部列表中查找
-    if (typeof clubId === 'number' || (typeof clubId === 'string' && !isNaN(clubId))) {
-        const id = parseInt(clubId);
-        
-        // 从 myClubs 中查找
-        const foundClub = this.myClubs.find(c => {
-            // 检查所有可能的ID属性
-            return c.id === id || c.clubId === id || c.clubID === id;
-        });
-        
-        if (foundClub) {
-            this.currentClub = foundClub;
-            console.log('从myClubs找到俱乐部:', this.currentClub);
-        } else {
-            // 如果没有找到，创建一个临时俱乐部对象
-            console.log('本地未找到俱乐部，创建临时对象');
-            this.currentClub = {
-                id: id,
-                clubId: id, // 确保有 clubId 属性
-                name: '临时俱乐部',
-                creator: '未知',
-                members: 0,
-                tag: '临时',
-                description: ''
-            };
-        }
-    } else if (typeof clubId === 'object') {
-        // 如果是对象，直接设置为当前俱乐部
-        this.currentClub = clubId;
-        console.log('直接设置俱乐部对象:', this.currentClub);
-    }
-    
-    // 确保有必要的属性
-    if (this.currentClub) {
-        // 确保有 id 和 clubId 属性
-        if (!this.currentClub.id && this.currentClub.clubId) {
-            this.currentClub.id = this.currentClub.clubId;
-        }
-        if (!this.currentClub.clubId && this.currentClub.id) {
-            this.currentClub.clubId = this.currentClub.id;
-        }
-        
-        console.log('最终设置的当前俱乐部:', this.currentClub);
-        
-        // 保存到本地存储，确保跨页面访问
-        if (window.Utils) {
-            Utils.saveToStorage('current_club', this.currentClub);
-        }
-    }
-    
-    return this.currentClub;
-},
     // 获取当前俱乐部
     getCurrentClub: function() {
         return this.currentClub;
@@ -424,32 +468,75 @@ setCurrentClub: function(clubId) {
         return club ? club.members : 0;
     },
     
-    // 渲染俱乐部列表
     renderClubList: function() {
-    console.log('渲染俱乐部列表');
-    
-    const container = document.getElementById('club-list');
-    if (!container) {
-        console.error('俱乐部列表容器未找到');
-        return;
-    }
-    
-    // 清空容器
-    container.innerHTML = '';
-    
-    if (!this.myClubs || this.myClubs.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-users"></i>
-                <h3>暂无俱乐部</h3>
-                <p>点击上方按钮创建或加入俱乐部</p>
-            </div>
-        `;
-        return;
-    }
-    
-    // 渲染俱乐部卡片
-    this.myClubs.forEach(club => {
+        console.log('渲染俱乐部列表');
+        
+        const container = document.getElementById('club-list');
+        if (!container) {
+            console.error('俱乐部列表容器未找到');
+            return;
+        }
+        
+        // 清空容器
+        container.innerHTML = '';
+        
+        // 如果没有俱乐部
+        if (!this.myClubs || this.myClubs.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-users"></i>
+                    <h3>暂无俱乐部</h3>
+                    <p>点击上方按钮创建或加入俱乐部</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // 按状态分组：活跃俱乐部在前，归档俱乐部在后
+        const activeClubs = this.myClubs.filter(club => !club.archived && club.status !== 'archived');
+        const archivedClubs = this.myClubs.filter(club => club.archived || club.status === 'archived');
+        
+        // 渲染活跃俱乐部
+        if (activeClubs.length > 0) {
+            activeClubs.forEach(club => {
+                this.renderClubCard(club, container, false);
+            });
+        }
+        
+        // 渲染归档俱乐部（如果有）
+        if (archivedClubs.length > 0) {
+            // 添加归档俱乐部标题
+            container.innerHTML += `
+                <div style="grid-column: 1 / -1; margin: 40px 0 20px 0; border-top: 1px solid #eee; padding-top: 20px;">
+                    <h3 style="color: #999; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-archive"></i> 已归档俱乐部
+                    </h3>
+                    <p style="color: #999; font-size: 13px; margin-top: 4px;">已归档的俱乐部将变为灰色，不可加入</p>
+                </div>
+            `;
+            
+            // 渲染归档俱乐部卡片
+            archivedClubs.forEach(club => {
+                this.renderClubCard(club, container, true);
+            });
+        }
+        
+        console.log('俱乐部列表渲染完成，共', this.myClubs.length, '个俱乐部');
+    },
+
+    // 渲染单个俱乐部卡片
+    renderClubCard: function(club, container, isArchived) {
+        console.log(`渲染俱乐部 ${club.name}:`, { 
+            id: club.id, 
+            name: club.name, 
+            isArchived: isArchived,
+            status: club.status 
+        });
+        
+        // 根据是否归档设置卡片样式
+        const cardClass = isArchived ? 'club-card archived' : 'club-card';
+        const cardStyle = isArchived ? 'background: #fafafa; border-color: #e0e0e0; opacity: 0.8;' : '';
+        
         // 根据memberRole显示标签
         let roleTag = '';
         if (club.memberRole === 'manager') {
@@ -458,15 +545,74 @@ setCurrentClub: function(clubId) {
             roleTag = '<span class="tag" style="background: linear-gradient(135deg, #f6ffed, #d9f7be); color: #389e0d;">成员</span>';
         }
         
-        // 标签显示
-        const tagBadge = club.tag ? `<span class="tag" style="background: linear-gradient(135deg, #f0f0f0, #e0e0e0); color: #666;">${club.tag}</span>` : '';
+        // 归档标签
+        const archiveTag = isArchived ? '<span class="tag" style="background: linear-gradient(135deg, #f0f0f0, #e0e0e0); color: #666;"><i class="fas fa-archive"></i> 已归档</span>' : '';
         
-        // =============== 重点修改这里：按钮的 onclick 事件 ===============
+        // 标签显示
+        const tagBadge = club.tag ? `<span class="tag" style="background: linear-gradient(135deg, #e6f7ff, #bae7ff); color: #096dd9;">${club.tag}</span>` : '';
+        
+        let actionButtons = '';
+        
+        if (isArchived) {
+            // 归档俱乐部：只有恢复按钮
+            actionButtons = `
+                <div class="club-actions">
+                    <button class="btn btn-primary" onclick="window.Clubs.restoreClub(${club.id})" style="flex:1">
+                        <i class="fas fa-undo"></i> 恢复俱乐部
+                    </button>
+                </div>
+            `;
+        } else if (club.memberRole === 'manager') {
+            // 活跃俱乐部创建者：查看任务 + 编辑 + 解散/归档
+            actionButtons = `
+                <div class="club-actions">
+                    <button class="btn btn-primary" onclick="goToVideoPage(${club.id})" style="flex:1">
+                        <i class="fas fa-video"></i> 查看任务
+                    </button>
+                    <button class="btn btn-outline btn-sm" onclick="openEditClubModal(${club.id})" title="编辑俱乐部">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="window.Clubs.confirmArchiveOrDelete(${club.id})" title="解散或归档">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+        } else if (club.memberRole === 'member') {
+            // 活跃俱乐部成员：查看任务 + 退出
+            actionButtons = `
+                <div class="club-actions">
+                    <button class="btn btn-primary" onclick="goToVideoPage(${club.id})" style="flex:1">
+                        <i class="fas fa-video"></i> 查看任务
+                    </button>
+                    <button class="btn btn-outline" onclick="quitClub(${club.id})">
+                        <i class="fas fa-sign-out-alt"></i> 退出
+                    </button>
+                </div>
+            `;
+        } else {
+            // 默认：只有查看任务按钮
+            actionButtons = `
+                <div class="club-actions">
+                    <button class="btn btn-primary" onclick="goToVideoPage(${club.id})" style="width:100%">
+                        <i class="fas fa-video"></i> 查看任务
+                    </button>
+                </div>
+            `;
+        }
+        
+        // 如果有归档时间，显示归档时间
+        const archiveTime = isArchived && club.archivedAt ? 
+            `<div style="font-size: 12px; color: #999; margin-top: 8px;"><i class="fas fa-clock"></i> 归档于：${this.formatDate(club.archivedAt)}</div>` : '';
+        
         container.innerHTML += `
-            <div class="club-card">
-                <h3>${club.name}</h3>
+            <div class="${cardClass}" style="${cardStyle}">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                    <h3 style="color: ${isArchived ? '#999' : 'inherit'}; margin: 0; font-size: 18px;">${club.name}</h3>
+                    ${isArchived ? '<i class="fas fa-archive" style="color: #999;"></i>' : ''}
+                </div>
                 <div class="club-tags">
                     ${roleTag}
+                    ${archiveTag}
                     ${tagBadge}
                 </div>
                 <div style="font-size:13px; color:#999; margin-bottom:16px; display: flex; align-items: center; gap: 16px;">
@@ -474,17 +620,648 @@ setCurrentClub: function(clubId) {
                     <span><i class="fas fa-users"></i> 成员：${club.members}人</span>
                 </div>
                 ${club.description ? `<div style="font-size:14px; color:#666; margin-bottom:12px; line-height:1.5;">${club.description}</div>` : ''}
-                <div class="club-actions">
-                    <!-- 修改前：onclick="window.App.enterTaskPage(${club.id})" -->
-                    <!-- 修改后：onclick="goToVideoPage(${club.id})" -->
-                    <button class="btn btn-primary" style="flex:1" onclick="goToVideoPage(${club.id})">
-                        <i class="fas fa-video"></i> 查看任务
-                    </button>
+                ${archiveTime}
+                ${actionButtons}
+            </div>
+        `;
+    },
+    
+    // 格式化日期
+    formatDate: function(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    },
+    
+    quitClub: async function(clubId) {
+        if (!confirm('确定要退出这个俱乐部吗？退出后将无法查看俱乐部任务。')) {
+            return;
+        }
+        
+        try {
+            Utils.showNotification('正在退出俱乐部...', 'info');
+            
+            // 调用API退出俱乐部
+            const response = await API.quitClub(clubId);
+            
+            console.log('退出俱乐部API响应:', response);
+            
+            if (response && response.code === 0) {
+                // 从我的俱乐部列表中移除
+                this.myClubs = this.myClubs.filter(club => {
+                    const cid = club.id || club.clubId || club.clubID;
+                    return parseInt(cid) !== parseInt(clubId);
+                });
+                this.saveClubsToStorage();
+                
+                Utils.showNotification('已成功退出俱乐部', 'success');
+                
+                // 重新渲染俱乐部列表
+                this.renderClubList();
+            } else {
+                Utils.showNotification(response?.msg || '退出俱乐部失败', 'error');
+            }
+        } catch (error) {
+            console.error('退出俱乐部失败:', error);
+            Utils.showNotification('退出俱乐部失败: ' + error.message, 'error');
+        }
+    },
+    
+    /**
+     * 打开编辑俱乐部模态框
+     * @param {number} clubId - 俱乐部ID
+     */
+    openEditClubModal: function(clubId) {
+        // 首先验证权限
+        if (!this.isClubCreator(clubId)) {
+            Utils.showNotification('只有俱乐部创建者可以编辑俱乐部信息', 'error');
+            return;
+        }
+        
+        const club = this.myClubs.find(c => {
+            const cid = c.id || c.clubId || c.clubID;
+            return parseInt(cid) === parseInt(clubId);
+        });
+        
+        if (!club) {
+            Utils.showNotification('未找到俱乐部信息', 'error');
+            return;
+        }
+        
+        // 创建模态框HTML（动态添加到页面）
+        const modalHTML = `
+            <div id="edit-club-modal" class="modal-overlay" style="display: flex;">
+                <div class="modal">
+                    <h3 style="margin-bottom: 24px;"><i class="fas fa-edit"></i> 编辑俱乐部</h3>
+                    <div class="form-item">
+                        <label class="required">俱乐部名称</label>
+                        <input type="text" id="edit-club-name" value="${club.name}" placeholder="请输入俱乐部名称">
+                    </div>
+                    <div class="form-item">
+                        <label>标签</label>
+                        <input type="text" id="edit-club-tag" value="${club.tag || '教研组'}" placeholder="标签">
+                    </div>
+                    <div class="form-item">
+                        <label>简介</label>
+                        <textarea id="edit-club-description" placeholder="请输入俱乐部简介" rows="3">${club.description || ''}</textarea>
+                    </div>
+                    <div style="text-align:right; margin-top: 24px;">
+                        <button class="btn btn-outline" onclick="window.Clubs.closeEditClubModal()">取消</button>
+                        <button class="btn btn-primary" onclick="window.Clubs.updateClubInfo(${clubId})">保存修改</button>
+                    </div>
                 </div>
             </div>
         `;
-    });
+        
+        // 添加到页面
+        const modalContainer = document.getElementById('modal-container') || document.body;
+        modalContainer.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // 绑定点击外部关闭事件
+        const modal = document.getElementById('edit-club-modal');
+        modal.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                window.Clubs.closeEditClubModal();
+            }
+        });
+    },
     
-    console.log('俱乐部列表渲染完成，共', this.myClubs.length, '个俱乐部');
-}
+    /**
+     * 关闭编辑俱乐部模态框
+     */
+    closeEditClubModal: function() {
+        const modal = document.getElementById('edit-club-modal');
+        if (modal) {
+            modal.remove();
+        }
+    },
+    
+    /**
+     * 更新俱乐部信息
+     * @param {number} clubId - 俱乐部ID
+     */
+    updateClubInfo: async function(clubId) {
+        // 验证权限
+        if (!this.isClubCreator(clubId)) {
+            Utils.showNotification('权限不足', 'error');
+            return;
+        }
+        
+        const nameInput = document.getElementById('edit-club-name');
+        const tagInput = document.getElementById('edit-club-tag');
+        const descInput = document.getElementById('edit-club-description');
+        
+        if (!nameInput) return;
+        
+        const name = nameInput.value.trim();
+        const tag = tagInput ? tagInput.value.trim() : '教研组';
+        const description = descInput ? descInput.value.trim() : '';
+        
+        if (!name) {
+            Utils.showNotification('俱乐部名称不能为空', 'error');
+            return;
+        }
+        
+        try {
+            Utils.showNotification('正在更新俱乐部信息...', 'info');
+            
+            // 调用API编辑俱乐部（PATCH方法）
+            const response = await API.updateClub(clubId, {
+                name: name,
+                tag: tag,
+                description: description
+            });
+            
+            console.log('编辑俱乐部API响应:', response);
+            
+            if (response && response.code === 0) {
+                // 更新本地俱乐部数据
+                const clubIndex = this.myClubs.findIndex(c => {
+                    const cid = c.id || c.clubId || c.clubID;
+                    return parseInt(cid) === parseInt(clubId);
+                });
+                
+                if (clubIndex !== -1) {
+                    this.myClubs[clubIndex] = {
+                        ...this.myClubs[clubIndex],
+                        name: name,
+                        tag: tag,
+                        description: description
+                    };
+                    this.saveClubsToStorage();
+                }
+                
+                Utils.showNotification('俱乐部信息更新成功', 'success');
+                this.closeEditClubModal();
+                this.renderClubList(); // 重新渲染列表
+            } else {
+                Utils.showNotification(response?.msg || '更新失败', 'error');
+            }
+        } catch (error) {
+            console.error('更新俱乐部失败:', error);
+            Utils.showNotification('更新失败: ' + error.message, 'error');
+        }
+    },
+    
+    /**
+     * 确认解散或归档俱乐部
+     * @param {number} clubId - 俱乐部ID
+     */
+    confirmArchiveOrDelete: function(clubId) {
+        // 验证权限
+        if (!this.isClubCreator(clubId)) {
+            Utils.showNotification('只有俱乐部创建者可以解散或归档俱乐部', 'error');
+            return;
+        }
+        
+        const club = this.myClubs.find(c => {
+            const cid = c.id || c.clubId || c.clubID;
+            return parseInt(cid) === parseInt(clubId);
+        });
+        
+        if (!club) return;
+        
+        // 创建选择解散或归档的对话框
+        const modalHTML = `
+            <div id="archive-delete-modal" class="modal-overlay" style="display: flex;">
+                <div class="modal" style="max-width: 500px;">
+                    <h3 style="margin-bottom: 20px;"><i class="fas fa-archive"></i> 俱乐部管理</h3>
+                    
+                    <div style="margin-bottom: 24px; padding: 16px; background: #f8f9fa; border-radius: 8px;">
+                        <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                            <i class="fas fa-users" style="font-size: 20px; color: #1890ff; margin-right: 10px;"></i>
+                            <div>
+                                <strong style="font-size: 16px;">${club.name}</strong>
+                                ${club.tag ? `<div style="font-size: 13px; color: #666;">标签：${club.tag}</div>` : ''}
+                            </div>
+                        </div>
+                        <div style="font-size: 13px; color: #666;">
+                            <div><i class="fas fa-user"></i> 创建者：${club.creator}</div>
+                            <div><i class="fas fa-users"></i> 成员：${club.members}人</div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 24px;">
+                        <h4 style="margin-bottom: 12px; color: #333;">请选择操作：</h4>
+                        
+                        <!-- 归档选项 -->
+                        <div class="action-option" onclick="selectAction('archive')" id="archive-option" style="cursor: pointer;">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div style="display: flex; align-items: center;">
+                                    <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #f0f0f0, #e0e0e0); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+                                        <i class="fas fa-archive" style="color: #999;"></i>
+                                    </div>
+                                    <div>
+                                        <strong style="color: #666;">归档俱乐部</strong>
+                                        <div style="font-size: 13px; color: #999;">暂时关闭俱乐部，保留所有数据</div>
+                                    </div>
+                                </div>
+                                <div class="action-radio" id="archive-radio"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- 解散选项 -->
+                        <div class="action-option" onclick="selectAction('delete')" id="delete-option" style="cursor: pointer; margin-top: 16px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div style="display: flex; align-items: center;">
+                                    <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #fff2f0, #ffccc7); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+                                        <i class="fas fa-trash" style="color: #ff4d4f;"></i>
+                                    </div>
+                                    <div>
+                                        <strong style="color: #ff4d4f;">解散俱乐部</strong>
+                                        <div style="font-size: 13px; color: #999;">永久删除俱乐部和所有数据</div>
+                                    </div>
+                                </div>
+                                <div class="action-radio" id="delete-radio"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 操作后果说明 -->
+                    <div id="consequence-info" style="padding: 12px; border-radius: 6px; margin-bottom: 20px; display: none;">
+                        <div id="consequence-text"></div>
+                    </div>
+                    
+                    <div style="text-align:right; margin-top: 24px;">
+                        <button class="btn btn-outline" onclick="window.Clubs.closeArchiveDeleteModal()">取消</button>
+                        <button class="btn btn-primary" id="confirm-action-btn" onclick="window.Clubs.executeSelectedAction(${clubId})" disabled>确认操作</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // 添加到页面
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // 添加样式
+        const style = document.createElement('style');
+        style.textContent = `
+            .action-option {
+                padding: 16px;
+                border: 2px solid #eee;
+                border-radius: 8px;
+                transition: all 0.2s;
+            }
+            
+            .action-option:hover {
+                border-color: #1890ff;
+                background: rgba(24, 144, 255, 0.03);
+            }
+            
+            .action-option.selected {
+                border-color: #1890ff;
+                background: rgba(24, 144, 255, 0.05);
+            }
+            
+            .action-radio {
+                width: 20px;
+                height: 20px;
+                border: 2px solid #ddd;
+                border-radius: 50%;
+                position: relative;
+            }
+            
+            .action-radio.selected::after {
+                content: '';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 12px;
+                height: 12px;
+                background: #1890ff;
+                border-radius: 50%;
+            }
+            
+            .archive-consequence {
+                background: rgba(0, 0, 0, 0.02);
+                border-left: 4px solid #999;
+            }
+            
+            .delete-consequence {
+                background: rgba(255, 77, 79, 0.05);
+                border-left: 4px solid #ff4d4f;
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // 初始化状态
+        window.selectedAction = null;
+        
+        // 绑定点击外部关闭事件
+        const modal = document.getElementById('archive-delete-modal');
+        modal.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                this.closeArchiveDeleteModal();
+            }
+        }.bind(this));
+    },
+    
+    // 选择操作
+    selectAction: function(actionType) {
+        window.selectedAction = actionType;
+        
+        // 更新UI
+        const archiveOption = document.getElementById('archive-option');
+        const deleteOption = document.getElementById('delete-option');
+        const archiveRadio = document.getElementById('archive-radio');
+        const deleteRadio = document.getElementById('delete-radio');
+        const confirmBtn = document.getElementById('confirm-action-btn');
+        const consequenceInfo = document.getElementById('consequence-info');
+        const consequenceText = document.getElementById('consequence-text');
+        
+        // 重置所有选项
+        [archiveOption, deleteOption].forEach(opt => opt.classList.remove('selected'));
+        [archiveRadio, deleteRadio].forEach(radio => radio.classList.remove('selected'));
+        
+        if (actionType === 'archive') {
+            archiveOption.classList.add('selected');
+            archiveRadio.classList.add('selected');
+            
+            consequenceText.innerHTML = `
+                <div style="display: flex; align-items: flex-start; margin-bottom: 8px;">
+                    <i class="fas fa-info-circle" style="color: #1890ff; margin-right: 8px; margin-top: 2px;"></i>
+                    <div>
+                        <strong>归档操作将：</strong>
+                        <ul style="margin: 8px 0 0 20px; padding: 0;">
+                            <li>俱乐部将变为灰色显示</li>
+                            <li>其他用户无法再加入此俱乐部</li>
+                            <li>保留所有成员、任务和数据</li>
+                            <li>创建者和管理员可以恢复</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+            consequenceInfo.className = 'archive-consequence';
+            consequenceInfo.style.display = 'block';
+            
+            confirmBtn.innerHTML = '<i class="fas fa-archive"></i> 确认归档';
+            confirmBtn.className = 'btn btn-primary';
+        } else if (actionType === 'delete') {
+            deleteOption.classList.add('selected');
+            deleteRadio.classList.add('selected');
+            
+            consequenceText.innerHTML = `
+                <div style="display: flex; align-items: flex-start; margin-bottom: 8px;">
+                    <i class="fas fa-exclamation-triangle" style="color: #ff4d4f; margin-right: 8px; margin-top: 2px;"></i>
+                    <div>
+                        <strong>解散操作将：</strong>
+                        <ul style="margin: 8px 0 0 20px; padding: 0;">
+                            <li>永久删除俱乐部</li>
+                            <li>移除所有俱乐部成员</li>
+                            <li>删除所有任务和视频数据</li>
+                            <li>此操作不可撤销</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+            consequenceInfo.className = 'delete-consequence';
+            consequenceInfo.style.display = 'block';
+            
+            confirmBtn.innerHTML = '<i class="fas fa-trash"></i> 确认解散';
+            confirmBtn.className = 'btn btn-danger';
+        }
+        
+        // 启用确认按钮
+        confirmBtn.disabled = false;
+    },
+    
+    // 关闭归档/解散模态框
+    closeArchiveDeleteModal: function() {
+        const modal = document.getElementById('archive-delete-modal');
+        if (modal) {
+            modal.remove();
+        }
+        window.selectedAction = null;
+    },
+    
+    // 执行选中的操作
+    executeSelectedAction: async function(clubId) {
+        const action = window.selectedAction;
+        
+        if (!action) {
+            Utils.showNotification('请选择一个操作', 'error');
+            return;
+        }
+        
+        try {
+            if (action === 'archive') {
+                await this.archiveClub(clubId);
+            } else if (action === 'delete') {
+                await this.deleteClub(clubId);
+            }
+            
+            this.closeArchiveDeleteModal();
+        } catch (error) {
+            console.error('执行操作失败:', error);
+            Utils.showNotification('操作失败: ' + error.message, 'error');
+        }
+    },
+    
+    /**
+     * 解散俱乐部
+     * @param {number} clubId - 俱乐部ID
+     */
+    deleteClub: async function(clubId) {
+        try {
+            Utils.showNotification('正在解散俱乐部...', 'info');
+            
+            // 调用API解散俱乐部（DELETE方法）
+            const response = await API.deleteClub(clubId);
+            
+            console.log('解散俱乐部API响应:', response);
+            
+            if (response && response.code === 0) {
+                // 从我的俱乐部列表中移除
+                this.myClubs = this.myClubs.filter(club => {
+                    const cid = club.id || club.clubId || club.clubID;
+                    return parseInt(cid) !== parseInt(clubId);
+                });
+                this.saveClubsToStorage();
+                
+                Utils.showNotification('俱乐部已解散', 'success');
+                this.renderClubList(); // 重新渲染列表
+            } else {
+                Utils.showNotification(response?.msg || '解散俱乐部失败', 'error');
+            }
+        } catch (error) {
+            console.error('解散俱乐部失败:', error);
+            Utils.showNotification('解散俱乐部失败: ' + error.message, 'error');
+        }
+    },
+    
+    /**
+     * 归档俱乐部
+     * @param {number} clubId - 俱乐部ID
+     */
+    archiveClub: async function(clubId) {
+        try {
+            Utils.showNotification('正在归档俱乐部...', 'info');
+            
+            // 调用API归档俱乐部
+            const response = await API.request(
+                window.AppConfig.API_ENDPOINTS.ARCHIVE_CLUB.replace('{id}', clubId),
+                'PATCH',
+                { status: 'archived' }
+            );
+            
+            console.log('归档俱乐部API响应:', response);
+            
+            if (response && response.code === 0) {
+                // 更新本地俱乐部状态
+                const clubIndex = this.myClubs.findIndex(c => {
+                    const cid = c.id || c.clubId || c.clubID;
+                    return parseInt(cid) === parseInt(clubId);
+                });
+                
+                if (clubIndex !== -1) {
+                    this.myClubs[clubIndex] = {
+                        ...this.myClubs[clubIndex],
+                        status: 'archived',
+                        archived: true,
+                        archivedAt: new Date().toISOString()
+                    };
+                    this.saveClubsToStorage();
+                }
+                
+                Utils.showNotification('俱乐部已归档', 'success');
+                this.renderClubList(); // 重新渲染列表
+            } else {
+                Utils.showNotification(response?.msg || '归档俱乐部失败', 'error');
+            }
+        } catch (error) {
+            console.error('归档俱乐部失败:', error);
+            Utils.showNotification('归档俱乐部失败: ' + error.message, 'error');
+        }
+    },
+    
+    /**
+     * 恢复俱乐部
+     * @param {number} clubId - 俱乐部ID
+     */
+    restoreClub: async function(clubId) {
+        try {
+            Utils.showNotification('正在恢复俱乐部...', 'info');
+            
+            // 调用API恢复俱乐部
+            const response = await API.request(
+                window.AppConfig.API_ENDPOINTS.ARCHIVE_CLUB.replace('{id}', clubId),
+                'PATCH',
+                { status: 'active' }
+            );
+            
+            console.log('恢复俱乐部API响应:', response);
+            
+            if (response && response.code === 0) {
+                // 更新本地俱乐部状态
+                const clubIndex = this.myClubs.findIndex(c => {
+                    const cid = c.id || c.clubId || c.clubID;
+                    return parseInt(cid) === parseInt(clubId);
+                });
+                
+                if (clubIndex !== -1) {
+                    this.myClubs[clubIndex] = {
+                        ...this.myClubs[clubIndex],
+                        status: 'active',
+                        archived: false,
+                        archivedAt: null
+                    };
+                    this.saveClubsToStorage();
+                }
+                
+                Utils.showNotification('俱乐部已恢复', 'success');
+                this.renderClubList(); // 重新渲染列表
+            } else {
+                Utils.showNotification(response?.msg || '恢复俱乐部失败', 'error');
+            }
+        } catch (error) {
+            console.error('恢复俱乐部失败:', error);
+            Utils.showNotification('恢复俱乐部失败: ' + error.message, 'error');
+        }
+    },
+    
+    /**
+     * 获取用户在俱乐部中的角色
+     * @param {number} clubId - 俱乐部ID
+     * @returns {Promise<string>} 'manager' 或 'member'
+     */
+    getUserRoleInClub: async function(clubId) {
+        try {
+            // 检查是否是创建者
+            const isCreator = await this.isClubCreator(clubId);
+            return isCreator ? 'manager' : 'member';
+        } catch (error) {
+            console.error('获取用户角色失败:', error);
+            return 'member'; // 默认作为成员
+        }
+    },
+    
+    /**
+     * 检查任务是否可访问（非创建者需要顺序解锁）
+     * @param {number} taskId - 任务ID
+     * @param {Array} allTasks - 所有任务数组
+     * @param {number} clubId - 俱乐部ID
+     * @returns {Promise<boolean>} 是否可访问
+     */
+    isTaskAccessible: async function(taskId, allTasks, clubId) {
+        // 1. 获取用户角色
+        const userRole = await this.getUserRoleInClub(clubId);
+        
+        // 2. 如果是创建者，所有任务都可用
+        if (userRole === 'manager') {
+            return true;
+        }
+        
+        // 3. 如果是普通成员，按顺序检查
+        const user = window.Auth.getUser();
+        if (!user || !allTasks || !Array.isArray(allTasks)) {
+            return false;
+        }
+        
+        // 按创建时间排序任务
+        const sortedTasks = [...allTasks].sort((a, b) => {
+            const timeA = new Date(a.createdAt || 0).getTime();
+            const timeB = new Date(b.createdAt || 0).getTime();
+            return timeA - timeB;
+        });
+        
+        // 找到当前任务在列表中的位置
+        const currentIndex = sortedTasks.findIndex(task => 
+            (task.taskId || task.id) === taskId
+        );
+        
+        if (currentIndex <= 0) {
+            // 第一个任务总是可访问
+            return true;
+        }
+        
+        // 检查之前的所有任务是否都已完成
+        for (let i = 0; i < currentIndex; i++) {
+            const previousTask = sortedTasks[i];
+            const taskDetail = await Tasks.getTaskDetail(previousTask.taskId || previousTask.id);
+            
+            if (taskDetail && taskDetail.taskInfo && Array.isArray(taskDetail.taskInfo.subTasks)) {
+                // 检查两个子任务是否都已完成
+                const subTasks = taskDetail.taskInfo.subTasks;
+                const watchTask = subTasks.find(st => st.type === 'watch');
+                const researchTask = subTasks.find(st => st.type === 'research');
+                
+                // 两个子任务都必须完成
+                if (!watchTask || watchTask.status !== 'completed' || 
+                    !researchTask || researchTask.status !== 'completed') {
+                    return false; // 前面的任务未完成，当前任务不可访问
+                }
+            } else {
+                // 如果获取不到子任务信息，假设未完成
+                return false;
+            }
+        }
+        
+        return true;
+    }
 };

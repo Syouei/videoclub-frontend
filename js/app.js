@@ -4,7 +4,8 @@ window.App = {
     state: {
         currentPage: 'login',
         isLoading: false,
-        currentClubId: null
+        currentClubId: null,
+        privacyAgreed: false
     },
     
     // 初始化应用
@@ -15,6 +16,7 @@ window.App = {
         Auth.init();
         Clubs.init();
         Tasks.init();
+        Profile.init(); // 新增：初始化个人资料模块
         
         // 检查URL路由
         this.handleRouting();
@@ -25,8 +27,25 @@ window.App = {
         // 检查是否已登录
         this.checkAutoLogin();
         
+        // 检查隐私协议同意状态
+        this.checkPrivacyAgreement();
+        
         console.log('应用初始化完成');
         return this;
+    },
+    
+    // 检查隐私协议同意状态
+    checkPrivacyAgreement: function() {
+        if (window.Utils) {
+            const privacyData = Utils.getFromStorage('privacy_agreed');
+            this.state.privacyAgreed = !!(privacyData && privacyData.agreed);
+            
+            if (this.state.privacyAgreed) {
+                console.log('[隐私] 用户已同意隐私政策');
+            } else {
+                console.log('[隐私] 用户未同意隐私政策');
+            }
+        }
     },
     
     // 应用完整性检查
@@ -108,6 +127,13 @@ window.App = {
                         this.handleFormSubmit(form);
                     }
                 }
+            }
+        });
+        
+        // 监听隐私协议变化
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'privacy_agreed') {
+                this.checkPrivacyAgreement();
             }
         });
     },
@@ -254,14 +280,18 @@ window.App = {
     validateLoginForm: function() {
         const name = document.getElementById('login-name')?.value.trim();
         const password = document.getElementById('login-password')?.value.trim();
+        const privacyAgree = document.getElementById('privacy-agree')?.checked;
+        
         let isValid = true;
         
         // 重置错误信息
         const nameError = document.getElementById('login-name-error');
         const passwordError = document.getElementById('login-password-error');
+        const privacyError = document.getElementById('privacy-error');
         
         if (nameError) nameError.style.display = 'none';
         if (passwordError) passwordError.style.display = 'none';
+        if (privacyError) privacyError.style.display = 'none';
         
         if (!name) {
             if (nameError) nameError.style.display = 'flex';
@@ -273,15 +303,25 @@ window.App = {
             isValid = false;
         }
         
-        return { isValid, name, password };
+        // 验证隐私协议
+        if (!privacyAgree) {
+            if (privacyError) privacyError.style.display = 'flex';
+            isValid = false;
+        }
+        
+        return { isValid, name, password, privacyAgree };
     },
     
     // 登录
     login: async function() {
-        const { isValid, name, password } = this.validateLoginForm();
+        const { isValid, name, password, privacyAgree } = this.validateLoginForm();
         
         if (!isValid) {
-            Utils.showNotification('请填写完整的登录信息', 'error');
+            if (!privacyAgree) {
+                Utils.showNotification('请同意隐私和数据使用说明', 'error');
+            } else {
+                Utils.showNotification('请填写完整的登录信息', 'error');
+            }
             return;
         }
         
@@ -304,6 +344,9 @@ window.App = {
                 if (!accessToken || !userInfo) {
                     throw new Error('API响应缺少必要的用户信息');
                 }
+                
+                // 记录隐私协议同意状态（用于埋点）
+                this.recordPrivacyAgreement(userInfo.userId);
                 
                 // 使用Auth模块处理登录成功
                 const success = Auth.handleLoginSuccess(result);
@@ -332,6 +375,77 @@ window.App = {
         } finally {
             this.state.isLoading = false;
         }
+    },
+    
+    // 记录隐私协议同意（用于埋点）
+    recordPrivacyAgreement: function(userId) {
+        if (!userId) return;
+        
+        try {
+            // 记录用户同意隐私协议的事件
+            const privacyData = Utils.getFromStorage('privacy_agreed') || {};
+            
+            // 更新同意记录
+            const updatedData = {
+                ...privacyData,
+                userId: userId,
+                agreedAt: new Date().toISOString(),
+                version: '2026-01',
+                // 埋点数据
+                analytics: {
+                    platform: 'web',
+                    userAgent: navigator.userAgent,
+                    screenResolution: `${window.screen.width}x${window.screen.height}`,
+                    language: navigator.language
+                }
+            };
+            
+            Utils.saveToStorage('privacy_agreed', updatedData);
+            
+            // 这里可以发送埋点数据到服务器
+            this.sendPrivacyAnalytics(userId, updatedData);
+            
+            console.log('[隐私] 隐私协议同意记录已更新');
+            
+        } catch (error) {
+            console.error('[隐私] 记录隐私协议同意失败:', error);
+        }
+    },
+    
+    // 发送隐私分析数据（埋点）
+    sendPrivacyAnalytics: function(userId, privacyData) {
+        // 模拟发送埋点数据
+        // 在实际应用中，这里应该发送到分析服务器
+        console.log('[埋点] 发送隐私协议同意事件:', {
+            event: 'privacy_agreement_accepted',
+            userId: userId,
+            timestamp: new Date().toISOString(),
+            data: {
+                agreedAt: privacyData.agreedAt,
+                version: privacyData.version,
+                deviceInfo: privacyData.analytics
+            }
+        });
+        
+        // 在实际应用中，可以这样发送：
+        /*
+        if (window.AppConfig.ANALYTICS_ENABLED) {
+            fetch(AppConfig.ANALYTICS_ENDPOINT, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    event: 'privacy_agreement_accepted',
+                    userId: userId,
+                    timestamp: new Date().toISOString(),
+                    data: privacyData
+                })
+            }).catch(error => {
+                console.error('[埋点] 发送分析数据失败:', error);
+            });
+        }
+        */
     },
     
     // 验证注册表单
@@ -505,6 +619,9 @@ window.App = {
                 // 根据API文档，返回格式：{userId, username, role, createdAt}
                 const { userId, username: apiUsername, role } = result.data;
                 
+                // 记录隐私协议同意状态（注册时也需要同意）
+                this.recordPrivacyAgreement(userId);
+                
                 Utils.showNotification('注册成功！请使用新账号登录', 'success');
                 
                 // 清空表单
@@ -532,6 +649,14 @@ window.App = {
             this.state.isLoading = false;
         }
     },
+
+    // 隐藏登录错误提示
+hideLoginError: function(elementId) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.style.display = 'none';
+    }
+},
     
     // ================ 俱乐部功能 ================
     
@@ -763,29 +888,28 @@ window.App = {
     
     // ================ 任务功能 ================
     
-// 进入任务页面
-enterTaskPage: async function(clubId) {
-    console.log('进入任务页面 - 通过接口获取任务数据');
-    
-    // 保存俱乐部ID
-    if (Number.isInteger(clubId)) {
-        this.state.currentClubId = clubId;
-        if (window.Clubs && Clubs.setCurrentClub) {
-            Clubs.setCurrentClub(clubId);
+    // 进入任务页面
+    enterTaskPage: async function(clubId) {
+        console.log('进入任务页面 - 通过接口获取任务数据');
+        
+        // 保存俱乐部ID
+        if (Number.isInteger(clubId)) {
+            this.state.currentClubId = clubId;
+            if (window.Clubs && Clubs.setCurrentClub) {
+                Clubs.setCurrentClub(clubId);
+            }
         }
-    }
+        
+        // 跳转到视频页面（创建/查看任务）
+        this.navigateTo('video');
+    },
     
-    // 跳转到视频页面（创建/查看任务）
-    this.navigateTo('video');
-},
-
     // 标记任务完成（现在逻辑在tasks.html中处理，这里留空）
-markTaskComplete: async function(taskId) {
-    console.log('任务完成逻辑在tasks.html中处理，这里仅作为兼容接口');
-    // 什么都不做，逻辑已移动到tasks.html
-},
+    markTaskComplete: async function(taskId) {
+        console.log('任务完成逻辑在tasks.html中处理，这里仅作为兼容接口');
+        // 什么都不做，逻辑已移动到tasks.html
+    },
     
-
     // 更新任务UI显示
     updateTaskUI: function(taskId, status) {
         console.log('更新任务UI，任务ID:', taskId, '状态:', status);
@@ -813,7 +937,6 @@ markTaskComplete: async function(taskId) {
         });
     },
     
-
     // 打开外部平台
     openExternalPlatform: function(taskId) {
         const success = Tasks.openExternalPlatform(taskId);
@@ -826,7 +949,6 @@ markTaskComplete: async function(taskId) {
             }
         }
     },
-    
     
     // ================ 其他功能 ================
     
@@ -884,7 +1006,7 @@ markTaskComplete: async function(taskId) {
         // 跳转到视频页面
         this.navigateTo('video');
     },
-
+    
     // 登出
     logout: function() {
         if (!confirm('确定要退出登录吗？')) {
@@ -920,6 +1042,179 @@ markTaskComplete: async function(taskId) {
     // 显示通知
     showNotification: function(message, type) {
         Utils.showNotification(message, type);
+    },
+
+    // ================ 个人资料功能 ================
+
+/**
+ * 导航到个人资料页面
+ */
+navigateToProfile: function() {
+    console.log('导航到个人资料页面');
+    this.navigateTo('profile');
+},
+
+/**
+ * 更新用户个人资料
+ * @param {object} profileData - 个人资料数据
+ */
+updateUserProfile: async function(profileData) {
+    try {
+        if (!window.Profile) {
+            throw new Error('个人资料模块未加载');
+        }
+        
+        // 调用Profile模块保存资料
+        const result = await window.Profile.saveUserProfile(profileData);
+        
+        if (result.success) {
+            Utils.showNotification('个人资料更新成功', 'success');
+            
+            // 更新用户显示
+            if (window.Auth && window.Auth.updateUserDisplay) {
+                window.Auth.updateUserDisplay();
+            }
+            
+            return true;
+        } else {
+            Utils.showNotification(result.message || '更新失败', 'error');
+            return false;
+        }
+        
+    } catch (error) {
+        console.error('更新用户个人资料失败:', error);
+        Utils.showNotification('更新失败: ' + error.message, 'error');
+        return false;
+    }
+},
+
+/**
+ * 检查个人资料完成度
+ * @returns {number} 完成度百分比
+ */
+checkProfileCompletion: function() {
+    if (!window.Profile) {
+        console.warn('个人资料模块未加载');
+        return 0;
+    }
+    
+    try {
+        return window.Profile.calculateCompletion();
+    } catch (error) {
+        console.error('检查个人资料完成度失败:', error);
+        return 0;
+    }
+},
+
+/**
+ * 获取个人资料完成度描述
+ * @returns {string} 完成度描述
+ */
+getProfileCompletionDescription: function() {
+    if (!window.Profile) {
+        return '个人资料模块未加载';
+    }
+    
+    try {
+        return window.Profile.getCompletionDescription();
+    } catch (error) {
+        console.error('获取个人资料描述失败:', error);
+        return '获取失败';
+    }
+},
+
+/**
+ * 检查是否需要提醒完善资料
+ * @returns {boolean} 是否需要提醒
+ */
+shouldShowProfileReminder: function() {
+    if (!window.Profile) {
+        return false;
+    }
+    
+    try {
+        return window.Profile.shouldShowReminder();
+    } catch (error) {
+        console.error('检查个人资料提醒失败:', error);
+        return false;
+    }
+},
+
+/**
+ * 导出个人资料
+ */
+exportProfile: function() {
+    if (!window.Profile) {
+        Utils.showNotification('个人资料模块未加载', 'error');
+        return;
+    }
+    
+    const success = window.Profile.exportProfile();
+    
+    if (success) {
+        Utils.showNotification('个人资料导出成功', 'success');
+    } else {
+        Utils.showNotification('导出失败', 'error');
+    }
+},
+
+/**
+ * 清空个人资料
+ */
+clearProfile: function() {
+    if (!window.Profile) {
+        Utils.showNotification('个人资料模块未加载', 'error');
+        return;
+    }
+    
+    const success = window.Profile.clearProfile();
+    
+    if (success) {
+        Utils.showNotification('个人资料已清空', 'info');
+        // 刷新页面
+        setTimeout(() => {
+            this.navigateTo('profile');
+        }, 1000);
+    }
+},
+    
+    // 发送用户行为埋点
+    sendUserAction: function(action, data = {}) {
+        if (!this.state.privacyAgreed) {
+            console.log('[埋点] 隐私协议未同意，不发送埋点数据');
+            return;
+        }
+        
+        const user = Auth.getUser();
+        if (!user) return;
+        
+        const eventData = {
+            event: action,
+            userId: user.userId,
+            timestamp: new Date().toISOString(),
+            page: this.state.currentPage,
+            data: data,
+            userAgent: navigator.userAgent,
+            screenResolution: `${window.screen.width}x${window.screen.height}`,
+            platform: 'web'
+        };
+        
+        console.log('[埋点] 用户行为:', eventData);
+        
+        // 在实际应用中，可以发送到分析服务器
+        /*
+        if (window.AppConfig.ANALYTICS_ENABLED) {
+            fetch(AppConfig.ANALYTICS_ENDPOINT, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(eventData)
+            }).catch(error => {
+                console.error('[埋点] 发送行为数据失败:', error);
+            });
+        }
+        */
     }
 };
 
