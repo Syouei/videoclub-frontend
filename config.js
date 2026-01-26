@@ -38,8 +38,24 @@ window.AppConfig = {
         UPDATE_CLUB: '/clubs/{id}',
         // 4.7 解散俱乐部
         DELETE_CLUB: '/clubs/{id}',
-        // 归档俱乐部 
+        // 4.8 归档俱乐部 
         ARCHIVE_CLUB: '/clubs/{id}/archive',
+        // 4.9 入会申请列表
+        GET_JOIN_REQUESTS: '/clubs/{id}/join-requests',
+        // 4.10 通过入会申请
+        APPROVE_JOIN_REQUEST: '/clubs/{id}/join-requests/{requestId}/approve',
+        // 4.11 驳回入会申请
+        REJECT_JOIN_REQUEST: '/clubs/{id}/join-requests/{requestId}/reject',
+        
+        // ================ 通知模块（需Token） ================
+        // 9.1 站内信列表
+        GET_NOTIFICATIONS: '/notifications',
+        // 9.2 未读数量
+        GET_UNREAD_COUNT: '/notifications/unread-count',
+        // 9.3 标记已读
+        MARK_NOTIFICATION_READ: '/notifications/{id}/read',
+        // 9.4 全部已读
+        MARK_ALL_NOTIFICATIONS_READ: '/notifications/read-all',
         
         // ================ 任务模块（需Token） ================
         CREATE_TASK: '/tasks',
@@ -55,7 +71,8 @@ window.AppConfig = {
         USER_TOKEN: 'teacher_video_club_token',
         USER_INFO: 'teacher_video_club_user',
         CLUBS_CACHE: 'teacher_video_club_clubs_cache',
-        TASKS_CACHE: 'teacher_video_club_tasks_cache'
+        TASKS_CACHE: 'teacher_video_club_tasks_cache',
+        NOTIFICATIONS: 'teacher_video_club_notifications'  // 新增
     },
     
     // 页面路径配置（保持不变）
@@ -64,34 +81,35 @@ window.AppConfig = {
         REGISTER: 'pages/register.html',
         HOME: 'pages/home.html',
         VIDEO: 'pages/video.html', 
-        TASKS: 'pages/tasks.html' ,
-         PROFILE: 'pages/profile.html'  // 新增
+        TASKS: 'pages/tasks.html',
+        PROFILE: 'pages/profile.html',
+        NOTIFICATIONS: 'pages/notifications.html'  // 通知页面路径
     },
 
     // 修改用户信息字段配置，使用API文档的字段名：
-USER_INFO_FIELDS: {
-    required: ['realname', 'gender', 'age', 'school', 'phone', 'email'],
-    optional: ['studentId', 'job', 'signature'],
-    genders: [
-        { value: 'male', label: '男' },
-        { value: 'female', label: '女' },
-        { value: 'other', label: '其他' },
-        { value: 'secret', label: '保密' }
-    ],
-    jobs: [
-        { value: 'student', label: '学生' },
-        { value: 'teacher', label: '教师' }
-    ]
-},
+    USER_INFO_FIELDS: {
+        required: ['realname', 'gender', 'age', 'school', 'phone', 'email'],
+        optional: ['studentId', 'job', 'signature'],
+        genders: [
+            { value: 'male', label: '男' },
+            { value: 'female', label: '女' },
+            { value: 'other', label: '其他' },
+            { value: 'secret', label: '保密' }
+        ],
+        jobs: [
+            { value: 'student', label: '学生' },
+            { value: 'teacher', label: '教师' }
+        ]
+    },
 
-// 添加资料完成度配置：
-USER_PROFILE_COMPLETION: {
-    thresholds: {
-        basic: 60,
-        medium: 80,
-        complete: 95
-    }
-},
+    // 添加资料完成度配置：
+    USER_PROFILE_COMPLETION: {
+        thresholds: {
+            basic: 60,
+            medium: 80,
+            complete: 95
+        }
+    },
     
     // 固定任务配置（新增）
     FIXED_TASKS: {

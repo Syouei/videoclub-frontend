@@ -5,7 +5,8 @@ window.App = {
         currentPage: 'login',
         isLoading: false,
         currentClubId: null,
-        privacyAgreed: false
+        privacyAgreed: false,
+        unreadNotificationCount: 0  // 添加未读通知计数
     },
     
     // 初始化应用
@@ -17,6 +18,7 @@ window.App = {
         Clubs.init();
         Tasks.init();
         Profile.init(); // 新增：初始化个人资料模块
+        Notifications.init(); // 新增：初始化通知模块
         
         // 检查URL路由
         this.handleRouting();
@@ -740,81 +742,181 @@ hideLoginError: function(elementId) {
     },
     
     // 搜索俱乐部
-    searchClubs: async function() {
-        const searchInput = document.getElementById('search-club-input');
-        const resultsContainer = document.getElementById('search-results');
+    searchClubs: async function(keyword) {
+    try {
+        console.log('搜索俱乐部，关键词:', keyword);
+        // 从API搜索俱乐部 - 适配新的API格式
+        const response = await API.getAllClubs({ keyword: keyword });
         
-        if (!searchInput || !resultsContainer) return;
+        if (response && response.code === 0 && response.data && Array.isArray(response.data.list)) {
+            // 过滤掉已加入的俱乐部和已归档的俱乐部
+            const joinedIds = this.myClubs.map(club => club.id);
+            
+            const clubs = response.data.list
+                .filter(club => !club.archived && club.status !== 'archived') // 过滤已归档
+                .map(club => ({
+                    id: club.clubId,
+                    name: club.name,
+                    creatorId: club.creatorId,
+                    creator: club.creatorId ? `${club.creatorId}` : '未知',
+                    members: club.memberCount || 0,
+                    tag: club.tag || '教研组',
+                    description: club.description || '',
+                    status: club.status || 'active',
+                    archived: club.archived || false,
+                    joinPolicy: club.joinPolicy || 'free',            // ← 添加这个
+                    joinConditions: club.joinConditions || null       // ← 添加这个
+                }));
+            
+            const clubsWithCreator = await Promise.all(clubs.map(async club => {
+                if (club.creatorId) {
+                    const creatorName = await this.getUserNameById(club.creatorId);
+                    return { ...club, creator: creatorName };
+                }
+                return club;
+            }));
+            
+            return clubsWithCreator.filter(club => !joinedIds.includes(club.id));
+        } else {
+            console.warn('搜索俱乐部API返回格式不正确:', response);
+            return [];
+        }
+    } catch (error) {
+        console.error('搜索俱乐部失败:', error);
+        // 如果API失败，本地搜索
+        const joinedIds = this.myClubs.map(club => club.id);
+        return this.allClubs.filter(club => {
+            if (joinedIds.includes(club.id)) return false;
+            if (club.archived || club.status === 'archived') return false; // 过滤本地归档
+            return club.name.includes(keyword) || 
+                   club.tag.includes(keyword) || 
+                   club.id.toString().includes(keyword);
+        });
+    }
+},
+
+    /**
+ * 显示加入俱乐部对话框
+ * @param {number} clubId - 俱乐部ID
+ */
+showJoinClubDialog: async function(clubId) {
+    try {
+        // 获取俱乐部详情以了解加入政策
+        const clubDetail = await Clubs.getClubDetail(clubId);
         
-        const keyword = searchInput.value.trim();
-        
-        if (!keyword) {
-            resultsContainer.innerHTML = `
-                <div style="text-align: center; color: #999; padding: 40px 20px;">
-                    <i class="fas fa-exclamation-circle" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
-                    <p>请输入搜索关键词</p>
-                </div>
-            `;
+        if (!clubDetail) {
+            Utils.showNotification('获取俱乐部信息失败', 'error');
             return;
         }
         
-        try {
-            Utils.showLoading(resultsContainer);
-            
-            // 搜索俱乐部 - 使用Clubs模块的searchClubs方法
-            const searchResults = await Clubs.searchClubs(keyword);
-            
-            console.log('搜索到俱乐部:', searchResults);
-            
-            if (!searchResults || searchResults.length === 0) {
-                resultsContainer.innerHTML = `
-                    <div style="text-align: center; color: #999; padding: 40px 20px;">
-                        <i class="fas fa-search-minus" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
-                        <p>未找到匹配的俱乐部</p>
-                        <p style="font-size: 13px; margin-top: 8px;">尝试其他关键词</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            // 显示搜索结果
-            let resultsHTML = '';
-            searchResults.forEach(club => {
-                // 注意：club结构已经是转换后的格式
-                resultsHTML += `
-                    <div style="border: 1px solid #eee; border-radius: 8px; padding: 16px; margin-bottom: 12px; background: white;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <strong style="font-size: 16px;">${club.name}</strong>
-                            <span class="tag" style="background: linear-gradient(135deg, #e6f7ff, #bae7ff); color: #096dd9; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 500;">ID: ${club.id}</span>
-                        </div>
-                        ${club.tag ? `<div style="font-size: 12px; margin-bottom: 8px;"><span style="background: #f0f0f0; padding: 2px 8px; border-radius: 10px;">${club.tag}</span></div>` : ''}
-                        <div style="font-size: 12px; color: #999; display: flex; justify-content: space-between; margin-bottom: 12px;">
-                            <span><i class="fas fa-user"></i> 创建者：${club.creator}</span>
-                            <span><i class="fas fa-users"></i> 成员：${club.members}人</span>
-                        </div>
-                        ${club.description ? `<div style="font-size: 13px; color: #666; margin-bottom: 12px; line-height: 1.4;">${club.description}</div>` : ''}
-                        <div style="text-align: right;">
-                            <button class="btn btn-primary" onclick="App.joinClub(${club.id})" style="padding: 8px 16px; font-size: 13px;">
-                                <i class="fas fa-user-plus"></i> 加入俱乐部
-                            </button>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            resultsContainer.innerHTML = resultsHTML;
-            
-        } catch (error) {
-            console.error('搜索俱乐部失败:', error);
-            resultsContainer.innerHTML = `
-                <div style="text-align: center; color: #999; padding: 40px 20px;">
-                    <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
-                    <p>搜索失败</p>
-                    <p style="font-size: 13px; margin-top: 8px;">${error.message}</p>
-                </div>
-            `;
+        const isApprovalRequired = clubDetail.joinPolicy === 'approval';
+        
+        if (!isApprovalRequired) {
+            // 自由加入，直接调用原来的joinClub方法
+            this.joinClub(clubId);
+            return;
         }
-    },
+        
+        // 需要审核，显示申请对话框
+        const modalHTML = `
+            <div id="join-request-modal" class="modal-overlay" style="display: flex;">
+                <div class="modal">
+                    <h3 style="margin-bottom: 20px;"><i class="fas fa-user-plus"></i> 申请加入俱乐部</h3>
+                    <div style="margin-bottom: 20px; padding: 16px; background: #f8f9fa; border-radius: 8px;">
+                        <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                            <i class="fas fa-users" style="font-size: 20px; color: #1890ff; margin-right: 10px;"></i>
+                            <div>
+                                <strong style="font-size: 16px;">${clubDetail.name}</strong>
+                                ${clubDetail.tag ? `<div style="font-size: 13px; color: #666;">标签：${clubDetail.tag}</div>` : ''}
+                            </div>
+                        </div>
+                        ${clubDetail.joinConditions ? `
+                        <div style="font-size: 13px; color: #666; margin-bottom: 8px; padding: 8px; background: #fff; border-radius: 4px; border-left: 3px solid #1890ff;">
+                            <strong><i class="fas fa-info-circle"></i> 入会条件：</strong> ${clubDetail.joinConditions}
+                        </div>
+                        ` : ''}
+                        <div style="font-size: 13px; color: #666;">
+                            <div><i class="fas fa-user"></i> 创建者：${clubDetail.creatorName || '未知'}</div>
+                            <div><i class="fas fa-users"></i> 成员：${clubDetail.memberCount || 0}人</div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-item">
+                        <label>申请说明（选填）</label>
+                        <textarea id="join-apply-message" placeholder="请简单介绍一下自己或说明申请理由..." rows="3" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;"></textarea>
+                    </div>
+                    
+                    <div style="text-align:right; margin-top: 24px;">
+                        <button class="btn btn-outline" onclick="App.closeJoinRequestModal()">取消</button>
+                        <button class="btn btn-primary" onclick="App.submitJoinRequest(${clubId})">提交申请</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // 添加到页面
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // 绑定点击外部关闭事件
+        const modal = document.getElementById('join-request-modal');
+        modal.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                this.closeJoinRequestModal();
+            }
+        }.bind(this));
+        
+    } catch (error) {
+        console.error('显示加入对话框失败:', error);
+        Utils.showNotification('加载失败: ' + error.message, 'error');
+    }
+},
+
+/**
+ * 关闭加入申请模态框
+ */
+closeJoinRequestModal: function() {
+    const modal = document.getElementById('join-request-modal');
+    if (modal) {
+        modal.remove();
+    }
+},
+
+/**
+ * 提交加入申请
+ * @param {number} clubId - 俱乐部ID
+ */
+submitJoinRequest: async function(clubId) {
+    const messageInput = document.getElementById('join-apply-message');
+    const applyMessage = messageInput ? messageInput.value.trim() : '';
+    
+    try {
+        Utils.showNotification('正在提交申请...', 'info');
+        
+        // 调用新的加入俱乐部方法（支持申请信息）
+        const result = await Clubs.joinClub(clubId, applyMessage);
+        
+        if (result.success) {
+            if (result.status === 'joined') {
+                Utils.showNotification(result.message, 'success');
+                this.closeJoinClubModal();
+                this.closeJoinRequestModal();
+                this.enterTaskPage(clubId); // 直接进入任务页面
+            } else if (result.status === 'pending') {
+                Utils.showNotification(result.message, 'info');
+                this.closeJoinClubModal();
+                this.closeJoinRequestModal();
+            } else {
+                Utils.showNotification(result.message, 'info');
+            }
+        } else {
+            Utils.showNotification(result.message || '申请失败', 'error');
+        }
+        
+    } catch (error) {
+        console.error('提交申请失败:', error);
+        Utils.showNotification('提交失败: ' + error.message, 'error');
+    }
+},
     
     // 加入俱乐部
     joinClub: async function(clubId) {
@@ -839,50 +941,106 @@ hideLoginError: function(elementId) {
     },
     
     // 创建新俱乐部
-    createNewClub: async function() {
-        const nameInput = document.getElementById('new-club-name');
-        const tagInput = document.getElementById('new-club-tag');
-        const descInput = document.getElementById('new-club-description');
+    // 创建新俱乐部
+createNewClub: async function() {
+    const nameInput = document.getElementById('new-club-name');
+    const tagInput = document.getElementById('new-club-tag');
+    const descInput = document.getElementById('new-club-description');
+    const policySelect = document.getElementById('new-club-join-policy');
+    const conditionsInput = document.getElementById('new-club-join-conditions');
+    
+    if (!nameInput) return;
+    
+    const name = nameInput.value.trim();
+    const tag = tagInput ? tagInput.value.trim() : '教研组';
+    const description = descInput ? descInput.value.trim() : '';
+    const joinPolicy = policySelect ? policySelect.value : 'free';
+    const joinConditions = joinPolicy === 'approval' && conditionsInput ? conditionsInput.value.trim() : null;
+    
+    if (!name) {
+        Utils
+.showNotification('请填写俱乐部名称', 'error');
+        return;
+    }
+    
+    if (name.length < 2 || name.length > 50) {
+        Utils
+.showNotification('俱乐部名称长度应在2-50字符之间', 'error');
+        return;
+    }
+    
+    try {
+        // 显示加载状态
+        Utils
+.showNotification('正在创建俱乐部...', 'info');
         
-        if (!nameInput) return;
+        // 构建俱乐部数据，包括加入政策
+        const clubData = {
+            name: name,
+            tag: tag,
+            description:
+ description
+        };
         
-        const name = nameInput.value.trim();
-        const tag = tagInput ? tagInput.value.trim() : '教研组';
-        const description = descInput ? descInput.value.trim() : '';
-        
-        if (!name) {
-            Utils.showNotification('请填写俱乐部名称', 'error');
-            return;
-        }
-        
-        if (name.length < 2 || name.length > 50) {
-            Utils.showNotification('俱乐部名称长度应在2-50字符之间', 'error');
-            return;
-        }
-        
-        try {
-            // 显示加载状态
-            Utils.showNotification('正在创建俱乐部...', 'info');
-            
-            // 调用API创建俱乐部 - 严格按照API文档格式
-            // 参数：name(必填), tag(必填), description(可选)
-            const result = await Clubs.createClub({
-                name: name,
-                tag: tag,
-                description: description
-            });
-            
-            if (result.success) {
-                Utils.showNotification(`俱乐部"${name}"创建成功！`, 'success');
-                this.closeCreateClubModal();
-                this.enterTaskPage(result.club ? result.club.id : undefined); // 直接进入任务页面
-            } else {
-                Utils.showNotification(result.message || '创建俱乐部失败', 'error');
+        // 添加加入政策（如果用户选择了）
+        if (joinPolicy) {
+            clubData
+.joinPolicy = joinPolicy;
+            if (joinConditions) {
+                clubData
+.joinConditions = joinConditions;
             }
-            
-        } catch (error) {
-            console.error('创建俱乐部失败:', error);
-            Utils.showNotification(error.message || '创建俱乐部失败', 'error');
+        }
+        
+        // 调用API创建俱乐部 - 严格按照API文档格式
+        const result = await Clubs.createClub(clubData);
+        
+        if (result.success) {
+            Utils
+.showNotification(`俱乐部"${name}"创建成功！`, 'success');
+            this.closeCreateClubModal();
+            this.enterTaskPage(result.club ? result.club.id : undefined); // 直接进入任务页面
+        } else {
+            Utils
+.showNotification(result.message || '创建俱乐部失败', 'error');
+        }
+        
+    } catch (error) {
+        console
+.error('创建俱乐部失败:', error);
+        Utils
+.showNotification(error.message || '创建俱乐部失败', 'error');
+    }
+},
+
+// 导航到通知列表
+    navigateToNotifications: function() {
+        console.log('导航到通知列表');
+        this.navigateTo('notifications');
+    },
+    
+    // 获取未读通知数量
+    updateUnreadCount: function() {
+        if (!Auth.isLoggedIn()) return;
+        
+        Notifications.getUnreadCount().then(count => {
+            this.state.unreadNotificationCount = count;
+            this.updateNotificationBadge();
+        }).catch(error => {
+            console.error('获取未读通知数量失败:', error);
+        });
+    },
+    
+    // 更新通知徽章显示
+    updateNotificationBadge: function() {
+        const badge = document.getElementById('notification-badge');
+        if (badge) {
+            if (this.state.unreadNotificationCount > 0) {
+                badge.textContent = this.state.unreadNotificationCount > 99 ? '99+' : this.state.unreadNotificationCount.toString();
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
         }
     },
     

@@ -1,4 +1,4 @@
-// API调用模块 - 完全按照API文档格式对接
+// API调用模块
 window.API = {
     /**
      * 基础请求方法（处理所有API调用）
@@ -118,6 +118,8 @@ window.API = {
             throw new Error(error.message || 'API请求失败');
         }
     },
+
+    
     
     /**
      * 获取离线数据（开发/测试用）
@@ -205,6 +207,9 @@ window.API = {
                         tag: "数学",
                         description: "初中数学教学研讨",
                         memberCount: 12,
+                        status: "active",
+                        joinPolicy: "free",
+                        joinConditions: null,
                         createdAt: "2026-01-01T10:00:00Z"
                     },
                     {
@@ -214,12 +219,13 @@ window.API = {
                         tag: "综合",
                         description: "项目式学习方法研讨",
                         memberCount: 8,
+                        status: "active",
+                        joinPolicy: "approval",
+                        joinConditions: "仅限在职教师",
                         createdAt: "2026-01-02T10:00:00Z"
                     }
                 ]
             },
-            
-            // ⭐⭐⭐ 修改：删除视频模块的离线数据 ⭐⭐⭐
             
             // 任务模块
             '/tasks': {
@@ -241,6 +247,44 @@ window.API = {
                         status: "incomplete"
                     }
                 ]
+            },
+            
+            // 通知模块 - 新增离线数据
+            '/notifications': {
+                code: 0,
+                msg: 'success',
+                data: {
+                    list: [
+                        {
+                            notificationId: 1,
+                            userId: 1001,
+                            type: "club_join_request",
+                            title: "新的入会申请",
+                            content: "用户ID 1002 申请加入 PBL项目式学习",
+                            payload: {
+                                clubId: 102,
+                                requestId: 1,
+                                applicantId: 1002,
+                                clubName: "PBL项目式学习",
+                                applyMessage: "我是数学老师，希望加入学习"
+                            },
+                            isRead: false,
+                            readAt: null,
+                            createdAt: "2026-01-25T10:00:00Z"
+                        }
+                    ],
+                    total: 1,
+                    page: 1,
+                    pageSize: 20
+                }
+            },
+            
+            '/notifications/unread-count': {
+                code: 0,
+                msg: 'success',
+                data: {
+                    total: 1
+                }
             }
         };
         
@@ -354,7 +398,7 @@ window.API = {
     
     /**
      * 4.1 创建俱乐部
-     * @param {object} clubData - 俱乐部数据 {name, tag, description}
+     * @param {object} clubData - 俱乐部数据 {name, tag, description, joinPolicy, joinConditions}
      * @returns {Promise} {code, msg, data: {clubId}}
      */
     async createClub(clubData) {
@@ -387,11 +431,13 @@ window.API = {
     /**
      * 4.4 加入俱乐部
      * @param {number} clubId - 俱乐部ID
-     * @returns {Promise} {code, msg, data: {status: "joined"}}
+     * @param {object} joinData - 加入数据 {applyMessage}
+     * @returns {Promise} {code, msg, data: {clubId, status, requestId}}
      */
-    async joinClub(clubId) {
+    async joinClub(clubId, joinData = {}) {
         const endpoint = window.AppConfig.API_ENDPOINTS.JOIN_CLUB;
-        return await this.request(endpoint, 'POST', { _pathParams: { id: clubId } });
+        const data = { ...joinData, _pathParams: { id: clubId } };
+        return await this.request(endpoint, 'POST', data);
     },
     
     /**
@@ -407,7 +453,7 @@ window.API = {
     /**
      * 4.6 编辑俱乐部
      * @param {number} clubId - 俱乐部ID
-     * @param {object} clubData - 更新的俱乐部数据 {name, tag, description}
+     * @param {object} clubData - 更新的俱乐部数据 {name, tag, description, joinPolicy, joinConditions}
      * @returns {Promise} {code, msg, data: null}
      */
     async updateClub(clubId, clubData) {
@@ -425,100 +471,186 @@ window.API = {
         const endpoint = window.AppConfig.API_ENDPOINTS.DELETE_CLUB;
         return await this.request(endpoint, 'DELETE', { _pathParams: { id: clubId } });
     },
+
+    /**
+     * 4.8 归档俱乐部
+     * @param {number} clubId - 俱乐部ID
+     * @param {object} data - 归档数据 {status}
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async archiveClub(clubId, data = { status: 'archived' }) {
+        const endpoint = window.AppConfig.API_ENDPOINTS.ARCHIVE_CLUB;
+        const requestData = { ...data, _pathParams: { id: clubId } };
+        return await this.request(endpoint, 'PATCH', requestData);
+    },
+
+    /**
+     * 4.9 入会申请列表
+     * @param {number} clubId - 俱乐部ID
+     * @param {object} params - 查询参数 {status}
+     * @returns {Promise} {code, msg, data: {list}}
+     */
+    async getJoinRequests(clubId, params = {}) {
+        const endpoint = window.AppConfig.API_ENDPOINTS.GET_JOIN_REQUESTS;
+        const queryString = this.buildQueryString(params);
+        const fullEndpoint = endpoint.replace('{id}', clubId) + queryString;
+        return await this.request(fullEndpoint, 'GET');
+    },
+
+    /**
+     * 4.10 通过入会申请
+     * @param {number} clubId - 俱乐部ID
+     * @param {number} requestId - 申请ID
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async approveJoinRequest(clubId, requestId) {
+        const endpoint = window.AppConfig.API_ENDPOINTS.APPROVE_JOIN_REQUEST;
+        const fullEndpoint = endpoint.replace('{id}', clubId).replace('{requestId}', requestId);
+        return await this.request(fullEndpoint, 'POST');
+    },
+
+    /**
+     * 4.11 驳回入会申请
+     * @param {number} clubId - 俱乐部ID
+     * @param {number} requestId - 申请ID
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async rejectJoinRequest(clubId, requestId) {
+        const endpoint = window.AppConfig.API_ENDPOINTS.REJECT_JOIN_REQUEST;
+        const fullEndpoint = endpoint.replace('{id}', clubId).replace('{requestId}', requestId);
+        return await this.request(fullEndpoint, 'POST');
+    },
+    
+    // ================ 通知模块（需Token） ================
+    
+    /**
+     * 9.1 站内信列表
+     * @param {object} params - 查询参数 {isRead, page, pageSize}
+     * @returns {Promise} {code, msg, data: {list}}
+     */
+    async getNotifications(params = {}) {
+        const queryString = this.buildQueryString(params);
+        return await this.request('/notifications' + queryString, 'GET');
+    },
+
+    /**
+     * 9.2 未读数量
+     * @returns {Promise} {code, msg, data: {total}}
+     */
+    async getUnreadCount() {
+        return await this.request('/notifications/unread-count', 'GET');
+    },
+
+    /**
+     * 9.3 标记已读
+     * @param {number} notificationId - 通知ID
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async markNotificationAsRead(notificationId) {
+        return await this.request(`/notifications/${notificationId}/read`, 'POST');
+    },
+
+    /**
+     * 9.4 全部已读
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async markAllNotificationsAsRead() {
+        return await this.request('/notifications/read-all', 'POST');
+    },
     
     // ================ 任务模块（需Token） ================
 
-/**
- * 7.1 发布任务
- * @param {object} taskData - 任务数据 {clubId, videoId, type, title, description}
- * @returns {Promise} {code, msg, data: {taskId}}
- */
-async createTask(taskData) {
+    /**
+     * 7.1 发布任务
+     * @param {object} taskData - 任务数据 {clubId, videoId, type, title, description}
+     * @returns {Promise} {code, msg, data: {taskId}}
+     */
+    async createTask(taskData) {
     const endpoint = window.AppConfig.API_ENDPOINTS.CREATE_TASK;
     
-    // 强制使用正确的参数结构
+    // 构建请求数据，确保 unlockAt 被正确处理
     const requestData = {
         clubId: parseInt(taskData.clubId),
         title: taskData.title,
         description: taskData.description || '',
-        type: 'all'  // ⚠️ 硬编码为 'all'
+        type: 'all'
     };
+    
+    // 添加 unlockAt（如果有）
+    if (taskData.unlockAt) {
+        requestData.unlockAt = taskData.unlockAt;
+    }
     
     console.log('发送到后端的最终数据:', requestData);
     
     return await this.request(endpoint, 'POST', requestData);
 },
 
-/**
- * 7.3 任务列表
- * @param {number} clubId - 俱乐部ID
- * @returns {Promise} {code, msg, data: Array<任务信息>}
- */
-async getTasks(clubId) {
-    const endpoint = window.AppConfig.API_ENDPOINTS.GET_TASKS;
-    const queryString = this.buildQueryString({ clubId });
-    return await this.request(endpoint + queryString, 'GET');
-},
+    /**
+     * 7.3 任务列表
+     * @param {number} clubId - 俱乐部ID
+     * @returns {Promise} {code, msg, data: Array<任务信息>}
+     */
+    async getTasks(clubId) {
+        const endpoint = window.AppConfig.API_ENDPOINTS.GET_TASKS;
+        const queryString = this.buildQueryString({ clubId });
+        return await this.request(endpoint + queryString, 'GET');
+    },
 
-/**
- * 7.4 任务详情
- * @param {number} taskId - 任务ID
- * @returns {Promise} {code, msg, data: {taskInfo}}
- */
-async getTaskDetail(taskId) {
-    const endpoint = '/tasks/{id}';
-    return await this.request(endpoint, 'GET', { _pathParams: { id: taskId } });
-},
+    /**
+     * 7.4 任务详情
+     * @param {number} taskId - 任务ID
+     * @returns {Promise} {code, msg, data: {taskInfo}}
+     */
+    async getTaskDetail(taskId) {
+        const endpoint = '/tasks/{id}';
+        return await this.request(endpoint, 'GET', { _pathParams: { id: taskId } });
+    },
 
-/**
- * 7.2 提交子任务
- * @param {number} taskId - 任务ID
- * @param {number} subtaskId - 子任务ID (1:看视频, 2:研视频)
- * @param {object} completionData - 完成数据 {researchNotes, attachmentUrl}
- * @returns {Promise} {code, msg, data: null}
- */
-async completeSubTask(taskId, subtaskId, completionData = {}) {
-    const endpoint = `/tasks/${taskId}/subtasks/${subtaskId}/complete`;
-    return await this.request(endpoint, 'POST', completionData);
-},
+    /**
+     * 7.2 提交子任务
+     * @param {number} taskId - 任务ID
+     * @param {number} subtaskId - 子任务ID (1:看视频, 2:研视频)
+     * @param {object} completionData - 完成数据 {researchNotes, attachmentUrl}
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async completeSubTask(taskId, subtaskId, completionData = {}) {
+        const endpoint = `/tasks/${taskId}/subtasks/${subtaskId}/complete`;
+        return await this.request(endpoint, 'POST', completionData);
+    },
 
-/**
- * 7.5 修改任务
- * @param {number} taskId - 任务ID
- * @param {object} taskData - 更新的任务数据 {title, description, videoId}
- * @returns {Promise} {code, msg, data: null}
- */
-async updateTask(taskId, taskData) {
+    /**
+     * 7.5 修改任务
+     * @param {number} taskId - 任务ID
+     * @param {object} taskData - 更新的任务数据 {title, description, videoId}
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async updateTask(taskId, taskData) {
     // 获取配置中的端点
     const baseEndpoint = window.AppConfig.API_ENDPOINTS.UPDATE_TASK;
     
     // 手动替换 :id 为实际taskId
     const endpoint = baseEndpoint.replace(':id', taskId);
     
-    // 确保videoId是数字（如果有的话）
+    // 确保unlockAt是有效的日期字符串或null
     const requestData = { ...taskData };
-    if (requestData.videoId) {
-        requestData.videoId = parseInt(requestData.videoId);
-    }
     
     console.log('修改任务请求:', { endpoint, requestData });
     return await this.request(endpoint, 'PATCH', requestData);
 },
-
-/**
- * 7.6 删除任务
- * @param {number} taskId - 任务ID
- * @returns {Promise} {code, msg, data: null}
- */
-async deleteTask(taskId) {
-    // 获取配置中的端点
-    const baseEndpoint = window.AppConfig.API_ENDPOINTS.DELETE_TASK;
-    
-    // 手动替换 :id 为实际taskId
-    const endpoint = baseEndpoint.replace(':id', taskId);
-    
-    console.log('删除任务请求:', endpoint);
-    return await this.request(endpoint, 'DELETE');
-}
-
+    /**
+     * 7.6 删除任务
+     * @param {number} taskId - 任务ID
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async deleteTask(taskId) {
+        // 获取配置中的端点
+        const baseEndpoint = window.AppConfig.API_ENDPOINTS.DELETE_TASK;
+        
+        // 手动替换 :id 为实际taskId
+        const endpoint = baseEndpoint.replace(':id', taskId);
+        
+        console.log('删除任务请求:', endpoint);
+        return await this.request(endpoint, 'DELETE');
+    }
 };

@@ -8,27 +8,50 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         /* 归档俱乐部卡片样式 */
-        .club-card.archived {
-            background: #fafafa;
-            border-color: #e0e0e0;
-            opacity: 0.8;
-        }
-        
-        .club-card.archived h3 {
-            color: #999 !important;
-        }
-        
-        .club-card.archived .club-tags .tag {
-            opacity: 0.6;
-        }
-        
-        .club-card.archived .club-actions .btn {
-            opacity: 0.8;
-        }
-        
-        .club-card.archived .club-actions .btn:hover {
-            opacity: 1;
-        }
+.club-card.archived {
+    background: #fafafa;
+    border-color: #e0e0e0;
+    opacity: 0.9;
+}
+
+.club-card.archived h3 {
+    color: #666 !important;
+}
+
+.club-card.archived .club-tags .tag {
+    opacity: 0.8;
+}
+
+.club-card.archived .club-actions .btn {
+    opacity: 0.9;
+    border-width: 1px;
+}
+
+.club-card.archived .club-actions .btn:hover {
+    opacity: 1;
+}
+
+/* 归档卡片的查看任务按钮特殊样式 */
+.club-card.archived .club-actions .btn-outline {
+    border-color: #999;
+    color: #666;
+}
+
+.club-card.archived .club-actions .btn-outline:hover {
+    border-color: #1890ff;
+    color: #1890ff;
+    background-color: rgba(24, 144, 255, 0.05);
+}
+
+.club-card.archived .club-actions .btn-primary {
+    background: linear-gradient(135deg, #52c41a, #73d13d);
+    border-color: #52c41a;
+}
+
+.club-card.archived .club-actions .btn-primary:hover {
+    background: linear-gradient(135deg, #389e0d, #52c41a);
+    border-color: #389e0d;
+}
         
         /* 归档模态框样式 */
         .archive-consequence {
@@ -178,35 +201,6 @@
             position: relative;
         }
         
-        .completion-indicator-small {
-            position: absolute;
-            bottom: -4px;
-            right: -4px;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            border: 2px solid white;
-            background: linear-gradient(135deg, #1890ff, #722ed1);
-            font-size: 9px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-        }
-        
-        .completion-indicator-small.low {
-            background: linear-gradient(135deg, #ff4d4f, #ff7a45);
-        }
-        
-        .completion-indicator-small.medium {
-            background: linear-gradient(135deg, #ffa940, #ffc53d);
-        }
-        
-        .completion-indicator-small.high {
-            background: linear-gradient(135deg, #52c41a, #73d13d);
-        }
-        
         .user-dropdown-header {
             padding: 16px;
             background: linear-gradient(135deg, rgba(24, 144, 255, 0.1), rgba(114, 46, 209, 0.1));
@@ -240,6 +234,55 @@
             text-overflow: ellipsis;
             max-width: 160px;
         }
+
+        /* ========== 新增：通知徽章样式 ========== */
+        .notification-badge {
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .notification-icon {
+            font-size: 18px;
+            color: #666;
+            transition: color 0.3s ease;
+            padding: 8px;
+            border-radius: 8px;
+        }
+        
+        .notification-icon:hover {
+            color: #1890ff;
+            background: rgba(24, 144, 255, 0.1);
+        }
+        
+        .notification-count {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ff4d4f;
+            color: white;
+            font-size: 10px;
+            min-width: 16px;
+            height: 16px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+            font-weight: bold;
+            display: none; /* 默认隐藏，有通知时显示 */
+        }
+        
+        .notification-count.high {
+            background: #ff4d4f;
+        }
+        
+        .notification-count.medium {
+            background: #faad14;
+        }
+        
+        .notification-count.low {
+            background: #52c41a;
+        }
         
         /* 响应式调整 */
         @media (max-width: 768px) {
@@ -254,13 +297,19 @@
     </style>
 </head>
 <body>
-    <div id="page-home" class="page active">
+     <div id="page-home" class="page active">
         <div class="header">
             <div class="header-left">
                 <span class="platform-name">教师视频俱乐部</span>
                 <span style="color: #999; font-weight: normal;"> | 我的俱乐部</span>
             </div>
             <div class="header-right">
+                <!-- ========== 新增：通知图标 ========== -->
+                <div class="notification-badge" onclick="openNotifications()" style="margin-right: 15px; position: relative;">
+                    <i class="fas fa-bell notification-icon"></i>
+                    <div id="notification-badge" class="notification-count" style="display: none;">0</div>
+                </div>
+                
                 <!-- 搜索和创建俱乐部按钮 -->
                 <div style="display: flex; gap: 10px; margin-right: 15px;">
                     <button class="btn btn-outline btn-sm" onclick="window.App.openJoinClubModal()">
@@ -271,11 +320,10 @@
                     </button>
                 </div>
                 
-                <!-- ========== 修改：用户信息区域（添加下拉菜单） ========== -->
+                <!-- 用户信息区域 -->
                 <div class="user-info" id="user-info-dropdown" onclick="toggleUserDropdown(event)">
                     <div class="user-avatar-wrapper">
                         <div class="avatar" id="user-avatar">王</div>
-                        <div class="completion-indicator-small" id="completion-badge">0</div>
                     </div>
                     <span id="user-name-display">王老师</span>
                     <i class="fas fa-chevron-down" style="font-size: 12px; color: #999;"></i>
@@ -287,8 +335,13 @@
                             <div class="avatar" id="dropdown-user-avatar">王</div>
                             <div class="user-info-text">
                                 <div class="user-name" id="dropdown-user-name">王老师</div>
-                                <div class="user-email" id="dropdown-user-email">未设置邮箱</div>
                             </div>
+                        </div>
+                        
+                        <!-- 通知中心 -->
+                        <div class="dropdown-item" onclick="openNotifications()">
+                            <i class="fas fa-bell"></i> 通知中心
+                            <span id="dropdown-notification-count" class="profile-badge" style="display: none;">0</span>
                         </div>
                         
                         <!-- 完善个人信息 -->
@@ -316,6 +369,7 @@
         </div>
     </div>
 
+
     <!-- 搜索俱乐部模态框 -->
     <div id="join-club-modal" class="modal-overlay" style="display: none;">
         <div class="modal">
@@ -325,7 +379,7 @@
                 <input type="text" id="search-club-input" placeholder="输入俱乐部名称或ID...">
             </div>
             <div style="text-align:right; margin-bottom: 20px;">
-                <button class="btn btn-primary" onclick="window.App.searchClubs()">搜索</button>
+                <button class="btn btn-primary" onclick="searchClubsAction()">搜索</button>
             </div>
             <div id="search-results" style="max-height: 300px; overflow-y: auto;">
                 <div style="text-align: center; color: #999; padding: 40px 20px;">
@@ -339,7 +393,7 @@
         </div>
     </div>
 
-    <!-- 创建俱乐部模态框 -->
+    <!-- 创建俱乐部模态框（修改：添加加入政策选项） -->
     <div id="create-club-modal" class="modal-overlay" style="display: none;">
         <div class="modal">
             <h3 style="margin-bottom: 24px;">创建新俱乐部</h3>
@@ -355,6 +409,18 @@
                 <label>简介</label>
                 <textarea id="new-club-description" placeholder="请输入俱乐部简介" rows="3"></textarea>
             </div>
+            <div class="form-item">
+                <label>加入方式</label>
+                <select id="new-club-join-policy" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;"
+                        onchange="toggleJoinConditions(this.value)">
+                    <option value="free">自由加入</option>
+                    <option value="approval">需要审核</option>
+                </select>
+            </div>
+            <div class="form-item" id="join-conditions-container" style="display: none;">
+                <label>加入条件说明</label>
+                <textarea id="new-club-join-conditions" placeholder="请输入加入条件说明（例如：仅限在职教师）" rows="2"></textarea>
+            </div>
             <div style="text-align:right; margin-top: 24px;">
                 <button class="btn btn-outline" onclick="window.App.closeCreateClubModal()">取消</button>
                 <button class="btn btn-primary" onclick="window.App.createNewClub()">创建俱乐部</button>
@@ -363,6 +429,121 @@
     </div>
 
     <script>
+    // ========== 通知相关功能 ==========
+    
+    // 打开通知页面
+function openNotifications() {
+    console.log('打开通知中心');
+    closeUserDropdown();
+    
+    if (window.App && window.App.navigateToNotifications) {
+        window.App.navigateToNotifications();
+    } else {
+        window.location.hash = 'notifications';
+    }
+}
+
+// 更新通知徽章 - 修改：根据未读数量更新铃铛颜色
+function updateNotificationBadge() {
+    console.log('更新通知徽章');
+    
+    const notificationBadge = document.getElementById('notification-badge');
+    const notificationIcon = document.querySelector('.notification-icon');
+    const dropdownBadge = document.getElementById('dropdown-notification-count');
+    
+    if (window.App && window.App.state) {
+        const count = window.App.state.unreadNotificationCount || 0;
+        
+        // 更新顶部铃铛图标和徽章
+        if (notificationBadge && notificationIcon) {
+            if (count > 0) {
+                notificationBadge.textContent = count > 99 ? '99+' : count.toString();
+                notificationBadge.style.display = 'flex';
+                notificationBadge.style.backgroundColor = '#ff4d4f'; // 红色
+                
+                // 铃铛图标变为红色
+                notificationIcon.style.color = '#ff4d4f';
+            } else {
+                notificationBadge.style.display = 'none';
+                notificationIcon.style.color = '#666'; // 恢复默认颜色
+            }
+        }
+        
+        // 更新下拉菜单中的徽章
+        if (dropdownBadge) {
+            if (count > 0) {
+                dropdownBadge.textContent = count > 99 ? '99+' : count.toString();
+                dropdownBadge.style.display = 'inline-block';
+                dropdownBadge.style.backgroundColor = '#ff4d4f'; // 红色
+            } else {
+                dropdownBadge.style.display = 'none';
+            }
+        }
+    }
+}
+
+// ========== 首页初始化 ==========
+
+function initHomePage() {
+    console.log('首页初始化');
+    
+    // 更新用户信息
+    if (window.Auth && window.Auth.getUser()) {
+        const user = window.Auth.getUser();
+        console.log('当前用户:', user);
+        
+        const nameElements = document.querySelectorAll('#user-name-display');
+        const avatarElements = document.querySelectorAll('#user-avatar');
+        
+        nameElements.forEach(element => {
+            if (element) element.textContent = user.name || user.username || '用户';
+        });
+        
+        avatarElements.forEach(element => {
+            if (element) {
+                const firstName = user.name ? user.name.charAt(0) : user.username ? user.username.charAt(0) : '?';
+                element.textContent = firstName;
+            }
+        });
+    }
+    
+    // 检查个人资料完成度
+    setTimeout(() => {
+        checkProfileCompletion();
+    }, 500);
+    
+    // 页面加载后立即更新通知徽章
+    setTimeout(() => {
+        // 先初始化通知徽章
+        updateNotificationBadge();
+        
+        // 获取未读通知数量并更新徽章
+        if (window.Notifications && window.Notifications.getUnreadCount) {
+            window.Notifications.getUnreadCount().then(count => {
+                console.log('获取到的未读通知数量:', count);
+                if (window.App && window.App.state) {
+                    window.App.state.unreadNotificationCount = count;
+                    updateNotificationBadge();
+                }
+            }).catch(error => {
+                console.error('获取未读数量失败:', error);
+            });
+        }
+        
+        // 同时尝试通过App更新
+        if (window.App && window.App.updateUnreadCount) {
+            window.App.updateUnreadCount();
+        }
+    }, 300);
+    
+    // 页面加载后自动加载俱乐部列表
+    if (window.App && window.App.renderHome) {
+        setTimeout(() => {
+            console.log('调用App.renderHome');
+            window.App.renderHome();
+        }, 100);
+    }
+}
     // ========== 用户下拉菜单功能 ==========
     
     let userDropdownOpen = false;
@@ -433,18 +614,6 @@
             dropdownName.textContent = user.name || user.username || '用户';
         }
         
-        // 更新下拉菜单中的邮箱
-        const dropdownEmail = document.getElementById('dropdown-user-email');
-        if (dropdownEmail) {
-            // 如果有个人资料中的邮箱，显示邮箱，否则显示默认文本
-            if (user.profile && user.profile.email) {
-                dropdownEmail.textContent = user.profile.email;
-            } else if (user.email) {
-                dropdownEmail.textContent = user.email;
-            } else {
-                dropdownEmail.textContent = '点击完善个人信息';
-            }
-        }
     }
     
     // 检查个人资料完成度
@@ -549,36 +718,6 @@
         }
     }
     
-    // 更新完成度徽章
-    function updateCompletionBadge(completion) {
-        const badge = document.getElementById('completion-badge');
-        if (!badge) return;
-        
-        // 确保completion是数字
-        completion = parseInt(completion) || 0;
-        
-        badge.textContent = completion;
-        
-        // 根据完成度设置颜色
-        badge.className = 'completion-indicator-small';
-        if (completion < 60) {
-            badge.classList.add('low');
-        } else if (completion < 80) {
-            badge.classList.add('medium');
-        } else {
-            badge.classList.add('high');
-        }
-        
-        // 如果完成度100%，显示对勾
-        if (completion === 100) {
-            badge.textContent = '✓';
-            badge.style.fontSize = '10px';
-        } else {
-            badge.style.fontSize = '9px';
-        }
-        
-        console.log('更新完成度徽章:', completion + '%');
-    }
     
     // 更新完成度指示器
     function updateCompletionIndicator() {
@@ -619,44 +758,119 @@
         Utils.showNotification('帮助与反馈功能开发中', 'info');
     }
     
-    // ========== 页面加载初始化 ==========
+    // ========== 搜索俱乐部功能 ==========
     
-    function initHomePage() {
-        console.log('首页初始化');
+    function searchClubsAction() {
+        const searchInput = document.getElementById('search-club-input');
+        if (!searchInput) return;
         
-        // 更新用户信息
-        if (window.Auth && window.Auth.getUser()) {
-            const user = window.Auth.getUser();
-            console.log('当前用户:', user);
-            
-            const nameElements = document.querySelectorAll('#user-name-display');
-            const avatarElements = document.querySelectorAll('#user-avatar');
-            
-            nameElements.forEach(element => {
-                if (element) element.textContent = user.name || user.username || '用户';
-            });
-            
-            avatarElements.forEach(element => {
-                if (element) {
-                    const firstName = user.name ? user.name.charAt(0) : user.username ? user.username.charAt(0) : '?';
-                    element.textContent = firstName;
-                }
-            });
+        const keyword = searchInput.value.trim();
+        if (!keyword) {
+            Utils.showNotification('请输入搜索关键词', 'info');
+            return;
         }
         
-        // 检查个人资料完成度
-        setTimeout(() => {
-            checkProfileCompletion();
-        }, 500);
+        console.log('搜索俱乐部，关键词:', keyword);
         
-        // 页面加载后自动加载俱乐部列表
-        if (window.App && window.App.renderHome) {
-            setTimeout(() => {
-                console.log('调用App.renderHome');
-                window.App.renderHome();
-            }, 100);
+        // 显示加载状态
+        const searchResults = document.getElementById('search-results');
+        if (searchResults) {
+            searchResults.innerHTML = `
+                <div style="text-align: center; color: #999; padding: 40px 20px;">
+                    <div class="loading-spinner" style="display: inline-block; width: 40px; height: 40px; border: 3px solid #f3f3f3; border-top: 3px solid #1890ff; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                    <p style="margin-top: 16px;">正在搜索...</p>
+                </div>
+            `;
+        }
+        
+        // 调用搜索功能
+        window.Clubs.searchClubs(keyword).then(clubs => {
+            console.log('搜索到的俱乐部:', clubs);
+            renderSearchResults(clubs);
+        }).catch(error => {
+            console.error('搜索俱乐部失败:', error);
+            if (searchResults) {
+                searchResults.innerHTML = `
+                    <div style="text-align: center; color: #999; padding: 40px 20px;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                        <p>搜索失败: ${error.message}</p>
+                    </div>
+                `;
+            }
+        });
+    }
+    
+    function renderSearchResults(clubs) {
+        const searchResults = document.getElementById('search-results');
+        if (!searchResults) return;
+        
+        if (!clubs || clubs.length === 0) {
+            searchResults.innerHTML = `
+                <div style="text-align: center; color: #999; padding: 40px 20px;">
+                    <i class="fas fa-search" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                    <p>未找到相关俱乐部</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        
+        clubs.forEach(club => {
+            // 根据加入政策显示不同的按钮
+            let joinButton = '';
+            if (club.joinPolicy === 'free') {
+                joinButton = `<button class="btn btn-primary btn-sm" onclick="window.App.joinClub(${club.id})">
+                    <i class="fas fa-plus"></i> 立即加入
+                </button>`;
+            } else {
+                joinButton = `<button class="btn btn-primary btn-sm" onclick="window.App.showJoinClubDialog(${club.id})">
+                    <i class="fas fa-user-plus"></i> 申请加入
+                </button>`;
+            }
+            
+            // 入会条件说明
+            const joinConditions = club.joinConditions ? 
+                `<div style="font-size: 12px; color: #666; margin-top: 4px; padding: 4px 8px; background: #f5f5f5; border-radius: 4px;">
+                    <i class="fas fa-info-circle"></i> 入会条件：${club.joinConditions}
+                </div>` : '';
+            
+            html += `
+                <div class="search-result-item" style="border: 1px solid #eee; border-radius: 8px; padding: 16px; margin-bottom: 12px; background: white;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <h4 style="margin: 0; font-size: 16px; color: #333;">${club.name}</h4>
+                                <span class="tag" style="background: linear-gradient(135deg, #e6f7ff, #bae7ff); color: #096dd9; font-size: 12px;">${club.tag}</span>
+                                ${club.joinPolicy === 'approval' ? '<span class="tag" style="background: linear-gradient(135deg, #f0f0ff, #d6e4ff); color: #597ef7; font-size: 12px;"><i class="fas fa-user-check"></i> 需审核</span>' : ''}
+                            </div>
+                            <div style="font-size: 13px; color: #666; margin-bottom: 8px;">
+                                <span><i class="fas fa-user"></i> 创建者：${club.creator}</span>
+                                <span style="margin-left: 16px;"><i class="fas fa-users"></i> 成员：${club.members}人</span>
+                            </div>
+                            ${club.description ? `<div style="font-size: 13px; color: #777; margin-bottom: 8px; line-height: 1.4;">${club.description}</div>` : ''}
+                            ${joinConditions}
+                        </div>
+                        <div style="margin-left: 16px;">
+                            ${joinButton}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        searchResults.innerHTML = html;
+    }
+    
+    // ========== 创建俱乐部功能 ==========
+    
+    function toggleJoinConditions(policyValue) {
+        const conditionsContainer = document.getElementById('join-conditions-container');
+        if (conditionsContainer) {
+            conditionsContainer.style.display = policyValue === 'approval' ? 'block' : 'none';
         }
     }
+
     
     // ========== 事件监听 ==========
     
@@ -683,6 +897,16 @@
                 }
             });
         }
+        
+        // 绑定搜索输入框回车事件
+        const searchInput = document.getElementById('search-club-input');
+        if (searchInput) {
+            searchInput.addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    searchClubsAction();
+                }
+            });
+        }
     });
     
     // 确保全局函数可用
@@ -691,6 +915,10 @@
     window.viewMyProfile = viewMyProfile;
     window.openSettings = openSettings;
     window.openHelp = openHelp;
+    window.searchClubsAction = searchClubsAction;
+    window.toggleJoinConditions = toggleJoinConditions;
+    window.openNotifications = openNotifications;
+    window.updateNotificationBadge = updateNotificationBadge;
     
     // ========== 原有的全局函数（保持不变） ==========
     

@@ -67,6 +67,54 @@
             border-radius: 50%;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
+        
+        /* 解锁时间标签 */
+        .unlock-time-tag {
+            background: #f0f7ff;
+            color: #096dd9;
+            border: 1px solid #d6e4ff;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            margin-left: 8px;
+            gap: 4px;
+        }
+        
+        .unlock-time-tag i {
+            font-size: 11px;
+        }
+        
+        /* 时间选择器样式 */
+        .datetime-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .datetime-input:focus {
+            border-color: #1890ff;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+        }
+        
+        .unlock-info {
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 8px;
+            font-size: 13px;
+            color: #389e0d;
+        }
+        
+        .unlock-info i {
+            margin-right: 6px;
+        }
     </style>
 </head>
 <body>
@@ -134,6 +182,29 @@
                     <label>活动描述（可选）</label>
                     <textarea id="new-task-description" placeholder="请简要描述这个活动..." rows="3"></textarea>
                 </div>
+                <!-- 新增：解锁时间设置 -->
+                <div class="form-item">
+                    <label>解锁时间设置</label>
+                    <div style="margin-top: 8px;">
+                        <label style="display: flex; align-items: center; margin-bottom: 8px;">
+                            <input type="radio" id="unlock-immediately" name="unlock-type" value="immediate" checked onchange="toggleUnlockTimeInput()">
+                            <span style="margin-left: 8px;">立即解锁（创建后即可参与）</span>
+                        </label>
+                        <label style="display: flex; align-items: center;">
+                            <input type="radio" id="unlock-scheduled" name="unlock-type" value="scheduled" onchange="toggleUnlockTimeInput()">
+                            <span style="margin-left: 8px;">定时解锁（设置具体时间）</span>
+                        </label>
+                    </div>
+                    
+                    <!-- 解锁时间输入区域 -->
+                    <div id="unlock-time-container" style="display: none; margin-top: 12px;">
+                        <input type="datetime-local" id="unlock-time" class="datetime-input">
+                        <div class="unlock-info" style="margin-top: 8px;">
+                            <i class="fas fa-info-circle"></i>
+                            <span id="unlock-time-hint">设置后，成员需等待到达指定时间才能参与此活动</span>
+                        </div>
+                    </div>
+                </div>
                 <div style="text-align:right; margin-top: 24px;">
                     <button class="btn btn-outline" onclick="closeCreateTaskModal()">取消</button>
                     <button class="btn btn-primary" onclick="createNewTask()">创建活动</button>
@@ -151,127 +222,139 @@
         let isClubCreator = false; // 新增：是否是俱乐部创建者
 
         // 页面初始化
-function initVideoPage() {
-    if (videoPageInitialized) return;
-    videoPageInitialized = true;
-    
-    console.log('视频页面初始化');
-    
-    // 更新用户信息
-    updateUserDisplay();
-    
-    // 获取当前俱乐部信息
-    loadCurrentClub();
-    
-    // 加载已有任务
-    loadVideoTasks();
+        function initVideoPage() {
+            if (videoPageInitialized) return;
+            videoPageInitialized = true;
+            
+            console.log('视频页面初始化');
+            
+            // 更新用户信息
+            updateUserDisplay();
+            
+            // 获取当前俱乐部信息
+            loadCurrentClub();
+            
+            // 加载已有任务
+            loadVideoTasks();
 
-    // 添加一个标记，表示这是视频页面
-    window.isVideoPage = true;
-    
-    // 绑定输入框实时预览
-    const nameInput = document.getElementById('new-task-name');
-    const descInput = document.getElementById('new-task-description');
-    
-    if (nameInput) {
-        nameInput.addEventListener('input', updatePreview);
-    }
-    if (descInput) {
-        descInput.addEventListener('input', updatePreview);
-    }
-    
-    // 确保权限UI更新（如果已有数据）
-    setTimeout(() => {
-        updatePermissionBasedUI();
-    }, 100);
-}
+            // 添加一个标记，表示这是视频页面
+            window.isVideoPage = true;
+            
+            // 确保权限UI更新（如果已有数据）
+            setTimeout(() => {
+                updatePermissionBasedUI();
+            }, 100);
+        }
         
         // 检查权限并更新UI
-async function checkAndUpdatePermissions() {
-    if (!currentClub || !currentClub.id) {
-        console.warn('无法获取俱乐部信息，无法检查权限');
-        isClubCreator = false;
-        updatePermissionBasedUI(); // 添加：更新权限相关的UI
-        return false;
-    }
-    
-    try {
-        // 检查用户是否是俱乐部创建者（manager）
-        const hasPermission = await Clubs.isClubCreator(currentClub.id);
-        isClubCreator = hasPermission; // 保存到全局变量
-        console.log('权限检查结果 - 是否是创建者:', isClubCreator);
-        
-        // 获取"创建任务"按钮
-        const createTaskBtn = document.querySelector('button[onclick="openCreateTaskModal()"]');
-        if (createTaskBtn) {
-            if (!hasPermission) {
-                // 不是创建者，隐藏或禁用按钮
-                createTaskBtn.style.display = 'none';
-            } else {
-                createTaskBtn.style.display = 'inline-flex';
-                createTaskBtn.disabled = false;
+        async function checkAndUpdatePermissions() {
+            if (!currentClub || !currentClub.id) {
+                console.warn('无法获取俱乐部信息，无法检查权限');
+                isClubCreator = false;
+                updatePermissionBasedUI(); // 添加：更新权限相关的UI
+                return false;
+            }
+            
+            try {
+                // 检查用户是否是俱乐部创建者（manager）
+                const hasPermission = await Clubs.isClubCreator(currentClub.id);
+                isClubCreator = hasPermission; // 保存到全局变量
+                console.log('权限检查结果 - 是否是创建者:', isClubCreator);
+                
+                // 获取"创建任务"按钮
+                const createTaskBtn = document.querySelector('button[onclick="openCreateTaskModal()"]');
+                if (createTaskBtn) {
+                    if (!hasPermission) {
+                        // 不是创建者，隐藏或禁用按钮
+                        createTaskBtn.style.display = 'none';
+                    } else {
+                        createTaskBtn.style.display = 'inline-flex';
+                        createTaskBtn.disabled = false;
+                    }
+                }
+                
+                // 添加：更新权限相关的UI
+                updatePermissionBasedUI();
+                
+                return hasPermission;
+            } catch (error) {
+                console.error('检查权限失败:', error);
+                isClubCreator = false;
+                updatePermissionBasedUI(); // 添加：更新权限相关的UI
+                return false;
             }
         }
-        
-        // 添加：更新权限相关的UI
-        updatePermissionBasedUI();
-        
-        return hasPermission;
-    } catch (error) {
-        console.error('检查权限失败:', error);
-        isClubCreator = false;
-        updatePermissionBasedUI(); // 添加：更新权限相关的UI
-        return false;
-    }
-}
 
         // 根据权限更新UI显示
-function updatePermissionBasedUI() {
-    console.log('更新权限相关UI，是否是创建者:', isClubCreator);
-    
-    // 获取需要控制的元素
-    const welcomeSubtitle = document.getElementById('welcome-subtitle');
-    const usageTips = document.querySelector('.usage-tips');
-    
-    // 更新欢迎副标题
-    if (welcomeSubtitle && currentClub) {
-        if (isClubCreator) {
-            // 创建者看到的标题
-            welcomeSubtitle.textContent = `为${currentClub.name}俱乐部创建和管理教学视频研讨活动`;
-            welcomeSubtitle.style.display = 'block';
-        } else {
-            // 普通成员看到的标题
-            welcomeSubtitle.textContent = `参与${currentClub.name}俱乐部的教学视频研讨活动`;
-            welcomeSubtitle.style.display = 'block';
+        function updatePermissionBasedUI() {
+            console.log('更新权限相关UI，是否是创建者:', isClubCreator);
+            
+            // 获取需要控制的元素
+            const welcomeSubtitle = document.getElementById('welcome-subtitle');
+            const usageTips = document.querySelector('.usage-tips');
+            
+            // 更新欢迎副标题
+            if (welcomeSubtitle && currentClub) {
+                if (isClubCreator) {
+                    // 创建者看到的标题
+                    welcomeSubtitle.textContent = `为${currentClub.name}俱乐部创建和管理教学视频研讨活动`;
+                    welcomeSubtitle.style.display = 'block';
+                } else {
+                    // 普通成员看到的标题
+                    welcomeSubtitle.textContent = `参与${currentClub.name}俱乐部的教学视频研讨活动`;
+                    welcomeSubtitle.style.display = 'block';
+                }
+            }
+            
+            // 更新使用提示
+            if (usageTips) {
+                if (isClubCreator) {
+                    // 创建者看到的提示
+                    usageTips.innerHTML = `
+                        <h4><i class="fas fa-lightbulb"></i> 使用提示</h4>
+                        <ul>
+                            <li>点击"创建活动"按钮创建新的视频研讨活动</li>
+                            <li>创建活动时，可设置解锁时间</li>
+                            <li>点击活动卡片可以进入活动详情页</li>
+                        </ul>
+                    `;
+                    usageTips.style.display = 'block';
+                } else {
+                    // 普通成员看到的提示
+                    usageTips.innerHTML = `
+                        <h4><i class="fas fa-lightbulb"></i> 使用提示</h4>
+                        <ul>
+                            <li>活动按顺序解锁，需同时满足：前一个任务完成 + 到达解锁时间</li>
+                            <li>点击活动卡片查看和完成活动</li>
+                        </ul>
+                    `;
+                    usageTips.style.display = 'block';
+                }
+            }
         }
-    }
-    
-    // 更新使用提示
-    if (usageTips) {
-        if (isClubCreator) {
-            // 创建者看到的提示
-            usageTips.innerHTML = `
-                <h4><i class="fas fa-lightbulb"></i> 使用提示</h4>
-                <ul>
-                    <li>点击"创建活动"按钮创建新的视频研讨活动</li>
-                    <li>创建活动时，需填写活动名称</li>
-                    <li>点击活动卡片可以进入活动详情页</li>
-                </ul>
-            `;
-            usageTips.style.display = 'block';
-        } else {
-            // 普通成员看到的提示
-            usageTips.innerHTML = `
-                <h4><i class="fas fa-lightbulb"></i> 使用提示</h4>
-                <ul>
-                    <li>活动按顺序解锁，请先完成前面的活动</li>
-                    <li>点击活动卡片查看和完成活动</li>
-                </ul>
-            `;
-            usageTips.style.display = 'block';
+
+        // 切换解锁时间输入框显示
+        function toggleUnlockTimeInput() {
+            const unlockImmediately = document.getElementById('unlock-immediately');
+            const unlockScheduled = document.getElementById('unlock-scheduled');
+            const unlockTimeContainer = document.getElementById('unlock-time-container');
+            const unlockTimeHint = document.getElementById('unlock-time-hint');
+            
+            if (unlockScheduled.checked) {
+                unlockTimeContainer.style.display = 'block';
+                
+                // 设置默认时间为明天
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const formattedDate = tomorrow.toISOString().slice(0, 16);
+                document.getElementById('unlock-time').value = formattedDate;
+                
+                unlockTimeHint.textContent = '设置后，成员需同时满足：前一个任务完成 + 到达此时间，才能参与此活动';
+            } else {
+                unlockTimeContainer.style.display = 'none';
+                document.getElementById('unlock-time').value = '';
+            }
         }
-    }
-}
 
         async function openCreateTaskModal() {
             // 先检查权限
@@ -300,8 +383,11 @@ function updatePermissionBasedUI() {
                     if (descInput) descInput.value = '';
                     if (errorElement) errorElement.style.display = 'none';
                     
-                    // 更新预览
-                    updatePreview();
+                    // 重置解锁时间选项
+                    document.getElementById('unlock-immediately').checked = true;
+                    document.getElementById('unlock-scheduled').checked = false;
+                    document.getElementById('unlock-time-container').style.display = 'none';
+                    document.getElementById('unlock-time').value = '';
                     
                     // 聚焦到名称输入框
                     setTimeout(() => {
@@ -426,11 +512,14 @@ function updatePermissionBasedUI() {
         }
 
         // 加载视频任务
-async function loadVideoTasks() {
-    console.log('加载视频任务');
+        async function loadVideoTasks() {
+    console.log('========== 开始加载视频任务 ==========');
     const container = document.getElementById('videoTaskList');
     
-    if (!container) return;
+    if (!container) {
+        console.error('找不到任务列表容器');
+        return;
+    }
     
     try {
         // 检查权限
@@ -443,36 +532,105 @@ async function loadVideoTasks() {
             return;
         }
         
-        // 调用API获取任务列表
+        console.log('获取俱乐部ID的任务列表，clubId:', clubId);
+        
+        // 显示加载状态
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-spinner fa-spin"></i>
+                <h3>加载中...</h3>
+            </div>
+        `;
+        
+        // 关键修改：如果当前用户是创建者，我们需要一个特殊的API或者自己处理过滤
+        // 先尝试获取所有任务
+        console.log('调用API.getTasks，参数:', { clubId });
         const response = await API.getTasks(clubId);
         
-        if (response && response.code === 0 && Array.isArray(response.data)) {
-            videoTasks = response.data;
-            await renderVideoTasks();  // 改为异步调用
+        console.log('API.getTasks响应:', response);
+        
+        if (response && response.code === 0) {
+            // 确保data是数组
+            let tasksData = [];
+            
+            if (Array.isArray(response.data)) {
+                tasksData = response.data;
+                console.log('直接获取到数组，长度:', tasksData.length);
+            } else if (response.data && Array.isArray(response.data.list)) {
+                // 或者数据在list属性中
+                tasksData = response.data.list;
+                console.log('从list属性获取数组，长度:', tasksData.length);
+            } else if (response.data && response.data.taskId) {
+                // 单个任务对象
+                tasksData = [response.data];
+                console.log('单个任务对象');
+            } else {
+                console.warn('无法识别的响应格式:', response.data);
+                tasksData = [];
+            }
+            
+            // 处理每个任务，确保unlockAt字段存在
+            videoTasks = tasksData.map(task => {
+                const processedTask = {
+                    taskId: task.taskId || task.id,
+                    id: task.taskId || task.id,
+                    title: task.title || '未命名任务',
+                    description: task.description || '',
+                    type: task.type || 'all',
+                    clubId: task.clubId || clubId,
+                    unlockAt: task.unlockAt || null,
+                    createdAt: task.createdAt || new Date().toISOString(),
+                    status: task.status || 'active'
+                };
+                console.log('处理后的任务:', processedTask, 'unlockAt:', processedTask.unlockAt);
+                return processedTask;
+            });
+            
+            console.log('最终videoTasks数组:', videoTasks);
+            console.log('videoTasks长度:', videoTasks.length);
+            
+            // 关键：如果是创建者，我们需要手动添加可能被过滤掉的任务
+            if (isClubCreator) {
+                console.log('当前用户是创建者，需要显示所有任务');
+                // 创建者应该看到所有任务，包括未解锁的
+                // 这里假设API.getTasks已经返回了所有任务（包括未解锁的）
+                // 但实际上API可能过滤了未解锁任务，所以我们需要另外处理
+            }
+            
+            await renderVideoTasks();
         } else {
-            console.warn('没有获取到任务数据');
+            console.warn('API返回错误码:', response?.code, '消息:', response?.msg);
             videoTasks = [];
-            await renderVideoTasks();  // 改为异步调用
+            await renderVideoTasks();
         }
     } catch (error) {
         console.error('加载任务失败:', error);
         videoTasks = [];
-        await renderVideoTasks();  // 改为异步调用
+        await renderVideoTasks();
     } finally {
         // 确保UI根据权限更新
         updatePermissionBasedUI();
     }
+    console.log('========== 结束加载视频任务 ==========');
 }
 
-        // 渲染视频任务列表 - 简化版本
+        // 渲染视频任务列表
         async function renderVideoTasks() {
-            const container = document.getElementById('videoTaskList');
-            if (!container) return;
-            
-            // 确保权限状态已更新
+    console.log('========== 开始渲染任务列表 ==========');
+    const container = document.getElementById('videoTaskList');
+    if (!container) {
+        console.error('找不到任务列表容器');
+        return;
+    }
+    
+    // 确保权限状态已更新
     await checkAndUpdatePermissions();
     
+    console.log('渲染时videoTasks:', videoTasks);
+    console.log('videoTasks长度:', videoTasks ? videoTasks.length : 0);
+    
     if (!videoTasks || videoTasks.length === 0) {
+        console.log('没有任务数据，显示空状态');
         // 根据权限显示不同的空状态
         if (isClubCreator) {
             container.innerHTML = `
@@ -493,146 +651,244 @@ async function loadVideoTasks() {
         }
         return;
     }
-            
-            // 按创建时间排序任务
-            const sortedTasks = [...videoTasks].sort((a, b) => {
-                const timeA = new Date(a.createdAt || 0).getTime();
-                const timeB = new Date(b.createdAt || 0).getTime();
-                return timeA - timeB;
-            });
-            
-            let tasksHTML = '';
-            
-            // 获取当前用户角色（已经在上面的checkAndUpdatePermissions中获取）
-            console.log('当前用户是创建者吗？', isClubCreator);
-            
-            // 遍历所有任务
-            for (let i = 0; i < sortedTasks.length; i++) {
-                const task = sortedTasks[i];
-                const taskId = task.taskId || task.id;
-                const createdTime = task.createdAt ? formatDate(task.createdAt) : '刚刚';
-                const taskTypeLabel = getTaskTypeLabel(task.type);
+    
+    console.log('开始渲染', videoTasks.length, '个任务');
+    
+    // 按创建时间排序任务
+    const sortedTasks = [...videoTasks].sort((a, b) => {
+        const timeA = new Date(a.createdAt || 0).getTime();
+        const timeB = new Date(b.createdAt || 0).getTime();
+        return timeA - timeB;
+    });
+    
+    console.log('排序后的任务:', sortedTasks);
+    
+    let tasksHTML = '';
+    
+    // 获取当前用户角色
+    console.log('当前用户是创建者吗？', isClubCreator);
+    
+    // 遍历所有任务
+    for (let i = 0; i < sortedTasks.length; i++) {
+        const task = sortedTasks[i];
+        console.log(`处理第${i+1}个任务:`, task);
+        
+        const taskId = task.taskId || task.id;
+        const createdTime = task.createdAt ? formatDate(task.createdAt) : '刚刚';
+        const taskTypeLabel = getTaskTypeLabel(task.type);
+        
+        // 关键修改：权限判断逻辑
+        let isAccessible = true;
+        let lockReason = '';
+        let progressPercentage = 0;
+        
+        if (isClubCreator) {
+            // 创建者总是可以访问所有任务
+            isAccessible = true;
+            lockReason = '';
+        } else {
+            // 普通成员：检查解锁条件
+            const unlockCheck = await checkTaskUnlockConditions(sortedTasks, i, task);
+            isAccessible = unlockCheck.isAccessible;
+            lockReason = unlockCheck.lockReason;
+        }
+        
+        // 获取任务完成进度（仅对可访问的任务）
+        if (isAccessible) {
+            progressPercentage = await getTaskProgressPercentage(taskId);
+        }
+        
+        // 根据是否可访问决定卡片样式
+        const cardClass = isAccessible ? 'video-task-card' : 'video-task-card locked';
+        const cardStyle = isAccessible ? '' : 'opacity: 0.7; cursor: not-allowed;';
+        
+        // 解锁时间显示 - 修复空值判断
+        const hasUnlockTime = task.unlockAt && task.unlockAt !== 'null' && task.unlockAt !== 'undefined';
+        const unlockTimeDisplay = hasUnlockTime ? `
+        ` : '';
+        
+        // 管理按钮（仅创建者显示）- 创建者可以对所有任务进行管理
+        const managementButtonsHTML = isClubCreator ? `
+            <div class="task-management-buttons" data-task-id="${taskId}" style="margin-bottom: 12px; display: flex; gap: 8px;">
+                <button class="btn btn-icon btn-warning" onclick="event.stopPropagation(); openEditTaskModal(${taskId})" title="修改任务">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-icon btn-danger" onclick="event.stopPropagation(); confirmDeleteTask(${taskId})" title="删除任务">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        ` : '';
+        
+        // 进度条（普通成员且任务可访问时显示）
+        const progressBarHTML = !isClubCreator && isAccessible ? `
+            <div class="progress-container">
+                <div class="progress-bar" style="width: ${progressPercentage}%"></div>
+            </div>
+            <div class="progress-text">完成度: ${progressPercentage}%</div>
+        ` : '';
+        
+        // 锁定原因提示（仅普通成员看到）
+        const lockReasonHTML = !isClubCreator && !isAccessible && lockReason ? `
+            <div style="font-size: 12px; color: #ff4d4f; margin-top: 8px; padding: 8px; background: rgba(255,77,79,0.1); border-radius: 4px;">
+                <i class="fas fa-lock"></i> ${lockReason}
+            </div>
+        ` : '';
+        
+        // 创建者看到的提示信息
+        const creatorHintHTML = isClubCreator && task.unlockAt ? `
+            <div style="font-size: 12px; color: #d46b08; margin-top: 8px; padding: 8px; background: rgba(255,247,230,0.5); border-radius: 4px;">
+                <i class="fas fa-info-circle"></i> 此活动设置了解锁时间，普通成员将在 ${formatUnlockTime(task.unlockAt)} 后可见
+            </div>
+        ` : '';
+        
+        tasksHTML += `
+            <div class="${cardClass}" style="${cardStyle}" onclick="handleTaskCardClick(${taskId}, ${isAccessible})">
+                ${!isAccessible && !isClubCreator ? `
+                    <div class="task-lock-overlay">
+                        <i class="fas fa-lock lock-icon"></i>
+                    </div>
+                ` : ''}
                 
-                // ========== 新增：检查任务是否可访问 ==========
-                let isAccessible = true;
-                let progressPercentage = 0;
+                <div class="video-task-header">
+                    <div class="video-task-title">
+                        <i class="fas fa-video" style="color: #1890ff; margin-right: 8px;"></i>
+                        ${task.title || '未命名任务'}
+                        ${unlockTimeDisplay}
+                        ${!isAccessible && !isClubCreator ? '<i class="fas fa-lock" style="margin-left: 8px; color: #ff4d4f;"></i>' : ''}
+                        ${isClubCreator && !isAccessible ? '<span style="margin-left: 8px; color: #d46b08; font-size: 12px;">（未解锁）</span>' : ''}
+                    </div>
+                    <div class="video-task-status">
+                        <span class="tag" style="background: #e6f7ff; color: #096dd9;">
+                            <i class="fas fa-calendar-alt"></i> ${createdTime}
+                        </span>
+                        ${i === 0 ? '<span class="tag" style="background: #f6ffed; color: #389e0d; margin-left: 6px;">首个活动</span>' : ''}
+                        ${isClubCreator && task.unlockAt ? '<span class="tag" style="background: #fff7e6; color: #d46b08; margin-left: 6px;">定时解锁</span>' : ''}
+                    </div>
+                </div>
                 
-                if (!isClubCreator) {
-                    // 普通成员：按顺序解锁
-                    if (i === 0) {
-                        // 第一个任务总是可访问
-                        isAccessible = true;
-                    } else {
-                        // 检查前面的任务是否已完成
-                        isAccessible = await checkPreviousTasksCompleted(sortedTasks, i, taskId);
+                ${task.description ? `
+                <div class="video-task-description">
+                    ${task.description}
+                </div>
+                ` : ''}
+                
+                ${lockReasonHTML}
+                ${creatorHintHTML}
+                
+                <!-- 进度条 -->
+                ${progressBarHTML}
+                
+                <!-- 管理按钮区域（仅对创建者显示） -->
+                ${managementButtonsHTML}
+                
+                <div class="video-task-footer">
+                    <div class="video-task-meta" style="color: var(--text-sub); font-size: 13px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-layer-group" style="color: #1890ff;"></i>
+                        ${taskTypeLabel}
+                        ${!isAccessible && !isClubCreator ? '<i class="fas fa-lock" style="color: #ff4d4f; margin-left: auto;"></i>' : ''}
+                    </div>
+                    <div class="video-task-action">
+                        ${isAccessible ? `
+                        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); enterTaskPage(${taskId})">
+                            <i class="fas fa-arrow-right"></i> 进入活动
+                        </button>
+                        ` : `
+                        <button class="btn btn-outline btn-sm" disabled style="cursor: not-allowed;">
+                            <i class="fas fa-lock"></i> ${isClubCreator ? '成员不可访问' : '任务锁定'}
+                        </button>
+                        `}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    console.log('生成的HTML长度:', tasksHTML.length);
+    container.innerHTML = tasksHTML;
+    console.log('========== 渲染任务列表完成 ==========');
+}
+
+        // 修复这个关键函数！检查任务解锁条件
+        async function checkTaskUnlockConditions(tasks, currentIndex, task) {
+            const result = {
+                isAccessible: true,
+                lockReason: ''
+            };
+            
+            console.log(`检查任务解锁条件: 第${currentIndex+1}个任务 "${task.title}"`);
+            
+            // 检查1：解锁时间
+            if (task.unlockAt) {
+                const now = new Date();
+                const unlockTime = new Date(task.unlockAt);
+                
+                console.log(`当前时间: ${now}, 解锁时间: ${unlockTime}`);
+                
+                if (now < unlockTime) {
+                    result.isAccessible = false;
+                    result.lockReason = `等待解锁时间: ${formatUnlockTime(task.unlockAt)}`;
+                    console.log(`任务未解锁原因: ${result.lockReason}`);
+                    return result;
+                }
+            }
+            
+            // 检查2：前序任务完成情况（从第二个任务开始检查）
+            if (currentIndex > 0) {
+                for (let i = 0; i < currentIndex; i++) {
+                    const previousTask = tasks[i];
+                    console.log(`检查前序任务 ${i+1}: "${previousTask.title}"`);
+                    
+                    // 检查前序任务是否完成
+                    const isCompleted = await Tasks.isTaskCompleted(previousTask.taskId || previousTask.id);
+                    console.log(`前序任务 "${previousTask.title}" 完成状态: ${isCompleted}`);
+                    
+                    if (!isCompleted) {
+                        result.isAccessible = false;
+                        result.lockReason = `请先完成"${previousTask.title}"`;
+                        console.log(`任务未解锁原因: ${result.lockReason}`);
+                        return result;
                     }
                 }
-                
-                // 获取任务完成进度（仅对可访问的任务）
-                if (isAccessible) {
-                    progressPercentage = await getTaskProgressPercentage(taskId);
-                }
-                
-                // 根据是否可访问决定卡片样式
-                const cardClass = isAccessible ? 'video-task-card' : 'video-task-card locked';
-                const cardStyle = isAccessible ? '' : 'opacity: 0.7; cursor: not-allowed;';
-                
-                // 管理按钮（仅创建者显示）
-                const managementButtonsHTML = isClubCreator ? `
-                    <div class="task-management-buttons" data-task-id="${taskId}" style="margin-bottom: 12px; display: flex; gap: 8px;">
-                        <button class="btn btn-icon btn-warning" onclick="event.stopPropagation(); openEditTaskModal(${taskId})" title="修改任务">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-icon btn-danger" onclick="event.stopPropagation(); confirmDeleteTask(${taskId})" title="删除任务">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                ` : '';
-                
-                // 进度条（仅对可访问的任务显示）
-                const progressBarHTML = !isClubCreator && isAccessible ? `
-    <div class="progress-container">
-        <div class="progress-bar" style="width: ${progressPercentage}%"></div>
-    </div>
-    <div class="progress-text">完成度: ${progressPercentage}%</div>
-` : '';
-                
-                tasksHTML += `
-                    <div class="${cardClass}" style="${cardStyle}" onclick="handleTaskCardClick(${taskId}, ${isAccessible})">
-                        ${!isAccessible ? `
-                            <div class="task-lock-overlay">
-                                <i class="fas fa-lock lock-icon"></i>
-                            </div>
-                        ` : ''}
-                        
-                        <div class="video-task-header">
-                            <div class="video-task-title">
-                                <i class="fas fa-video" style="color: #1890ff; margin-right: 8px;"></i>
-                                ${task.title}
-                                ${!isAccessible ? '<i class="fas fa-lock" style="margin-left: 8px; color: #ff4d4f;"></i>' : ''}
-                            </div>
-                            <div class="video-task-status">
-                                <span class="tag" style="background: #e6f7ff; color: #096dd9;">
-                                    <i class="fas fa-calendar-alt"></i> ${createdTime}
-                                </span>
-                                ${i === 0 ? '<span class="tag" style="background: #f6ffed; color: #389e0d; margin-left: 6px;">首个活动</span>' : ''}
-                            </div>
-                        </div>
-                        
-                        ${task.description ? `
-                        <div class="video-task-description">
-                            ${task.description}
-                        </div>
-                        ` : ''}
-                        
-                        <!-- 进度条 -->
-                        ${progressBarHTML}
-                        
-                        <!-- 管理按钮区域（仅对创建者显示） -->
-                        ${managementButtonsHTML}
-                        
-                        <div class="video-task-footer">
-                            <div class="video-task-meta" style="color: var(--text-sub); font-size: 13px; display: flex; align-items: center; gap: 8px;">
-                                <i class="fas fa-layer-group" style="color: #1890ff;"></i>
-                                ${taskTypeLabel}
-                                ${!isAccessible ? '<i class="fas fa-lock" style="color: #ff4d4f; margin-left: auto;"></i>' : ''}
-                            </div>
-                            <div class="video-task-action">
-                                ${isAccessible ? `
-                                <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); enterTaskPage(${taskId})">
-                                    <i class="fas fa-arrow-right"></i> 进入活动
-                                </button>
-                                ` : `
-                                <button class="btn btn-outline btn-sm" disabled style="cursor: not-allowed;">
-                                    <i class="fas fa-lock"></i> 任务锁定
-                                </button>
-                                `}
-                            </div>
-                        </div>
-                    </div>
-                `;
             }
             
-            container.innerHTML = tasksHTML;
+            console.log(`任务 "${task.title}" 已解锁`);
+            return result;
         }
 
-        // 新增：检查前面任务是否完成
-        async function checkPreviousTasksCompleted(tasks, currentIndex, currentTaskId) {
-            if (currentIndex <= 0) return true;
+        // 格式化解锁时间
+        function formatUnlockTime(dateString) {
+            if (!dateString) return '';
             
-            for (let i = 0; i < currentIndex; i++) {
-                const previousTask = tasks[i];
-                const isCompleted = await Tasks.isTaskCompleted(previousTask.taskId || previousTask.id);
+            try {
+                const date = new Date(dateString);
+                const now = new Date();
                 
-                if (!isCompleted) {
-                    return false;
+                // 如果是今天，显示具体时间
+                if (date.toDateString() === now.toDateString()) {
+                    return `今天 ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
                 }
+                
+                // 如果是明天
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                if (date.toDateString() === tomorrow.toDateString()) {
+                    return `明天 ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+                }
+                
+                // 显示日期和时间
+                return date.toLocaleDateString('zh-CN', {
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (error) {
+                console.error('格式化解锁时间失败:', error, dateString);
+                return '时间格式错误';
             }
-            
-            return true;
         }
 
-        // 新增：获取任务完成百分比
+        // 获取任务完成百分比
         async function getTaskProgressPercentage(taskId) {
             try {
                 const taskDetail = await Tasks.getTaskDetail(taskId);
@@ -659,10 +915,10 @@ async function loadVideoTasks() {
             }
         }
 
-        // 新增：处理任务卡片点击
+        // 处理任务卡片点击
         function handleTaskCardClick(taskId, isAccessible) {
             if (!isAccessible) {
-                Utils.showNotification('请先完成前面的任务', 'warning');
+                Utils.showNotification('任务尚未解锁，请先完成前序任务或等待解锁时间', 'warning');
                 return;
             }
             enterTaskPage(taskId);
@@ -670,27 +926,217 @@ async function loadVideoTasks() {
 
         // 格式化日期
         function formatDate(dateString) {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('zh-CN', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit'
-            });
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                });
+            } catch (error) {
+                console.error('格式化日期失败:', error, dateString);
+                return '日期错误';
+            }
         }
 
-        // 更新预览
-        function updatePreview() {
-            const nameInput = document.getElementById('new-task-name');
-            const descInput = document.getElementById('new-task-description');
-            const previewTitle = document.getElementById('preview-task-title');
-            const previewDesc = document.getElementById('preview-task-description');
+        function validateUnlockTime(unlockTime) {
+            if (!unlockTime) return null;
             
-            if (nameInput && previewTitle) {
-                previewTitle.textContent = nameInput.value || '任务名称将显示在这里';
+            // 确保是有效的日期
+            const date = new Date(unlockTime);
+            if (isNaN(date.getTime())) {
+                throw new Error('解锁时间格式无效');
             }
             
-            if (descInput && previewDesc) {
-                previewDesc.textContent = descInput.value || '任务描述将显示在这里';
+            // 确保时间晚于当前时间
+            const now = new Date();
+            if (date <= now) {
+                throw new Error('解锁时间必须晚于当前时间');
+            }
+            
+            // 转换为ISO格式
+            return date.toISOString();
+        }
+
+        // 创建新任务
+        async function createNewTask() {
+    // 再次验证权限（以防万一）
+    if (!currentClub || !currentClub.id) {
+        Utils.showNotification('无法获取俱乐部信息', 'error');
+        return;
+    }
+    
+    try {
+        const hasPermission = await Clubs.isClubCreator(currentClub.id);
+        if (!hasPermission) {
+            Utils.showNotification('只有俱乐部创建者可以创建任务', 'error');
+            return;
+        }
+        
+        const nameInput = document.getElementById('new-task-name');
+        const descInput = document.getElementById('new-task-description');
+        
+        if (!nameInput) return;
+        
+        const taskName = nameInput.value.trim();
+        const taskDescription = descInput ? descInput.value.trim() : '';
+        
+        // 验证输入
+        if (!taskName) {
+            Utils.showNotification('请输入任务名称', 'error');
+            return;
+        }
+        
+        // 获取解锁时间
+        let unlockTime = null;
+        const unlockScheduled = document.getElementById('unlock-scheduled');
+        if (unlockScheduled.checked) {
+            const unlockTimeInput = document.getElementById('unlock-time').value;
+            if (unlockTimeInput) {
+                unlockTime = unlockTimeInput;
+                console.log('原始解锁时间:', unlockTimeInput);
+                
+                // 转换为ISO格式（重要！）
+                const date = new Date(unlockTime);
+                if (!isNaN(date.getTime())) {
+                    unlockTime = date.toISOString();
+                    console.log('转换后解锁时间(ISO):', unlockTime);
+                    
+                    // 验证解锁时间是否晚于当前时间
+                    const now = new Date();
+                    if (date <= now) {
+                        Utils.showNotification('解锁时间必须晚于当前时间', 'error');
+                        return;
+                    }
+                } else {
+                    console.error('无效的解锁时间格式:', unlockTimeInput);
+                    Utils.showNotification('解锁时间格式无效', 'error');
+                    return;
+                }
+            }
+        } else {
+            console.log('立即解锁，unlockAt为null');
+        }
+        
+        // 获取俱乐部ID
+        const clubId = parseInt(currentClub.id || currentClub.clubId);
+        
+        if (!clubId) {
+            Utils.showNotification('无法获取俱乐部信息', 'error');
+            return;
+        }
+        
+        console.log('创建任务请求参数:', { 
+            clubId, 
+            taskName, 
+            taskDescription, 
+            unlockTime,
+            type: 'all' 
+        });
+        
+        Utils.showNotification('正在创建任务...', 'info');
+        
+        const result = await API.createTask({
+            clubId: clubId,
+            title: taskName,
+            description: taskDescription,
+            type: 'all',
+            unlockAt: unlockTime  // ✅ 按照API文档使用 unlockAt
+        });
+        
+        console.log('创建任务API完整响应:', result);
+        
+        if (result && result.code === 0) {
+            Utils.showNotification(`任务"${taskName}"创建成功！`, 'success');
+            closeCreateTaskModal();
+            
+            // 关键修改：创建者应该立即看到新创建的任务，即使设置了未来解锁时间
+            // 直接添加到本地列表并渲染
+            if (result.data && result.data.taskId) {
+                const newTask = {
+                    taskId: result.data.taskId,
+                    id: result.data.taskId,
+                    title: taskName,
+                    description: taskDescription,
+                    type: 'all',
+                    clubId: clubId,
+                    unlockAt: unlockTime,
+                    createdAt: new Date().toISOString(),
+                    status: 'active'
+                };
+                
+                console.log('新创建的任务对象:', newTask);
+                
+                // 添加到本地任务列表
+                videoTasks.push(newTask);
+                
+                console.log('当前任务列表（创建后）:', videoTasks);
+                
+                // 立即重新渲染 - 创建者应该看到所有任务
+                await renderVideoTasks();
+                
+                // 不立即重新从API加载，因为API可能过滤掉未解锁的任务
+                // 只在后台同步一下，不影响当前显示
+                setTimeout(async () => {
+                    try {
+                        const refreshResponse = await API.getTasks(clubId);
+                        if (refreshResponse && refreshResponse.code === 0) {
+                            // 更新本地列表，但不立即渲染
+                            let refreshedTasks = [];
+                            
+                            if (Array.isArray(refreshResponse.data)) {
+                                refreshedTasks = refreshResponse.data;
+                            } else if (refreshResponse.data && Array.isArray(refreshResponse.data.list)) {
+                                refreshedTasks = refreshResponse.data.list;
+                            }
+                            
+                            // 保持未解锁任务在创建者视图中的显示
+                            if (refreshedTasks.length < videoTasks.length && isClubCreator) {
+                                console.log('API返回的任务数少于本地，但创建者应该看到所有任务');
+                                // 不更新，保持原来的列表
+                            } else {
+                                videoTasks = refreshedTasks.map(task => ({
+                                    taskId: task.taskId || task.id,
+                                    id: task.taskId || task.id,
+                                    title: task.title || '未命名任务',
+                                    description: task.description || '',
+                                    type: task.type || 'all',
+                                    clubId: task.clubId || clubId,
+                                    unlockAt: task.unlockAt || null,
+                                    createdAt: task.createdAt || new Date().toISOString(),
+                                    status: task.status || 'active'
+                                }));
+                                await renderVideoTasks();
+                            }
+                        }
+                    } catch (error) {
+                        console.error('刷新任务列表失败:', error);
+                    }
+                }, 2000);
+                
+            } else {
+                console.warn('API没有返回taskId，直接重新加载');
+                // 如果没有taskId，直接重新加载
+                setTimeout(async () => {
+                    await loadVideoTasks();
+                }, 500);
+            }
+            
+        } else {
+            console.error('创建任务API返回错误:', result?.msg || '未知错误');
+            Utils.showNotification(result?.msg || '创建任务失败', 'error');
+        }
+    } catch (error) {
+        console.error('创建任务失败:', error);
+        Utils.showNotification('创建任务失败: ' + error.message, 'error');
+    }
+}
+
+        // 关闭创建任务模态框
+        function closeCreateTaskModal() {
+            const modal = document.getElementById('create-task-modal');
+            if (modal) {
+                modal.style.display = 'none';
             }
         }
 
@@ -709,86 +1155,16 @@ async function loadVideoTasks() {
                 if (descInput) descInput.value = '';
                 if (errorElement) errorElement.style.display = 'none';
                 
-                // 更新预览
-                updatePreview();
+                // 重置解锁时间选项
+                document.getElementById('unlock-immediately').checked = true;
+                document.getElementById('unlock-scheduled').checked = false;
+                document.getElementById('unlock-time-container').style.display = 'none';
+                document.getElementById('unlock-time').value = '';
                 
                 // 聚焦到名称输入框
                 setTimeout(() => {
                     if (nameInput) nameInput.focus();
                 }, 100);
-            }
-        }
-
-        // 关闭创建任务模态框
-        function closeCreateTaskModal() {
-            const modal = document.getElementById('create-task-modal');
-            if (modal) {
-                modal.style.display = 'none';
-            }
-        }
-
-        // 创建新任务
-        async function createNewTask() {
-            // 再次验证权限（以防万一）
-            if (!currentClub || !currentClub.id) {
-                Utils.showNotification('无法获取俱乐部信息', 'error');
-                return;
-            }
-            
-            try {
-                const hasPermission = await Clubs.isClubCreator(currentClub.id);
-                if (!hasPermission) {
-                    Utils.showNotification('只有俱乐部创建者可以创建任务', 'error');
-                    return;
-                }
-                
-                const nameInput = document.getElementById('new-task-name');
-                const descInput = document.getElementById('new-task-description');
-                
-                if (!nameInput) return;
-                
-                const taskName = nameInput.value.trim();
-                const taskDescription = descInput ? descInput.value.trim() : '';
-                
-                // 验证输入
-                if (!taskName) {
-                    Utils.showNotification('请输入任务名称', 'error');
-                    return;
-                }
-                
-                // 获取俱乐部ID
-                const clubId = parseInt(currentClub.id || currentClub.clubId);
-                
-                if (!clubId) {
-                    Utils.showNotification('无法获取俱乐部信息', 'error');
-                    return;
-                }
-                
-                console.log('创建任务参数:', { clubId, taskName, taskDescription });
-                
-                Utils.showNotification('正在创建任务...', 'info');
-                
-                const result = await API.createTask({
-                    clubId: clubId,
-                    title: taskName,
-                    description: taskDescription,
-                    type: 'all'
-                });
-                
-                console.log('创建任务API响应:', result);
-                
-                if (result && result.code === 0) {
-                    Utils.showNotification(`任务"${taskName}"创建成功！`, 'success');
-                    closeCreateTaskModal();
-                    
-                    // 刷新任务列表
-                    await loadVideoTasks();
-                } else {
-                    Utils.showNotification(result?.msg || '创建任务失败', 'error');
-                }
-            } catch (error) {
-                console.error('创建任务失败:', error);
-                Utils.showNotification('创建任务失败: ' + error.message, 'error');
             }
         }
 
@@ -856,6 +1232,16 @@ async function loadVideoTasks() {
                 existingModal.remove();
             }
             
+            // 解析解锁时间
+            const hasUnlockTime = task.unlockAt && task.unlockAt !== 'null';  // ✅ 使用 unlockAt
+            const unlockType = hasUnlockTime ? 'scheduled' : 'immediate';
+
+            let formattedUnlockTime = '';
+            if (hasUnlockTime) {
+                const date = new Date(task.unlockAt);  // ✅ 使用 unlockAt
+                formattedUnlockTime = date.toISOString().slice(0, 16);
+            }
+            
             const modalHTML = `
                 <div id="edit-task-modal" class="modal-overlay" style="display: flex;">
                     <div class="modal">
@@ -870,6 +1256,28 @@ async function loadVideoTasks() {
                         <div class="form-item">
                             <label>任务描述（可选）</label>
                             <textarea id="edit-task-description" placeholder="请简要描述这个任务..." rows="3">${task.description || ''}</textarea>
+                        </div>
+                        <div class="form-item">
+                            <label>解锁时间设置</label>
+                            <div style="margin-top: 8px;">
+                                <label style="display: flex; align-items: center; margin-bottom: 8px;">
+                                    <input type="radio" id="edit-unlock-immediately" name="edit-unlock-type" value="immediate" ${unlockType === 'immediate' ? 'checked' : ''} onchange="toggleEditUnlockTimeInput()">
+                                    <span style="margin-left: 8px;">立即解锁（创建后即可参与）</span>
+                                </label>
+                                <label style="display: flex; align-items: center;">
+                                    <input type="radio" id="edit-unlock-scheduled" name="edit-unlock-type" value="scheduled" ${unlockType === 'scheduled' ? 'checked' : ''} onchange="toggleEditUnlockTimeInput()">
+                                    <span style="margin-left: 8px;">定时解锁（设置具体时间）</span>
+                                </label>
+                            </div>
+                            
+                            <!-- 解锁时间输入区域 -->
+                            <div id="edit-unlock-time-container" style="${unlockType === 'scheduled' ? 'display: block;' : 'display: none;'} margin-top: 12px;">
+                                <input type="datetime-local" id="edit-unlock-time" class="datetime-input" value="${formattedUnlockTime}">
+                                <div class="unlock-info" style="margin-top: 8px;">
+                                    <i class="fas fa-info-circle"></i>
+                                    <span>设置后，成员需等待到达指定时间才能参与此活动</span>
+                                </div>
+                            </div>
                         </div>
                         <div style="text-align:right; margin-top: 24px;">
                             <button class="btn btn-outline" onclick="closeEditTaskModal()">取消</button>
@@ -896,6 +1304,27 @@ async function loadVideoTasks() {
                 const nameInput = document.getElementById('edit-task-name');
                 if (nameInput) nameInput.focus();
             }, 100);
+        }
+
+        // 切换编辑解锁时间输入框显示
+        function toggleEditUnlockTimeInput() {
+            const unlockImmediately = document.getElementById('edit-unlock-immediately');
+            const unlockScheduled = document.getElementById('edit-unlock-scheduled');
+            const unlockTimeContainer = document.getElementById('edit-unlock-time-container');
+            
+            if (unlockScheduled.checked) {
+                unlockTimeContainer.style.display = 'block';
+                
+                // 如果没有设置时间，设置默认时间为明天
+                const unlockTimeInput = document.getElementById('edit-unlock-time');
+                if (!unlockTimeInput.value) {
+                    const tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    unlockTimeInput.value = tomorrow.toISOString().slice(0, 16);
+                }
+            } else {
+                unlockTimeContainer.style.display = 'none';
+            }
         }
 
         // 关闭编辑任务模态框
@@ -933,12 +1362,23 @@ async function loadVideoTasks() {
                     return;
                 }
                 
+                // 获取解锁时间
+                let unlockTime = null;
+                const unlockScheduled = document.getElementById('edit-unlock-scheduled');
+                if (unlockScheduled && unlockScheduled.checked) {
+                    const unlockTimeInput = document.getElementById('edit-unlock-time');
+                    if (unlockTimeInput && unlockTimeInput.value) {
+                        unlockTime = unlockTimeInput.value;
+                    }
+                }
+                
                 Utils.showNotification('正在保存修改...', 'info');
                 
                 // 调用API更新任务
                 const result = await API.updateTask(taskId, {
                     title: taskName,
-                    description: taskDescription
+                    description: taskDescription,
+                    unlockAt: unlockTime  // ✅ 按照API文档使用 unlockAt
                 });
                 
                 console.log('更新任务API响应:', result);
@@ -1057,6 +1497,8 @@ async function loadVideoTasks() {
         window.confirmDeleteTask = confirmDeleteTask;
         window.deleteTask = deleteTask;
         window.handleTaskCardClick = handleTaskCardClick;
+        window.toggleUnlockTimeInput = toggleUnlockTimeInput;
+        window.toggleEditUnlockTimeInput = toggleEditUnlockTimeInput;
         
         // 点击模态框外部关闭
         const modal = document.getElementById('create-task-modal');
