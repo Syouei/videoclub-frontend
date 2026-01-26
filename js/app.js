@@ -16,6 +16,9 @@ window.App = {
         Auth.init();
         Clubs.init();
         Tasks.init();
+        if (window.Tracker && Tracker.init) {
+            Tracker.init();
+        }
         Profile.init(); // 新增：初始化个人资料模块
         
         // 检查URL路由

@@ -1,7 +1,7 @@
-window.AppConfig = {
+﻿window.AppConfig = {
     // API基础URL - 修改为你后端的地址
     // 注意：API文档指定基础路径为 /api/v1
-    API_BASE_URL: 'http://videohub.rhuey.org/api/v1',
+    API_BASE_URL: 'http://localhost:3000/api/v1',
     
     // API端点配置（完全按照API文档）
     API_ENDPOINTS: {
@@ -49,7 +49,16 @@ window.AppConfig = {
         UPDATE_TASK: '/tasks/:id',      // 7.5 修改任务
         DELETE_TASK: '/tasks/:id',      // 7.6 删除任务
     },
-    
+    // 行为埋点配置
+    ANALYTICS: {
+        ENABLED: true,
+        ENDPOINT: '/analytics/events',
+        SAMPLE_RATE: 1,
+        FLUSH_INTERVAL: 5000,
+        FLUSH_SIZE: 10,
+        MAX_QUEUE: 200,
+        DEBUG: false
+    },
     // 本地存储键名（保持不变）
     STORAGE_KEYS: {
         USER_TOKEN: 'teacher_video_club_token',
@@ -119,7 +128,7 @@ USER_PROFILE_COMPLETION: {
     ANALYTICS_ENABLED: true,
     
     // 分析服务器端点（可根据需要配置）
-    ANALYTICS_ENDPOINT: 'https://analytics.teachervideoclub.com/events',
+    ANALYTICS_ENDPOINT: 'http://localhost:3000/api/v1/analytics/events',
     
     // 隐私政策版本
     PRIVACY_VERSION: '2026-01',
@@ -130,3 +139,4 @@ USER_PROFILE_COMPLETION: {
     // 调试模式
     DEBUG_MODE: true
 };
+

@@ -368,3 +368,439 @@ window.Utils = {
         return sessionId;
     }
 };
+// Global interaction tracker (auto collection + manual track)
+window.Tracker = (function() {
+    const DEFAULTS = {
+        ENABLED: true,
+        ENDPOINT: '/analytics/events',
+        SAMPLE_RATE: 1,
+        FLUSH_INTERVAL: 5000,
+        FLUSH_SIZE: 10,
+        MAX_QUEUE: 200,
+        DEBUG: false
+    };
+
+    const STORAGE_KEY = 'analytics_event_queue';
+
+    const state = {
+        initialized: false,
+        enabled: true,
+        config: { ...DEFAULTS },
+        queue: [],
+        lastRoute: null,
+        scrollMarks: new Set(),
+        flushTimer: null
+    };
+
+    function log(...args) {
+        if (state.config.DEBUG) {
+            console.log('[Tracker]', ...args);
+        }
+    }
+
+    function safeGetStorage(key) {
+        try {
+            const raw = localStorage.getItem(key);
+            return raw ? JSON.parse(raw) : null;
+        } catch (_) {
+            return null;
+        }
+    }
+
+    function safeSetStorage(key, value) {
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+        } catch (_) {}
+    }
+
+    function generateId() {
+        if (window.Utils && Utils.generateId) return Utils.generateId();
+        return Date.now().toString(36) + Math.random().toString(36).slice(2);
+    }
+
+    function getUserInfo() {
+        if (window.Auth && Auth.getUser) {
+            const user = Auth.getUser();
+            if (user) {
+                return {
+                    user_id: user.userId || user.id || null,
+                    user_name: user.username || user.name || null,
+                    user_true_name: user.realname || user.realName || user.trueName || null
+                };
+            }
+        }
+        return { user_id: null, user_name: null, user_true_name: null };
+    }
+
+    function getClubId() {
+        if (window.App && App.state && App.state.currentClubId) {
+            return parseInt(App.state.currentClubId);
+        }
+        if (window.Clubs && Clubs.getCurrentClub) {
+            const club = Clubs.getCurrentClub();
+            if (club) return parseInt(club.id || club.clubId);
+        }
+        const hash = window.location.hash || '';
+        if (hash.includes('?')) {
+            const params = new URLSearchParams(hash.split('?')[1]);
+            const clubId = params.get('clubId');
+            if (clubId) return parseInt(clubId);
+        }
+        if (window.Utils) {
+            const saved = Utils.getFromStorage('current_club');
+            if (saved) return parseInt(saved.id || saved.clubId);
+        }
+        return null;
+    }
+
+    function getPageName() {
+        const hash = window.location.hash || '';
+        if (hash.startsWith('#')) {
+            const page = hash.slice(1).split('?')[0];
+            if (page) return page;
+        }
+        const path = window.location.pathname || '';
+        return path === '/' ? 'index' : path.split('/').pop();
+    }
+
+    function getEndpoint() {
+        const endpoint = state.config.ENDPOINT || DEFAULTS.ENDPOINT;
+        if (/^https?:\/\//i.test(endpoint) || endpoint.startsWith('//')) return endpoint;
+        const base = (window.AppConfig && AppConfig.API_BASE_URL) ? AppConfig.API_BASE_URL : window.location.origin;
+        const normalizedBase = base.replace(/\/$/, '');
+        return `${normalizedBase}${endpoint}`;
+    }
+
+    function getAuthHeader() {
+        try {
+            const token = window.Utils ? Utils.getFromStorage(AppConfig.STORAGE_KEYS.USER_TOKEN) : null;
+            return token ? { Authorization: `Bearer ${token}` } : {};
+        } catch (_) {
+            return {};
+        }
+    }
+
+    function isIgnored(el) {
+        if (!el) return true;
+        return !!el.closest('[data-track="ignore"], [data-no-track="true"]');
+    }
+
+    function buildSelector(el) {
+        if (!el || !el.tagName) return '';
+        if (el.id) return `#${el.id}`;
+        const tag = el.tagName.toLowerCase();
+        const className = typeof el.className === 'string' ? el.className.trim() : '';
+        if (!className) return tag;
+        const classes = className.split(/\s+/).slice(0, 3).join('.');
+        return `${tag}.${classes}`;
+    }
+
+    function elementInfo(el) {
+        if (!el) return null;
+        const tag = (el.tagName || '').toLowerCase();
+        const info = { tag };
+        if (el.id) info.id = el.id;
+        if (typeof el.className === 'string' && el.className.trim()) {
+            info.class = el.className.trim().split(/\s+/).slice(0, 3).join(' ');
+        }
+        const label = el.getAttribute('data-track-label') ||
+            el.getAttribute('aria-label') ||
+            el.getAttribute('title');
+        if (label) info.label = String(label).slice(0, 64);
+        const text = (el.textContent || '').trim();
+        if (text && text.length <= 64 && tag !== 'input' && tag !== 'textarea') {
+            info.text = text.slice(0, 64);
+        }
+        info.selector = buildSelector(el);
+        info.module = el.getAttribute('data-track-module') || '';
+        info.subEvent = el.getAttribute('data-track-event') || el.getAttribute('data-track') || '';
+        return info;
+    }
+
+    function sanitizeInput(el) {
+        if (!el) return null;
+        const tag = (el.tagName || '').toLowerCase();
+        if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') return null;
+        const type = (el.getAttribute('type') || '').toLowerCase();
+        const name = (el.getAttribute('name') || '').toLowerCase();
+        if (type === 'password' || name.includes('password') || name.includes('token') || name.includes('secret')) {
+            return { tag, type, name, ignored: true };
+        }
+        let valueLength = null;
+        if (typeof el.value === 'string') valueLength = el.value.length;
+        return { tag, type, name, value_length: valueLength };
+    }
+
+    function resolveSubEvent(info) {
+        if (!info) return '';
+        return info.subEvent || info.label || info.id || info.text || '';
+    }
+
+    function resolveTarget(info) {
+        if (!info) return '';
+        return info.selector || info.id || info.tag || '';
+    }
+
+    function buildBaseEvent(eventName, options = {}) {
+        const userInfo = getUserInfo();
+        const page = options.page || getPageName();
+        const moduleName = options.module || getPageName();
+        return {
+            event_id: generateId(),
+            user_id: userInfo.user_id,
+            club_id: getClubId(),
+            event_time: Date.now(),
+            user_name: userInfo.user_name,
+            user_true_name: userInfo.user_true_name,
+            page: page,
+            module: moduleName,
+            event: eventName,
+            sub_event: options.sub_event || null,
+            target_object: options.target_object || null
+        };
+    }
+
+    function persistQueue() {
+        safeSetStorage(STORAGE_KEY, state.queue.slice(-state.config.MAX_QUEUE));
+    }
+
+    function loadQueue() {
+        const saved = safeGetStorage(STORAGE_KEY);
+        if (Array.isArray(saved)) {
+            state.queue = saved.slice(-state.config.MAX_QUEUE);
+        }
+    }
+
+    function enqueue(event) {
+        if (!state.enabled) return;
+        state.queue.push(event);
+        if (state.queue.length > state.config.MAX_QUEUE) {
+            state.queue = state.queue.slice(-state.config.MAX_QUEUE);
+        }
+        persistQueue();
+        if (state.queue.length >= state.config.FLUSH_SIZE) {
+            flush();
+        }
+    }
+
+    function track(eventName, options) {
+        if (!state.enabled) return;
+        enqueue(buildBaseEvent(eventName, options || {}));
+    }
+
+    async function flush(useBeacon = false) {
+        if (!state.enabled || state.queue.length === 0) return;
+        const batch = state.queue.slice(0, state.config.FLUSH_SIZE);
+        const payload = JSON.stringify({ events: batch });
+
+        if (useBeacon && navigator.sendBeacon) {
+            const ok = navigator.sendBeacon(getEndpoint(), payload);
+            if (ok) {
+                state.queue = state.queue.slice(batch.length);
+                persistQueue();
+            }
+            return;
+        }
+
+        try {
+            const res = await fetch(getEndpoint(), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+                body: payload,
+                keepalive: true
+            });
+            if (res && res.ok) {
+                state.queue = state.queue.slice(batch.length);
+                persistQueue();
+            }
+        } catch (error) {
+            log('flush failed', error);
+        }
+    }
+
+    function throttle(fn, wait) {
+        let inThrottle = false;
+        return function(...args) {
+            if (inThrottle) return;
+            inThrottle = true;
+            fn.apply(this, args);
+            setTimeout(() => { inThrottle = false; }, wait);
+        };
+    }
+
+    function handleClick(e) {
+        const target = e.target && e.target.closest
+            ? e.target.closest('button, a, input, textarea, select, [data-track], [role="button"]')
+            : e.target;
+        if (!target || isIgnored(target)) return;
+        const info = elementInfo(target);
+        track('click', {
+            module: info && info.module ? info.module : undefined,
+            sub_event: resolveSubEvent(info),
+            target_object: resolveTarget(info)
+        });
+    }
+
+    function handleInput(e) {
+        const target = e.target;
+        if (!target || isIgnored(target)) return;
+        const inputInfo = sanitizeInput(target);
+        if (!inputInfo || inputInfo.ignored) return;
+        const info = elementInfo(target);
+        track('input', {
+            module: info && info.module ? info.module : undefined,
+            sub_event: resolveSubEvent(info),
+            target_object: resolveTarget(info)
+        });
+    }
+
+    function handleChange(e) {
+        const target = e.target;
+        if (!target || isIgnored(target)) return;
+        const inputInfo = sanitizeInput(target);
+        if (!inputInfo || inputInfo.ignored) return;
+        const info = elementInfo(target);
+        track('change', {
+            module: info && info.module ? info.module : undefined,
+            sub_event: resolveSubEvent(info),
+            target_object: resolveTarget(info)
+        });
+    }
+
+    function handleSubmit(e) {
+        const form = e.target;
+        if (!form || isIgnored(form)) return;
+        const info = elementInfo(form);
+        track('submit', {
+            module: info && info.module ? info.module : undefined,
+            sub_event: resolveSubEvent(info),
+            target_object: resolveTarget(info)
+        });
+    }
+
+    function handleScroll() {
+        const doc = document.documentElement;
+        const scrollTop = doc.scrollTop || document.body.scrollTop || 0;
+        const scrollHeight = doc.scrollHeight || document.body.scrollHeight || 1;
+        const clientHeight = doc.clientHeight || window.innerHeight || 1;
+        const percent = Math.min(100, Math.round((scrollTop + clientHeight) / scrollHeight * 100));
+        const marks = [25, 50, 75, 100];
+        marks.forEach(m => {
+            if (percent >= m && !state.scrollMarks.has(m)) {
+                state.scrollMarks.add(m);
+                track('scroll_depth', {
+                    sub_event: String(m),
+                    target_object: 'scroll'
+                });
+            }
+        });
+    }
+
+    function handleVisibility() {
+        track(document.hidden ? 'page_hidden' : 'page_visible');
+    }
+
+    function handleHashChange() {
+        const to = window.location.hash || '';
+        const from = state.lastRoute;
+        state.lastRoute = to;
+        track('route_change', {
+            sub_event: to || '',
+            target_object: from || ''
+        });
+    }
+
+    function handlePopState() {
+        const to = window.location.href;
+        const from = state.lastRoute;
+        state.lastRoute = to;
+        track('route_change', {
+            sub_event: to || '',
+            target_object: from || ''
+        });
+    }
+
+    function handleError(event) {
+        if (event && event.target && event.target !== window) {
+            const target = event.target;
+            track('resource_error', {
+                sub_event: target.tagName || '',
+                target_object: target.src || target.href || ''
+            });
+            return;
+        }
+        track('js_error', {
+            sub_event: event.message || 'unknown',
+            target_object: event.filename || ''
+        });
+    }
+
+    function handleRejection(event) {
+        let message = '';
+        if (event && event.reason) {
+            message = event.reason.message || String(event.reason);
+        }
+        track('unhandled_rejection', { sub_event: String(message).slice(0, 200) });
+    }
+
+    function trackPerformance() {
+        if (!('performance' in window)) return;
+        const navEntries = performance.getEntriesByType && performance.getEntriesByType('navigation');
+        if (navEntries && navEntries.length) {
+            const nav = navEntries[0];
+            track('page_performance', {
+                sub_event: nav.type || '',
+                target_object: `duration:${Math.round(nav.duration)}`
+            });
+        }
+    }
+
+    function init(config) {
+        if (state.initialized) return;
+        const externalConfig = (window.AppConfig && AppConfig.ANALYTICS) ? AppConfig.ANALYTICS : {};
+        state.config = { ...DEFAULTS, ...externalConfig, ...(config || {}) };
+
+        if (!state.config.ENABLED) {
+            state.enabled = false;
+            return;
+        }
+
+        if (state.config.SAMPLE_RATE < 1 && Math.random() > state.config.SAMPLE_RATE) {
+            state.enabled = false;
+            return;
+        }
+
+        state.enabled = true;
+        state.initialized = true;
+        state.lastRoute = window.location.hash || window.location.href;
+        loadQueue();
+
+        document.addEventListener('click', handleClick, true);
+        document.addEventListener('input', handleInput, true);
+        document.addEventListener('change', handleChange, true);
+        document.addEventListener('submit', handleSubmit, true);
+        window.addEventListener('scroll', throttle(handleScroll, 500), { passive: true });
+        document.addEventListener('visibilitychange', handleVisibility, true);
+        window.addEventListener('hashchange', handleHashChange, true);
+        window.addEventListener('popstate', handlePopState, true);
+        window.addEventListener('error', handleError, true);
+        window.addEventListener('unhandledrejection', handleRejection, true);
+        window.addEventListener('beforeunload', () => flush(true));
+        window.addEventListener('pagehide', () => flush(true));
+
+        track('page_view', { sub_event: document.title });
+        trackPerformance();
+
+        state.flushTimer = setInterval(() => {
+            flush();
+        }, state.config.FLUSH_INTERVAL);
+
+        log('initialized');
+    }
+
+    return {
+        init,
+        track,
+        flush
+    };
+})();
