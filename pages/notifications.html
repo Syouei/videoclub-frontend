@@ -971,7 +971,7 @@ function goToHome() {
 
 // ========== 页面加载初始化 ==========
 
-document.addEventListener('DOMContentLoaded', function() {
+function onNotificationsPageReady() {
     console.log('通知页面DOM加载完成');
     initNotificationsPage();
     
@@ -984,7 +984,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', onNotificationsPageReady);
+} else {
+    onNotificationsPageReady();
+}
 
 // 确保全局函数可用
 window.initNotificationsPage = initNotificationsPage;

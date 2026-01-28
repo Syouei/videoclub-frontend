@@ -415,7 +415,10 @@
         "name": "数学教研组",
         "tag": "数学",
         "description": "数学教研分享",
-        "creatorId": 1001,
+        "creator": {
+          "userId": 1001,
+          "username": "math_teacher"
+        },
         "memberCount": 10,
         "status": "active",
         "joinPolicy": "approval",
@@ -452,7 +455,10 @@
     "name": "数学教研组",
     "tag": "数学",
     "description": "数学教研分享",
-    "creatorId": 1001,
+    "creator": {
+      "userId": 1001,
+      "username": "math_teacher"
+    },
     "memberCount": 10,
     "status": "active",
     "joinPolicy": "approval",
@@ -1292,6 +1298,7 @@ JSON
   | 参数名    | 类型    | 必填  | 说明 |
   | ------- | ----- | --- | ---- |
   | isRead  | boolean | 否 | 是否已读 |
+  | isProcessed | boolean | 否 | 是否已处理 |
   | page    | number | 否 | 页码，默认 1 |
   | pageSize | number | 否 | 每页数量，默认 20 |
 
@@ -1317,6 +1324,8 @@ JSON
         },
         "isRead": false,
         "readAt": null,
+        "isProcessed": false,
+        "processAt": null,
         "createdAt": "2026-01-17T12:00:00.000Z"
       }
     ],
@@ -1428,7 +1437,15 @@ JSON
 
 ### 11. 更新日志
 
-Current Version: 1.5.2
+Current Version: 1.5.4
+
+#### 2026-01-28
+
+- Version: 1.5.4
+- Editor: Jieyang W.
+
+1. 站内信表增加两个字段：IsProcessed, ProcessAt。如果入会申请审批后 IsProcessed 为 true。
+1. 修改4.2和4.3接口，返回的 creatorId 改为 creator 对象，包含 userId 和 username。
 
 #### 2026-01-26
 

@@ -104,7 +104,7 @@ window.Notifications = {
             readAt: apiData.readAt,
             createdAt: apiData.createdAt,
             // 添加处理状态字段
-            processed: apiData.processed || false,
+            processed: apiData.isProcessed ?? apiData.processed ?? false,
             processedResult: apiData.processedResult || null // 'approved' 或 'rejected'
         };
     },
