@@ -203,7 +203,10 @@ window.API = {
                     {
                         clubId: 101,
                         clubName: "初中数学教研组",
-                        creatorId: 1001,
+                        creator: {
+                            userId: 1001,
+                            username: "math_teacher"
+                        },
                         tag: "数学",
                         description: "初中数学教学研讨",
                         memberCount: 12,
@@ -215,7 +218,10 @@ window.API = {
                     {
                         clubId: 102,
                         clubName: "PBL项目式学习",
-                        creatorId: 1002,
+                        creator: {
+                            userId: 1002,
+                            username: "pbl_teacher"
+                        },
                         tag: "综合",
                         description: "项目式学习方法研讨",
                         memberCount: 8,

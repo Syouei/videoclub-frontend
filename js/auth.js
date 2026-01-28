@@ -518,7 +518,7 @@ getProfileCompletion: function() {
     }
     
     const requiredFields = AppConfig.USER_INFO_FIELDS?.required || 
-                          ['realName', 'gender', 'age', 'school', 'phone', 'email'];
+                          ['realname', 'gender', 'age', 'school', 'phone', 'email'];
     
     let completedCount = 0;
     
@@ -538,7 +538,7 @@ getProfileCompletion: function() {
  */
 getRealName: function() {
     const profile = this.getUserProfile();
-    return profile?.realName || this.getDisplayName();
+    return profile?.realname || this.getDisplayName();
 },
 
 /**

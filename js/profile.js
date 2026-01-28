@@ -175,7 +175,11 @@ window.Profile = {
             return 0;
         }
         
-        const requiredFields = ['realname', 'age', 'school', 'phone', 'email'];
+        const requiredFields = (window.AppConfig &&
+            Array.isArray(AppConfig.USER_INFO_FIELDS?.required) &&
+            AppConfig.USER_INFO_FIELDS.required.length > 0)
+            ? AppConfig.USER_INFO_FIELDS.required
+            : ['realname', 'gender', 'age', 'school', 'phone', 'email'];
         
         let completedCount = 0;
         
@@ -196,9 +200,18 @@ window.Profile = {
                     if (phoneRegex.test(phoneStr)) {
                         completedCount++;
                     }
+                } else if (field === 'gender') {
+                    const allowed = AppConfig?.USER_INFO_FIELDS?.genders?.map(item => item.value);
+                    if (Array.isArray(allowed) && allowed.length > 0) {
+                        if (allowed.includes(this.currentProfile[field])) {
+                            completedCount++;
+                        }
+                    } else {
+                        completedCount++;
+                    }
                 } else if (field === 'email') {
                     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                    if (emailRegex.test(this.currentProfile[email])) {
+                    if (emailRegex.test(this.currentProfile[field].toString())) {
                         completedCount++;
                     }
                 } else {

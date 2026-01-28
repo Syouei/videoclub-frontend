@@ -101,7 +101,10 @@ window.App = {
             }
         } else {
             // 默认显示登录页
-            this.navigateTo('login');
+            this.state.currentPage = 'login';
+            window.location.hash = 'login';
+            this.loadPage('login');
+            this.updatePageDisplay();
         }
     },
     
@@ -157,9 +160,6 @@ window.App = {
         
         this.state.currentPage = pageName;
         window.location.hash = pageName;
-        
-        this.loadPage(pageName);
-        this.updatePageDisplay();
     },
     
     // 带参数的导航
@@ -173,9 +173,6 @@ window.App = {
         const hash = queryString ? `${pageName}?${queryString}` : pageName;
         
         window.location.hash = hash;
-        
-        this.loadPage(pageName);
-        this.updatePageDisplay();
     },
     
     // 加载页面
@@ -354,8 +351,6 @@ window.App = {
                 const success = Auth.handleLoginSuccess(result);
                 
                 if (success) {
-                    // 加载用户俱乐部数据
-                    await Clubs.loadMyClubs();
                     
                     // 显示成功消息
                     Utils.showNotification(`欢迎回来，${userInfo.username}！`, 'success');
@@ -754,29 +749,25 @@ hideLoginError: function(elementId) {
             
             const clubs = response.data.list
                 .filter(club => !club.archived && club.status !== 'archived') // 过滤已归档
-                .map(club => ({
-                    id: club.clubId,
-                    name: club.name,
-                    creatorId: club.creatorId,
-                    creator: club.creatorId ? `${club.creatorId}` : '未知',
-                    members: club.memberCount || 0,
-                    tag: club.tag || '教研组',
-                    description: club.description || '',
-                    status: club.status || 'active',
-                    archived: club.archived || false,
-                    joinPolicy: club.joinPolicy || 'free',            // ← 添加这个
-                    joinConditions: club.joinConditions || null       // ← 添加这个
-                }));
+                .map(club => {
+                    const creatorId = club.creator && club.creator.userId ? club.creator.userId : club.creatorId;
+                    const creatorName = club.creator && club.creator.username ? club.creator.username : (club.creatorName || club.creator || '未知');
+                    return ({
+                        id: club.clubId,
+                        name: club.name,
+                        creatorId: creatorId,
+                        creator: creatorName || '未知',
+                        members: club.memberCount || 0,
+                        tag: club.tag || '教研组',
+                        description: club.description || '',
+                        status: club.status || 'active',
+                        archived: club.archived || false,
+                        joinPolicy: club.joinPolicy || 'free',            // ← 添加这个
+                        joinConditions: club.joinConditions || null       // ← 添加这个
+                    });
+                });
             
-            const clubsWithCreator = await Promise.all(clubs.map(async club => {
-                if (club.creatorId) {
-                    const creatorName = await this.getUserNameById(club.creatorId);
-                    return { ...club, creator: creatorName };
-                }
-                return club;
-            }));
-            
-            return clubsWithCreator.filter(club => !joinedIds.includes(club.id));
+            return clubs.filter(club => !joinedIds.includes(club.id));
         } else {
             console.warn('搜索俱乐部API返回格式不正确:', response);
             return [];
@@ -836,7 +827,7 @@ showJoinClubDialog: async function(clubId) {
                         </div>
                         ` : ''}
                         <div style="font-size: 13px; color: #666;">
-                            <div><i class="fas fa-user"></i> 创建者：${clubDetail.creatorName || '未知'}</div>
+                            <div><i class="fas fa-user"></i> 创建者：${(clubDetail.creator && clubDetail.creator.username) || clubDetail.creatorName || '未知'}</div>
                             <div><i class="fas fa-users"></i> 成员：${clubDetail.memberCount || 0}人</div>
                         </div>
                     </div>
@@ -1376,8 +1367,3 @@ clearProfile: function() {
     }
 };
 
-
-// 应用初始化
-document.addEventListener('DOMContentLoaded', function() {
-    window.App.init();
-});
