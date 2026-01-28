@@ -111,6 +111,11 @@ window.Notifications = {
     
     // 标记为已读
     markAsRead: async function(notificationId) {
+        // 埋点：标记通知为已读
+        if (window.Analytics) {
+            window.Analytics.trackButtonClick('mark_notification_read', { module: 'notification', target_object: `notification-${notificationId}` });
+        }
+
         try {
             console.log('标记通知为已读，ID:', notificationId);
             
@@ -167,6 +172,11 @@ window.Notifications = {
     
     // 全部标记为已读
     markAllAsRead: async function() {
+        // 埋点：全部标记为已读
+        if (window.Analytics) {
+            window.Analytics.trackButtonClick('mark_all_notifications_read', { module: 'notification', target_object: 'all-notifications' });
+        }
+
         try {
             console.log('全部标记为已读');
             

@@ -230,6 +230,11 @@ window.Clubs = {
     createClub: async function(clubData) {
         try {
             console.log('创建俱乐部，数据:', clubData);
+
+            // 埋点：创建俱乐部操作
+            if (window.Analytics) {
+                window.Analytics.trackFormSubmit('create_club', { module: 'club', target_object: 'create-club-form' });
+            }
             
             // 构建API请求数据
             const requestData = {
@@ -319,6 +324,11 @@ window.Clubs = {
     
     // 加入俱乐部（新增审核流程）
     joinClub: async function(clubId, applyMessage = '') {
+        // 埋点：提交加入俱乐部申请
+        if (window.Analytics) {
+            window.Analytics.trackFormSubmit('join_club_request', { module: 'club', target_object: `club-${clubId}`, club_id: clubId });
+        }
+
         // 先获取俱乐部详情，检查是否已归档
         try {
             const clubDetail = await this.getClubDetail(clubId);
@@ -408,6 +418,11 @@ window.Clubs = {
 
     // 批准入会申请（管理员用）
     approveJoinRequest: async function(clubId, requestId) {
+        // 埋点：批准入会申请
+        if (window.Analytics) {
+            window.Analytics.trackButtonClick('approve_join_request', { module: 'club', target_object: `request-${requestId}`, club_id: clubId });
+        }
+
         try {
             const response = await API.approveJoinRequest(clubId, requestId);
             if (response && response.code === 0) {
@@ -422,6 +437,11 @@ window.Clubs = {
 
     // 驳回入会申请（管理员用）
     rejectJoinRequest: async function(clubId, requestId) {
+        // 埋点：驳回入会申请
+        if (window.Analytics) {
+            window.Analytics.trackButtonClick('reject_join_request', { module: 'club', target_object: `request-${requestId}`, club_id: clubId });
+        }
+
         try {
             const response = await API.rejectJoinRequest(clubId, requestId);
             if (response && response.code === 0) {
@@ -796,6 +816,11 @@ renderClubCard: function(club, container, isArchived) {
         if (!confirm('确定要退出这个俱乐部吗？退出后将无法查看俱乐部任务。')) {
             return;
         }
+
+        // 埋点：退出俱乐部
+        if (window.Analytics) {
+            window.Analytics.trackButtonClick('quit_club', { module: 'club', target_object: `club-${clubId}`, club_id: clubId });
+        }
         
         try {
             Utils.showNotification('正在退出俱乐部...', 'info');
@@ -925,6 +950,11 @@ renderClubCard: function(club, container, isArchived) {
         if (!this.isClubCreator(clubId)) {
             Utils.showNotification('权限不足', 'error');
             return;
+        }
+
+        // 埋点：更新俱乐部信息
+        if (window.Analytics) {
+            window.Analytics.trackFormSubmit('update_club', { module: 'club', target_object: `club-${clubId}`, club_id: clubId });
         }
         
         const nameInput = document.getElementById('edit-club-name');
@@ -1252,6 +1282,11 @@ renderClubCard: function(club, container, isArchived) {
      * @param {number} clubId - 俱乐部ID
      */
     deleteClub: async function(clubId) {
+        // 埋点：解散俱乐部
+        if (window.Analytics) {
+            window.Analytics.trackButtonClick('delete_club', { module: 'club', target_object: `club-${clubId}`, club_id: clubId });
+        }
+
         try {
             Utils.showNotification('正在解散俱乐部...', 'info');
             
@@ -1284,6 +1319,11 @@ renderClubCard: function(club, container, isArchived) {
      * @param {number} clubId - 俱乐部ID
      */
     archiveClub: async function(clubId) {
+        // 埋点：归档俱乐部
+        if (window.Analytics) {
+            window.Analytics.trackButtonClick('archive_club', { module: 'club', target_object: `club-${clubId}`, club_id: clubId });
+        }
+
         try {
             Utils.showNotification('正在归档俱乐部...', 'info');
             
@@ -1325,6 +1365,11 @@ renderClubCard: function(club, container, isArchived) {
      * @param {number} clubId - 俱乐部ID
      */
     restoreClub: async function(clubId) {
+        // 埋点：恢复俱乐部
+        if (window.Analytics) {
+            window.Analytics.trackButtonClick('restore_club', { module: 'club', target_object: `club-${clubId}`, club_id: clubId });
+        }
+
         try {
             Utils.showNotification('正在恢复俱乐部...', 'info');
             

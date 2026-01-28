@@ -44,6 +44,11 @@ window.Profile = {
     
     // 保存个人资料
     saveUserProfile: async function(profileData) {
+        // 埋点：保存个人资料
+        if (window.Analytics) {
+            window.Analytics.trackFormSubmit('update_profile', { module: 'profile', target_object: 'profile-form' });
+        }
+
         try {
             console.log('[Profile] 尝试保存个人资料:', profileData);
             
@@ -346,6 +351,11 @@ window.Profile = {
     
     // 导出个人资料
     exportProfile: function() {
+        // 埋点：导出个人资料
+        if (window.Analytics) {
+            window.Analytics.trackButtonClick('export_profile', { module: 'profile', target_object: 'profile-export' });
+        }
+
         try {
             if (!this.currentProfile) {
                 throw new Error('没有个人资料可导出');
@@ -385,6 +395,11 @@ window.Profile = {
     clearProfile: function() {
         if (!confirm('确定要清空个人资料吗？此操作不可撤销。')) {
             return false;
+        }
+
+        // 埋点：清空个人资料
+        if (window.Analytics) {
+            window.Analytics.trackButtonClick('clear_profile', { module: 'profile', target_object: 'profile-clear' });
         }
         
         try {

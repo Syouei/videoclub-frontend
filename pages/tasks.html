@@ -318,6 +318,11 @@
 
     // ========== 8. 跳转到平台 ==========
 function goToPlatform(subtaskId) {
+    // 埋点：前往外部平台
+    if (window.Analytics) {
+        window.Analytics.trackButtonClick('goto_platform', { module: 'task', target_object: `subtask-${subtaskId}` });
+    }
+
     // 根据子任务ID找到对应的子任务信息
     const taskCards = document.querySelectorAll('.task-card-item');
     let targetTaskCard = null;
@@ -368,7 +373,12 @@ function goToPlatform(subtaskId) {
     // ========== 9. 完成子任务 ==========
 async function completeSubTask(taskId, subtaskId, isResearchTask = false) {
     console.log('完成子任务:', { taskId, subtaskId, isResearchTask });
-    
+
+    // 埋点：点击完成子任务按钮
+    if (window.Analytics) {
+        window.Analytics.trackButtonClick('complete_subtask_click', { module: 'task', target_object: `task-${taskId}-subtask-${subtaskId}` });
+    }
+
     // 根据子任务ID找到对应的子任务信息
     const taskCards = document.querySelectorAll('.task-card-item');
     let targetTaskCard = null;
@@ -492,6 +502,11 @@ async function completeSubTask(taskId, subtaskId, isResearchTask = false) {
 
     // ========== 12. 返回视频页 ==========
     function goBackToHome() {
+        // 埋点：返回首页
+        if (window.Analytics) {
+            window.Analytics.trackButtonClick('go_back_home', { module: 'navigation', target_object: 'home-button' });
+        }
+
         const clubId = currentClubId || getClubIdFromContext();
         const clubName = currentClubName;
         const targetHash = clubId ? `video?clubId=${clubId}${clubName ? `&clubName=${encodeURIComponent(clubName)}` : ''}` : 'home';

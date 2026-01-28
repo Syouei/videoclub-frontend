@@ -18,6 +18,11 @@ window.Tasks = {
      */
     createTask: async function(taskData) {
     console.log('创建任务，数据:', taskData);
+
+    // 埋点：创建任务
+    if (window.Analytics) {
+        window.Analytics.trackFormSubmit('create_task', { module: 'task', target_object: `club-${taskData.clubId}`, club_id: taskData.clubId });
+    }
     
     try {
         // 验证必填字段
@@ -138,6 +143,11 @@ window.Tasks = {
      */
     completeSubTask: async function(taskId, subtaskId, completionData = {}) {
         console.log('提交子任务完成:', { taskId, subtaskId, completionData });
+
+        // 埋点：完成子任务
+        if (window.Analytics) {
+            window.Analytics.trackFormSubmit('complete_subtask', { module: 'task', target_object: `task-${taskId}-subtask-${subtaskId}` });
+        }
         
         try {
             // 调用API提交子任务
@@ -196,13 +206,18 @@ window.Tasks = {
     },
 
     /**
- * 7.5 修改任务
- * @param {number} taskId - 任务ID
- * @param {object} taskData - 更新的任务数据
- * @returns {Promise} 修改结果
- */
+     * 7.5 修改任务
+     * @param {number} taskId - 任务ID
+     * @param {object} taskData - 更新的任务数据
+     * @returns {Promise} 修改结果
+     */
 updateTask: async function(taskId, taskData) {
     console.log('修改任务，任务ID:', taskId, '数据:', taskData);
+
+    // 埋点：修改任务
+    if (window.Analytics) {
+        window.Analytics.trackFormSubmit('update_task', { module: 'task', target_object: `task-${taskId}` });
+    }
     
     try {
         // 调用API修改任务
@@ -237,6 +252,11 @@ updateTask: async function(taskId, taskData) {
  */
 deleteTask: async function(taskId) {
     console.log('删除任务，任务ID:', taskId);
+
+    // 埋点：删除任务
+    if (window.Analytics) {
+        window.Analytics.trackButtonClick('delete_task', { module: 'task', target_object: `task-${taskId}` });
+    }
     
     try {
         // 调用API删除任务

@@ -960,6 +960,11 @@
 
         // 创建新任务
         async function createNewTask() {
+    // 埋点：点击创建任务按钮
+    if (window.Analytics) {
+        window.Analytics.trackButtonClick('open_create_task_modal', { module: 'task', target_object: 'create-task-modal' });
+    }
+
     // 再次验证权限（以防万一）
     if (!currentClub || !currentClub.id) {
         Utils.showNotification('无法获取俱乐部信息', 'error');
@@ -1171,7 +1176,12 @@
         // 进入任务页面
         async function enterTaskPage(taskId) {
             console.log('进入任务页面，任务ID:', taskId);
-            
+
+            // 埋点：进入任务页面
+            if (window.Analytics) {
+                window.Analytics.trackButtonClick('enter_task_page', { module: 'task', target_object: `task-${taskId}` });
+            }
+
             try {
                 // 获取任务详情
                 const taskDetail = await Tasks.getTaskDetail(taskId);
@@ -1199,7 +1209,12 @@
         // 打开编辑任务模态框
         async function openEditTaskModal(taskId) {
             console.log('打开编辑任务模态框，任务ID:', taskId);
-            
+
+            // 埋点：打开编辑任务模态框
+            if (window.Analytics) {
+                window.Analytics.trackButtonClick('open_edit_task_modal', { module: 'task', target_object: `task-${taskId}` });
+            }
+
             try {
                 // 检查权限
                 const hasPermission = await checkAndUpdatePermissions();
@@ -1401,7 +1416,12 @@
         // 确认删除任务
         async function confirmDeleteTask(taskId) {
             console.log('确认删除任务，任务ID:', taskId);
-            
+
+            // 埋点：点击删除任务按钮
+            if (window.Analytics) {
+                window.Analytics.trackButtonClick('confirm_delete_task', { module: 'task', target_object: `task-${taskId}` });
+            }
+
             try {
                 // 检查权限
                 const hasPermission = await checkAndUpdatePermissions();

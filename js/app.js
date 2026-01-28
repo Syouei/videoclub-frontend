@@ -323,7 +323,12 @@ window.App = {
             }
             return;
         }
-        
+
+        // 埋点：点击登录按钮
+        if (window.Analytics) {
+            window.Analytics.trackButtonClick('login', { module: 'auth', target_object: 'login-button' });
+        }
+
         try {
             // 显示加载状态
             this.state.isLoading = true;
@@ -596,6 +601,11 @@ window.App = {
         if (password.length < 6) {
             Utils.showNotification('密码至少需要6位', 'error');
             return;
+        }
+
+        // 埋点：点击注册按钮
+        if (window.Analytics) {
+            window.Analytics.trackButtonClick('register', { module: 'auth', target_object: 'register-button' });
         }
         
         try {
@@ -911,6 +921,11 @@ submitJoinRequest: async function(clubId) {
     
     // 加入俱乐部
     joinClub: async function(clubId) {
+        // 埋点：点击加入俱乐部按钮
+        if (window.Analytics) {
+            window.Analytics.trackButtonClick('join_club', { module: 'club', target_object: `club-${clubId}`, club_id: clubId });
+        }
+
         try {
             Utils.showNotification('正在加入俱乐部...', 'info');
             
@@ -958,6 +973,11 @@ createNewClub: async function() {
         Utils
 .showNotification('俱乐部名称长度应在2-50字符之间', 'error');
         return;
+    }
+
+    // 埋点：点击创建俱乐部按钮
+    if (window.Analytics) {
+        window.Analytics.trackButtonClick('create_club', { module: 'club', target_object: 'create-club-button' });
     }
     
     try {
@@ -1160,6 +1180,11 @@ createNewClub: async function() {
     logout: function() {
         if (!confirm('确定要退出登录吗？')) {
             return;
+        }
+
+        // 埋点：点击登出按钮
+        if (window.Analytics) {
+            window.Analytics.trackButtonClick('logout', { module: 'auth', target_object: 'logout-button' });
         }
         
         try {
