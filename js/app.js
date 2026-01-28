@@ -754,23 +754,27 @@ hideLoginError: function(elementId) {
             
             const clubs = response.data.list
                 .filter(club => !club.archived && club.status !== 'archived') // 过滤已归档
-                .map(club => ({
-                    id: club.clubId,
-                    name: club.name,
-                    creatorId: club.creatorId,
-                    creator: club.creatorId ? `${club.creatorId}` : '未知',
-                    members: club.memberCount || 0,
-                    tag: club.tag || '教研组',
-                    description: club.description || '',
-                    status: club.status || 'active',
-                    archived: club.archived || false,
-                    joinPolicy: club.joinPolicy || 'free',            // ← 添加这个
-                    joinConditions: club.joinConditions || null       // ← 添加这个
-                }));
+                .map(club => {
+                    const creatorId = club.creator && club.creator.userId ? club.creator.userId : club.creatorId;
+                    const creatorName = club.creator && club.creator.username ? club.creator.username : (club.creatorName || club.creator || '未知');
+                    return ({
+                        id: club.clubId,
+                        name: club.name,
+                        creatorId: creatorId,
+                        creator: creatorName || '未知',
+                        members: club.memberCount || 0,
+                        tag: club.tag || '教研组',
+                        description: club.description || '',
+                        status: club.status || 'active',
+                        archived: club.archived || false,
+                        joinPolicy: club.joinPolicy || 'free',            // ← 添加这个
+                        joinConditions: club.joinConditions || null       // ← 添加这个
+                    });
+                });
             
             const clubsWithCreator = await Promise.all(clubs.map(async club => {
-                if (club.creatorId) {
-                    const creatorName = await this.getUserNameById(club.creatorId);
+                if (club.creatorId && (!club.creator || club.creator === '未知')) {
+                    const creatorName = await Clubs.getUserNameById(club.creatorId);
                     return { ...club, creator: creatorName };
                 }
                 return club;
@@ -836,7 +840,7 @@ showJoinClubDialog: async function(clubId) {
                         </div>
                         ` : ''}
                         <div style="font-size: 13px; color: #666;">
-                            <div><i class="fas fa-user"></i> 创建者：${clubDetail.creatorName || '未知'}</div>
+                            <div><i class="fas fa-user"></i> 创建者：${(clubDetail.creator && clubDetail.creator.username) || clubDetail.creatorName || '未知'}</div>
                             <div><i class="fas fa-users"></i> 成员：${clubDetail.memberCount || 0}人</div>
                         </div>
                     </div>

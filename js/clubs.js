@@ -92,11 +92,19 @@ window.Clubs = {
                     try {
                         const detail = await this.getClubDetail(club.id);
                         let creatorName = club.creator;
-                        if (detail && detail.creatorId) {
-                            creatorName = await this.getUserNameById(detail.creatorId);
+                        let creatorId = club.creatorId;
+                        if (detail) {
+                            const detailCreatorId = detail.creator && detail.creator.userId ? detail.creator.userId : detail.creatorId;
+                            const detailCreatorName = detail.creator && detail.creator.username ? detail.creator.username : null;
+                            if (detailCreatorName) {
+                                creatorName = detailCreatorName;
+                            } else if (detailCreatorId) {
+                                creatorName = await this.getUserNameById(detailCreatorId);
+                            }
+                            creatorId = detailCreatorId || creatorId;
                         }
                         if (detail) {
-                            const updatedClub = { ...club, creator: creatorName };
+                            const updatedClub = { ...club, creator: creatorName, creatorId: creatorId };
                             if (typeof detail.memberCount === 'number') {
                                 updatedClub.members = detail.memberCount;
                             }
@@ -173,11 +181,14 @@ window.Clubs = {
                         }
                         return true;
                     })
-                    .map(club => ({
+                    .map(club => {
+                        const creatorId = club.creator && club.creator.userId ? club.creator.userId : club.creatorId;
+                        const creatorName = club.creator && club.creator.username ? club.creator.username : (club.creatorName || club.creator || '未知');
+                        return ({
                         id: club.clubId || club.id,
                         name: club.name || club.clubName,
-                        creatorId: club.creatorId,
-                        creator: '未知', // 稍后会更新
+                        creatorId: creatorId,
+                        creator: creatorName || '未知',
                         members: club.memberCount || club.members || 0,
                         tag: club.tag || '教研组',
                         description: club.description || '',
@@ -186,11 +197,12 @@ window.Clubs = {
                         joinPolicy: club.joinPolicy || 'free',
                         joinConditions: club.joinConditions || null,
                         clubDetail: club // 保存原始数据
-                    }));
+                    });
+                    });
                 
                 // 获取创建者姓名
                 const clubsWithCreator = await Promise.all(clubs.map(async club => {
-                    if (club.creatorId) {
+                    if (club.creatorId && (!club.creator || club.creator === '未知')) {
                         try {
                             const creatorName = await this.getUserNameById(club.creatorId);
                             return { ...club, creator: creatorName };
@@ -295,11 +307,14 @@ window.Clubs = {
         
         const isDetail = backendClub.clubId === undefined; // 详情接口返回的格式
         
+        const creatorId = backendClub.creator && backendClub.creator.userId ? backendClub.creator.userId : backendClub.creatorId;
+        const creatorName = backendClub.creator && backendClub.creator.username ? backendClub.creator.username : (backendClub.creatorName || backendClub.creator || '未知');
         return {
             id: backendClub.clubId || backendClub.id,
             name: backendClub.clubName || backendClub.name,
             memberRole: backendClub.memberRole || 'member', // 统一使用 memberRole
-            creator: backendClub.creatorName || backendClub.creator || '未知',
+            creatorId: creatorId,
+            creator: creatorName,
             members: backendClub.memberCount || backendClub.members || 1,
             tag: backendClub.tag || '',
             description: backendClub.description || '',
@@ -454,7 +469,12 @@ window.Clubs = {
             return {
                 id: club.id,
                 name: club.name,
+                creatorId: club.creatorId,
                 creatorName: club.creator,
+                creator: {
+                    userId: club.creatorId || null,
+                    username: club.creator || '未知'
+                },
                 memberCount: club.members,
                 tag: club.tag,
                 description: club.description,
@@ -505,9 +525,10 @@ window.Clubs = {
             console.log('本地未找到俱乐部，尝试从API获取详情');
             try {
                 const clubDetail = await this.getClubDetail(clubId);
-                if (clubDetail && clubDetail.creatorId) {
+                const creatorId = clubDetail && clubDetail.creator && clubDetail.creator.userId ? clubDetail.creator.userId : clubDetail.creatorId;
+                if (creatorId) {
                     const currentUser = window.Auth.getUser();
-                    return currentUser && currentUser.userId === clubDetail.creatorId;
+                    return currentUser && currentUser.userId === creatorId;
                 }
             } catch (error) {
                 console.warn('从API获取俱乐部详情失败:', error);
