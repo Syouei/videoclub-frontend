@@ -11,6 +11,8 @@ window.Clubs = {
 
     // 用户名缓存
     userNameCache: {},
+
+    loadMyClubsPromise: null,
     
     // 初始化俱乐部模块
     init: function() {
@@ -78,6 +80,10 @@ window.Clubs = {
     
     // 加载我的俱乐部（从API）
     loadMyClubs: async function() {
+        if (this.loadMyClubsPromise) {
+            return this.loadMyClubsPromise;
+        }
+        this.loadMyClubsPromise = (async () => {
         try {
             console.log('调用API获取我的俱乐部列表');
             // 从API获取数据 - 适配新的API格式
@@ -139,6 +145,10 @@ window.Clubs = {
             console.log('使用本地俱乐部数据');
             return this.myClubs;
         }
+        })();
+        return this.loadMyClubsPromise.finally(() => {
+            this.loadMyClubsPromise = null;
+        });
     },
     
     // 搜索俱乐部（修复：正确处理API返回的list字段）

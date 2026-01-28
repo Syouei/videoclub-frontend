@@ -537,16 +537,7 @@ function initHomePage() {
         if (window.App && window.App.updateUnreadCount) {
             window.App.updateUnreadCount();
         }
-    }, 300);
-    
-    // 页面加载后自动加载俱乐部列表
-    if (window.App && window.App.renderHome) {
-        setTimeout(() => {
-            console.log('调用App.renderHome');
-            window.App.renderHome();
-        }, 100);
-    }
-}
+    }, 300);}
 
 // 从API刷新用户资料并同步到本地缓存
 async function refreshUserProfileFromApi() {

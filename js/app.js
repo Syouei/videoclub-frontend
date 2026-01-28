@@ -101,7 +101,10 @@ window.App = {
             }
         } else {
             // 默认显示登录页
-            this.navigateTo('login');
+            this.state.currentPage = 'login';
+            window.location.hash = 'login';
+            this.loadPage('login');
+            this.updatePageDisplay();
         }
     },
     
@@ -157,9 +160,6 @@ window.App = {
         
         this.state.currentPage = pageName;
         window.location.hash = pageName;
-        
-        this.loadPage(pageName);
-        this.updatePageDisplay();
     },
     
     // 带参数的导航
@@ -173,9 +173,6 @@ window.App = {
         const hash = queryString ? `${pageName}?${queryString}` : pageName;
         
         window.location.hash = hash;
-        
-        this.loadPage(pageName);
-        this.updatePageDisplay();
     },
     
     // 加载页面
@@ -354,8 +351,6 @@ window.App = {
                 const success = Auth.handleLoginSuccess(result);
                 
                 if (success) {
-                    // 加载用户俱乐部数据
-                    await Clubs.loadMyClubs();
                     
                     // 显示成功消息
                     Utils.showNotification(`欢迎回来，${userInfo.username}！`, 'success');
@@ -1380,8 +1375,3 @@ clearProfile: function() {
     }
 };
 
-
-// 应用初始化
-document.addEventListener('DOMContentLoaded', function() {
-    window.App.init();
-});
