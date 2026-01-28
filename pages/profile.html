@@ -583,8 +583,33 @@ async function loadUserProfile() {
                     userProfileData = result.data;
                     console.log('从API加载用户资料成功:', userProfileData);
                     
+                    // 同步到Auth与本地缓存，确保与Home一致
+                    if (window.Auth && window.Auth.currentUser) {
+                        const currentUser = window.Auth.currentUser;
+                        currentUser.userId = userProfileData.userId ?? currentUser.userId;
+                        currentUser.username = userProfileData.username ?? currentUser.username;
+                        currentUser.role = userProfileData.role ?? currentUser.role;
+                        currentUser.avatarUrl = userProfileData.avatarUrl ?? currentUser.avatarUrl;
+                        currentUser.name = userProfileData.username ?? currentUser.name;
+                        currentUser.profile = { ...(currentUser.profile || {}), ...userProfileData };
+                        Utils.saveToStorage(AppConfig.STORAGE_KEYS.USER_INFO, currentUser);
+                    }
+                    
+                    // 同步到Profile模块与本地存储
+                    if (window.Profile) {
+                        const mergedProfile = { ...(window.Profile.currentProfile || {}), ...userProfileData };
+                        window.Profile.currentProfile = mergedProfile;
+                        Utils.saveToStorage('user_profile', mergedProfile);
+                    }
+                    
+                    if (window.Auth && window.Auth.updateUserDisplay) {
+                        window.Auth.updateUserDisplay();
+                    }
+                    
                     // 填充表单
                     fillFormWithUserData();
+                    // 更新完成度指示器（API成功路径避免早退导致不更新）
+                    updateCompletionIndicator();
                     return;
                 }
             } catch (apiError) {
@@ -719,7 +744,11 @@ function fillFormWithUserData() {
 
         // 计算完成度
         function calculateCompletion(formData) {
-            const requiredFields = ['realname','gender', 'age', 'school', 'phone', 'email'];
+            const requiredFields = (window.AppConfig &&
+                Array.isArray(AppConfig.USER_INFO_FIELDS?.required) &&
+                AppConfig.USER_INFO_FIELDS.required.length > 0)
+                ? AppConfig.USER_INFO_FIELDS.required
+                : ['realname', 'gender', 'age', 'school', 'phone', 'email'];
             const totalFields = requiredFields.length;
             let completedCount = 0;
             
@@ -736,7 +765,7 @@ function fillFormWithUserData() {
                             completedCount++;
                         }
                     } else if (field === 'gender') {
-                        if (formData[field] === 'male' || formData[field] === 'female') {
+                        if (validateGenderFormat(formData[field])) {
                             completedCount++;
                         }
                     } else if (field === 'email') {
@@ -773,7 +802,7 @@ function fillFormWithUserData() {
             }
 
             // 验证性别
-if (!formData.gender) {
+            if (!formData.gender || !validateGenderFormat(formData.gender)) {
     showError('gender-error', '请选择性别');
     isValid = false;
 }
@@ -850,6 +879,18 @@ if (!formData.gender) {
         function validateEmailFormat(email) {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             return emailRegex.test(email);
+        }
+        
+        // 验证性别格式
+        function validateGenderFormat(gender) {
+            if (!gender) return false;
+            
+            const allowed = AppConfig?.USER_INFO_FIELDS?.genders?.map(item => item.value);
+            if (Array.isArray(allowed) && allowed.length > 0) {
+                return allowed.includes(gender);
+            }
+            
+            return true;
         }
 
         // 实时验证手机号

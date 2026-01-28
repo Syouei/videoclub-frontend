@@ -506,6 +506,9 @@ function initHomePage() {
             }
         });
     }
+
+    // 优先从API刷新用户资料，保证与Profile页面一致
+    refreshUserProfileFromApi();
     
     // 检查个人资料完成度
     setTimeout(() => {
@@ -542,6 +545,48 @@ function initHomePage() {
             console.log('调用App.renderHome');
             window.App.renderHome();
         }, 100);
+    }
+}
+
+// 从API刷新用户资料并同步到本地缓存
+async function refreshUserProfileFromApi() {
+    if (!window.API || !window.Auth || !window.Auth.isLoggedIn || !window.Auth.isLoggedIn()) {
+        return;
+    }
+    
+    try {
+        const result = await API.getMyInfo();
+        if (result && result.code === 0 && result.data) {
+            const apiUser = result.data;
+            
+            // 同步到Auth
+            if (window.Auth.currentUser) {
+                const currentUser = window.Auth.currentUser;
+                currentUser.userId = apiUser.userId ?? currentUser.userId;
+                currentUser.username = apiUser.username ?? currentUser.username;
+                currentUser.role = apiUser.role ?? currentUser.role;
+                currentUser.avatarUrl = apiUser.avatarUrl ?? currentUser.avatarUrl;
+                currentUser.name = apiUser.username ?? currentUser.name;
+                currentUser.profile = { ...(currentUser.profile || {}), ...apiUser };
+                
+                Utils.saveToStorage(AppConfig.STORAGE_KEYS.USER_INFO, currentUser);
+            }
+            
+            // 同步到Profile模块与本地存储
+            if (window.Profile) {
+                const mergedProfile = { ...(window.Profile.currentProfile || {}), ...apiUser };
+                window.Profile.currentProfile = mergedProfile;
+                Utils.saveToStorage('user_profile', mergedProfile);
+            }
+            
+            // 更新显示和完成度
+            if (window.Auth && window.Auth.updateUserDisplay) {
+                window.Auth.updateUserDisplay();
+            }
+            checkProfileCompletion();
+        }
+    } catch (error) {
+        console.warn('首页刷新用户资料失败，使用本地缓存:', error);
     }
 }
     // ========== 用户下拉菜单功能 ==========
@@ -661,7 +706,11 @@ function initHomePage() {
     function calculateProfileCompletion(profileData) {
         if (!profileData) return 0;
         
-        const requiredFields = ['realName', 'gender', 'age', 'school', 'phone', 'email'];
+        const requiredFields = (window.AppConfig &&
+            Array.isArray(AppConfig.USER_INFO_FIELDS?.required) &&
+            AppConfig.USER_INFO_FIELDS.required.length > 0)
+            ? AppConfig.USER_INFO_FIELDS.required
+            : ['realname', 'gender', 'age', 'school', 'phone', 'email'];
         let completedCount = 0;
         
         requiredFields.forEach(field => {
@@ -669,11 +718,15 @@ function initHomePage() {
                 // 特殊验证
                 if (field === 'age') {
                     const age = parseInt(profileData[field]);
-                    if (age >= 18 && age <= 70) {
+                    if (age >= 1 && age <= 100) {
                         completedCount++;
                     }
                 } else if (field === 'phone') {
                     if (validatePhoneFormat(profileData[field])) {
+                        completedCount++;
+                    }
+                } else if (field === 'gender') {
+                    if (validateGenderFormat(profileData[field])) {
                         completedCount++;
                     }
                 } else if (field === 'email') {
@@ -701,6 +754,18 @@ function initHomePage() {
         return emailRegex.test(email);
     }
     
+    // 验证性别格式
+    function validateGenderFormat(gender) {
+        if (!gender) return false;
+        
+        const allowed = AppConfig?.USER_INFO_FIELDS?.genders?.map(item => item.value);
+        if (Array.isArray(allowed) && allowed.length > 0) {
+            return allowed.includes(gender);
+        }
+        
+        return true;
+    }
+    
     // 显示个人资料提醒
     function showProfileReminder() {
         const badge = document.getElementById('profile-badge');
@@ -718,11 +783,25 @@ function initHomePage() {
         }
     }
     
+    // 更新完成度徽章显示
+    function updateCompletionBadge(completion) {
+        const badge = document.getElementById('profile-badge');
+        if (!badge) return;
+        
+        if (completion >= 80) {
+            badge.style.display = 'none';
+            return;
+        }
+        
+        badge.style.display = 'inline-block';
+        badge.textContent = completion === 0 ? '!' : `${completion}%`;
+    }
+    
     
     // 更新完成度指示器
     function updateCompletionIndicator() {
-        // 这个函数会被其他模块调用
-        checkProfileCompletion();
+        // 这里仅负责更新指示器本身，避免递归调用导致卡顿
+        // 当前页面无额外指示器逻辑，保留为空以供后续扩展
     }
     
     // 导航到个人资料页面
