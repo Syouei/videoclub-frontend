@@ -767,15 +767,7 @@ hideLoginError: function(elementId) {
                     });
                 });
             
-            const clubsWithCreator = await Promise.all(clubs.map(async club => {
-                if (club.creatorId && (!club.creator || club.creator === '未知')) {
-                    const creatorName = await Clubs.getUserNameById(club.creatorId);
-                    return { ...club, creator: creatorName };
-                }
-                return club;
-            }));
-            
-            return clubsWithCreator.filter(club => !joinedIds.includes(club.id));
+            return clubs.filter(club => !joinedIds.includes(club.id));
         } else {
             console.warn('搜索俱乐部API返回格式不正确:', response);
             return [];

@@ -9,9 +9,6 @@ window.Clubs = {
     // 当前选中的俱乐部
     currentClub: null,
 
-    // 用户名缓存
-    userNameCache: {},
-
     loadMyClubsPromise: null,
     
     // 初始化俱乐部模块
@@ -104,8 +101,6 @@ window.Clubs = {
                             const detailCreatorName = detail.creator && detail.creator.username ? detail.creator.username : null;
                             if (detailCreatorName) {
                                 creatorName = detailCreatorName;
-                            } else if (detailCreatorId) {
-                                creatorName = await this.getUserNameById(detailCreatorId);
                             }
                             creatorId = detailCreatorId || creatorId;
                         }
@@ -210,22 +205,8 @@ window.Clubs = {
                     });
                     });
                 
-                // 获取创建者姓名
-                const clubsWithCreator = await Promise.all(clubs.map(async club => {
-                    if (club.creatorId && (!club.creator || club.creator === '未知')) {
-                        try {
-                            const creatorName = await this.getUserNameById(club.creatorId);
-                            return { ...club, creator: creatorName };
-                        } catch (error) {
-                            console.warn('获取创建者姓名失败:', club.creatorId, error);
-                            return { ...club, creator: `ID:${club.creatorId}` };
-                        }
-                    }
-                    return club;
-                }));
-                
-                console.log('搜索到的俱乐部:', clubsWithCreator);
-                return clubsWithCreator;
+                console.log('搜索到的俱乐部:', clubs);
+                return clubs;
             } else {
                 console.warn('搜索俱乐部API返回错误:', response);
                 return [];
@@ -498,24 +479,6 @@ window.Clubs = {
         return null;
     },
 
-    // 获取用户名（缓存）
-    getUserNameById: async function(userId) {
-        if (!userId) return '未知';
-        if (this.userNameCache[userId]) return this.userNameCache[userId];
-        try {
-            const response = await API.getUserDetail(userId);
-            if (response && response.code === 0 && response.data && response.data.username) {
-                this.userNameCache[userId] = response.data.username;
-                return response.data.username;
-            }
-        } catch (error) {
-            console.warn('获取用户详情失败:', userId, error);
-        }
-        const fallbackName = `ID:${userId}`;
-        this.userNameCache[userId] = fallbackName;
-        return fallbackName;
-    },
-    
     isClubCreator: async function(clubId) {
         console.log('检查用户是否是俱乐部创建者，俱乐部ID:', clubId);
         
