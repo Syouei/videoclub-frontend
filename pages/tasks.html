@@ -312,8 +312,63 @@
             
             taskListContainer.innerHTML += taskCardHTML;
         });
+
+        // 检查任务是否关联了视频，如果有则添加视频播放按钮
+        const currentTask = window.Tasks && window.Tasks.currentTaskDetail;
+        if (currentTask && currentTask.taskInfo && currentTask.taskInfo.videoId) {
+            const videoId = currentTask.taskInfo.videoId;
+            const clubId = currentTask.taskInfo.clubId;
+            const taskId = currentTask.taskInfo.taskId;
+            
+            const videoButtonHTML = `
+                <div class="task-card-item video-play-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; margin-top: 20px;">
+                    <div class="task-card-header">
+                        <div class="task-card-title" style="color: #fff;">
+                            <i class="fas fa-play-circle"></i> 关联教学视频
+                        </div>
+                    </div>
+                    <div class="task-card-description" style="color: rgba(255,255,255,0.9);">
+                        本任务关联了一个教学视频，点击按钮进入视频播放页面，可以观看视频并参与时间轴评论。
+                    </div>
+                    <div class="task-card-actions">
+                        <button class="btn btn-primary" style="background: #fff; color: #667eea; border: none;" onclick="goToVideoPlayer(${videoId}, ${clubId}, ${taskId})">
+                            <i class="fas fa-video"></i> 观看教学视频
+                        </button>
+                    </div>
+                </div>
+            `;
+            taskListContainer.innerHTML += videoButtonHTML;
+        }
         
         console.log('子任务显示完成，共', subTasks.length, '个子任务');
+    }
+
+    // 跳转到视频播放页面
+    function goToVideoPlayer(videoId, clubId, taskId) {
+        // 埋点：跳转到视频播放页面
+        if (window.Analytics) {
+            window.Analytics.trackButtonClick('go_to_video_player', { 
+                module: 'video', 
+                target_object: `video-${videoId}`,
+                video_id: videoId,
+                task_id: taskId,
+                club_id: clubId
+            });
+        }
+        
+        console.log('跳转到视频播放页面:', { videoId, clubId, taskId });
+        
+        // 使用App导航到视频播放页面
+        if (window.App && window.App.navigateToWithParams) {
+            window.App.navigateToWithParams('video-player', { 
+                videoId: videoId, 
+                clubId: clubId,
+                taskId: taskId
+            });
+        } else {
+            // 备用方案：直接修改hash
+            window.location.hash = `video-player?videoId=${videoId}&clubId=${clubId}&taskId=${taskId}`;
+        }
     }
 
     // ========== 8. 跳转到平台 ==========
@@ -529,6 +584,7 @@ async function completeSubTask(taskId, subtaskId, isResearchTask = false) {
     window.completeSubTask = completeSubTask;
     window.goBackToHome = goBackToHome;
     window.initTaskPage = initTaskPage;
+    window.goToVideoPlayer = goToVideoPlayer;
 
     // 立即尝试初始化（兼容 SPA 动态加载）
     initTaskPage();

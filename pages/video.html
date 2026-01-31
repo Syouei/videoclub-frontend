@@ -670,10 +670,25 @@
     
     // 遍历所有任务
     for (let i = 0; i < sortedTasks.length; i++) {
-        const task = sortedTasks[i];
+        let task = sortedTasks[i];
         console.log(`处理第${i+1}个任务:`, task);
         
         const taskId = task.taskId || task.id;
+        
+        // 获取任务详情以补充 videoId 信息
+        try {
+            const taskDetail = await API.getTaskDetail(taskId);
+            console.log(`任务 ${taskId} 详情响应:`, taskDetail);
+            if (taskDetail && taskDetail.code === 0 && taskDetail.data && taskDetail.data.taskInfo) {
+                const videoId = taskDetail.data.taskInfo.videoId;
+                if (videoId) {
+                    task = { ...task, videoId: videoId };
+                    console.log(`任务 ${taskId} 获取到 videoId:`, videoId);
+                }
+            }
+        } catch (error) {
+            console.warn(`获取任务 ${taskId} 详情失败:`, error);
+        }
         const createdTime = task.createdAt ? formatDate(task.createdAt) : '刚刚';
         const taskTypeLabel = getTaskTypeLabel(task.type);
         
@@ -787,8 +802,30 @@
                         ${taskTypeLabel}
                         ${!isAccessible && !isClubCreator ? '<i class="fas fa-lock" style="color: #ff4d4f; margin-left: auto;"></i>' : ''}
                     </div>
-                    <div class="video-task-action">
+                    <div class="video-task-action" style="display: flex; gap: 8px;">
                         ${isAccessible ? `
+                        ${(() => {
+                            // 检查所有可能的视频ID来源
+                            const videoIdDirect = task.videoId;
+                            const videoIdFromVideo = task.video && task.video.videoId;
+                            const videoIdFromTaskInfo = task.taskInfo && task.taskInfo.videoId;
+                            
+                            console.log('Task full data:', JSON.stringify(task, null, 2));
+                            console.log('Video ID sources:', { videoIdDirect, videoIdFromVideo, videoIdFromTaskInfo });
+                            
+                            const finalVideoId = videoIdDirect || videoIdFromVideo || videoIdFromTaskInfo;
+                            const hasVideo = !!finalVideoId;
+                            const isWatchType = task.type === 'all' || task.type === 'watch';
+                            
+                            console.log('Button check result:', { hasVideo, isWatchType, finalVideoId });
+                            
+                            if (hasVideo && isWatchType) {
+                                return `<button class="btn btn-success btn-sm" onclick="event.stopPropagation(); goToVideoPlayerFromVideoPage(${finalVideoId}, ${task.clubId || currentClub.id}, ${taskId})" title="观看教学视频">
+                                    <i class="fas fa-play-circle"></i> 观看视频
+                                </button>`;
+                            }
+                            return '';
+                        })()}
                         <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); enterTaskPage(${taskId})">
                             <i class="fas fa-arrow-right"></i> 进入活动
                         </button>
@@ -1206,6 +1243,34 @@
             }
         }
 
+        // 从视频页面跳转到视频播放器
+        function goToVideoPlayerFromVideoPage(videoId, clubId, taskId) {
+            console.log('跳转到视频播放器:', { videoId, clubId, taskId });
+            
+            // 埋点：点击观看视频按钮
+            if (window.Analytics) {
+                window.Analytics.trackButtonClick('watch_video_from_video_page', { 
+                    module: 'video', 
+                    target_object: `video-${videoId}`,
+                    video_id: videoId,
+                    task_id: taskId,
+                    club_id: clubId
+                });
+            }
+            
+            // 使用App导航到视频播放页面
+            if (window.App && window.App.navigateToWithParams) {
+                window.App.navigateToWithParams('video-player', { 
+                    videoId: videoId, 
+                    clubId: clubId,
+                    taskId: taskId
+                });
+            } else {
+                // 备用方案：直接修改hash
+                window.location.hash = `video-player?videoId=${videoId}&clubId=${clubId}&taskId=${taskId}`;
+            }
+        }
+
         // 打开编辑任务模态框
         async function openEditTaskModal(taskId) {
             console.log('打开编辑任务模态框，任务ID:', taskId);
@@ -1509,6 +1574,7 @@
         window.closeCreateTaskModal = closeCreateTaskModal;
         window.createNewTask = createNewTask;
         window.enterTaskPage = enterTaskPage;
+        window.goToVideoPlayerFromVideoPage = goToVideoPlayerFromVideoPage;
         window.goBackToHome = goBackToHome;
         window.initVideoPage = initVideoPage;
         window.openEditTaskModal = openEditTaskModal;

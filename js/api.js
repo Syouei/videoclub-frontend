@@ -658,5 +658,95 @@ window.API = {
         
         console.log('删除任务请求:', endpoint);
         return await this.request(endpoint, 'DELETE');
+    },
+    
+    // ================ 视频模块（需Token） ================
+    
+    /**
+     * 5.2 获取上传凭证
+     * @returns {Promise} {code, msg, data: {uploadToken, domain, region, bucket}}
+     */
+    async getVideoUploadToken() {
+        return await this.request('/videos/token', 'GET');
+    },
+    
+    /**
+     * 5.3 保存视频信息
+     * @param {object} videoData - 视频数据 {clubId, title, objectKey, etag, duration, ...}
+     * @returns {Promise} {code, msg, data: 视频信息}
+     */
+    async saveVideo(videoData) {
+        return await this.request('/videos', 'POST', videoData);
+    },
+    
+    /**
+     * 5.4 视频列表
+     * @param {number} clubId - 俱乐部ID
+     * @param {object} params - 查询参数 {page, pageSize}
+     * @returns {Promise} {code, msg, data: {list, total}}
+     */
+    async getVideos(clubId, params = {}) {
+        const queryParams = { clubId, ...params };
+        const queryString = this.buildQueryString(queryParams);
+        return await this.request('/videos' + queryString, 'GET');
+    },
+    
+    /**
+     * 5.5 视频详情
+     * @param {number} videoId - 视频ID
+     * @returns {Promise} {code, msg, data: 视频详情}
+     */
+    async getVideoDetail(videoId) {
+        return await this.request('/videos/{id}', 'GET', { _pathParams: { id: videoId } });
+    },
+    
+    /**
+     * 5.6 删除视频
+     * @param {number} videoId - 视频ID
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async deleteVideo(videoId) {
+        return await this.request('/videos/{id}', 'DELETE', { _pathParams: { id: videoId } });
+    },
+    
+    /**
+     * 5.1 秒传检测与上传
+     * @param {object} data - 秒传数据 {clubId, title, etag, duration}
+     * @returns {Promise} {code, msg, data: 视频信息或null}
+     */
+    async fastUploadVideo(data) {
+        return await this.request('/videos/fast-upload', 'POST', data);
+    },
+    
+    // ================ 评论模块（需Token） ================
+    
+    /**
+     * 6.1 发表评论
+     * @param {object} commentData - 评论数据 {videoId, content, videoTime, parentId}
+     * @returns {Promise} {code, msg, data: 评论信息}
+     */
+    async postComment(commentData) {
+        return await this.request('/comments', 'POST', commentData);
+    },
+    
+    /**
+     * 6.2 评论列表
+     * @param {number} videoId - 视频ID
+     * @param {object} params - 查询参数 {page, pageSize}
+     * @returns {Promise} {code, msg, data: {list, total}}
+     */
+    async getComments(videoId, params = {}) {
+        const queryParams = { videoId, ...params };
+        const queryString = this.buildQueryString(queryParams);
+        return await this.request('/comments' + queryString, 'GET');
+    },
+    
+    /**
+     * 6.3 删除评论
+     * @param {number} commentId - 评论ID
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async deleteComment(commentId) {
+        return await this.request('/comments/{id}', 'DELETE', { _pathParams: { id: commentId } });
     }
 };
