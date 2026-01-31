@@ -1,0 +1,732 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>任务管理 - 教师视频俱乐部</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div id="page-task" class="page active">
+        <div class="header">
+            <div class="header-left">
+                <button class="btn btn-text" onclick="goBackToHome()" style="margin-right:10px;">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <span class="platform-name">教师视频俱乐部</span>
+                <span style="color: #999; font-weight: normal;"> | 教学任务</span>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <div class="avatar" id="task-user-avatar">王</div>
+                    <span id="task-user-name">王老师</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="task-page-container">
+            <h3 style="margin: 20px 0; color: #333;">教学视频任务</h3>
+            
+            <!-- 任务列表容器 -->
+            <div class="task-list-container" id="taskList">
+                <!-- 这里会自动显示2个任务 -->
+            </div>
+        </div>
+    </div>
+
+<script>
+    // ========== 0. 页面状态 ==========
+    let clubTaskList = [];
+    let taskPageInitialized = false;
+    let currentClubId = null;
+    let currentClubName = '';
+
+    // ========== 1. 页面加载后获取任务详情 ==========
+    async function initTaskPage() {
+        if (taskPageInitialized) return;
+        taskPageInitialized = true;
+
+        console.log('任务页面初始化');
+        
+        // 更新用户显示
+        updateUserDisplay();
+        
+        // 拉取任务列表并显示子任务
+        await loadTasksAndDetail();
+    }
+    
+    document.addEventListener('DOMContentLoaded', initTaskPage);
+
+    // ========== 2. 更新用户显示 ==========
+    function updateUserDisplay() {
+        if (window.Auth && window.Auth.getUser()) {
+            const user = window.Auth.getUser();
+            const avatarElements = document.querySelectorAll('#task-user-avatar');
+            const nameElements = document.querySelectorAll('#task-user-name');
+            
+            avatarElements.forEach(element => {
+                if (element) element.textContent = user.name.charAt(0);
+            });
+            nameElements.forEach(element => {
+                if (element) element.textContent = user.name;
+            });
+        }
+    }
+
+    // ========== 3. 从URL获取任务ID ==========
+    function getTaskIdFromURL() {
+        // 方法1：从hash参数获取
+        const hash = window.location.hash;
+        const params = new URLSearchParams(hash.split('?')[1]);
+        let taskId = params.get('taskId');
+        
+        // 方法2：从App状态获取
+        if (!taskId && window.App && window.App.state && window.App.state.currentTaskId) {
+            taskId = window.App.state.currentTaskId;
+        }
+        
+        // 方法3：从Tasks模块获取
+        if (!taskId && window.Tasks && window.Tasks.currentTaskDetail) {
+            taskId = window.Tasks.currentTaskDetail.taskInfo.taskId;
+        }
+        
+        console.log('获取到的任务ID:', taskId);
+        return taskId ? parseInt(taskId) : null;
+    }
+
+    // ========== 3.1 获取俱乐部ID（任务列表查询用） ==========
+    function getClubIdFromContext() {
+        const hash = window.location.hash;
+        const params = new URLSearchParams(hash.split('?')[1]);
+        let clubId = params.get('clubId');
+        
+        if (!clubId && window.App && window.App.state && window.App.state.currentClubId) {
+            clubId = window.App.state.currentClubId;
+        }
+        
+        if (!clubId && window.Clubs && window.Clubs.getCurrentClub) {
+            const currentClub = window.Clubs.getCurrentClub();
+            if (currentClub) {
+                clubId = currentClub.id || currentClub.clubId;
+                currentClubName = currentClub.name || '';
+            }
+        }
+
+        if (!clubId && window.Utils) {
+            const savedClub = Utils.getFromStorage('current_club');
+            if (savedClub) {
+                clubId = savedClub.id || savedClub.clubId;
+                currentClubName = savedClub.name || '';
+            }
+        }
+        
+        if (clubId) {
+            currentClubId = parseInt(clubId);
+        }
+        
+        return currentClubId;
+    }
+
+    // ========== 4. 先拉取任务列表，再加载任务详情 ==========
+    async function loadTasksAndDetail() {
+        try {
+            const clubId = getClubIdFromContext();
+            if (!clubId) {
+                showMessage('无法获取俱乐部信息', 'error');
+                goBackToHome();
+                return;
+            }
+
+            if (!window.API || !API.getTasks) {
+                throw new Error('任务接口不可用');
+            }
+
+            const listResult = await API.getTasks(clubId);
+            if (listResult && listResult.code === 0 && Array.isArray(listResult.data)) {
+                clubTaskList = listResult.data;
+                console.log('已获取任务列表', clubTaskList.length);
+            } else {
+                clubTaskList = [];
+                console.warn('任务列表为空或格式不正确');
+            }
+
+            let taskId = getTaskIdFromURL();
+            if (!taskId && clubTaskList.length > 0) {
+                taskId = clubTaskList[0].taskId || clubTaskList[0].id;
+            }
+
+            if (!taskId) {
+                showMessage('暂无可用任务', 'warning');
+                return;
+            }
+
+            await loadTaskDetail(taskId);
+        } catch (error) {
+            console.error('加载任务列表或详情失败:', error);
+            showMessage('加载任务失败: ' + error.message, 'error');
+        }
+    }
+
+    // ========== 5. 加载任务详情 ==========
+    async function loadTaskDetail(taskId) {
+        try {
+            showMessage('正在加载任务...', 'info');
+            
+            // 确保Tasks模块已加载
+            if (!window.Tasks) {
+                throw new Error('任务模块未加载');
+            }
+            
+            // 获取任务详情
+            const taskDetail = await Tasks.getTaskDetail(taskId);
+            const taskInfo = taskDetail?.taskInfo || taskDetail;
+            
+            if (!taskInfo) {
+                throw new Error('获取任务详情失败');
+            }
+
+            if (taskInfo.clubId) {
+                currentClubId = taskInfo.clubId;
+            }
+            if (!currentClubName && window.Clubs && Array.isArray(window.Clubs.myClubs)) {
+                const found = window.Clubs.myClubs.find(c => c.id === currentClubId || c.clubId === currentClubId);
+                if (found) currentClubName = found.name || '';
+            }
+            
+            // 仅使用接口文档的 subTasks 字段
+            const mergedTask = {
+                ...taskInfo,
+                subTasks: Array.isArray(taskInfo.subTasks) ? taskInfo.subTasks : []
+            };
+            
+            // 显示任务详情
+            displayTaskDetail(mergedTask);
+            
+        } catch (error) {
+            console.error('加载任务详情失败:', error);
+            showMessage('加载任务失败: ' + error.message, 'error');
+            
+            // 如果失败，3秒后返回
+            setTimeout(() => {
+                goBackToHome();
+            }, 3000);
+        }
+    }
+
+    // ========== 6. 显示任务详情和子任务 ==========
+    function displayTaskDetail(taskInfo) {
+        console.log('显示任务详情:', taskInfo);
+        
+        // 更新页面标题
+        const titleElement = document.querySelector('.task-page-container h3');
+        if (titleElement && taskInfo.title) {
+            titleElement.textContent = taskInfo.title;
+        }
+        
+        // 显示子任务
+        displaySubTasks(taskInfo);
+    }
+
+    // ========== 7. 显示子任务 ==========
+function displaySubTasks(taskInfo) {
+    const taskListContainer = document.getElementById('taskList');
+    
+    if (!taskListContainer) {
+        console.error('找不到任务列表容器');
+        return;
+    }
+
+    // 兼容不同字段命名
+    const subTasks = Array.isArray(taskInfo.subTasks)
+        ? taskInfo.subTasks
+        : Array.isArray(taskInfo.subtasks)
+            ? taskInfo.subtasks
+            : [];
+
+    // 按order字段排序，确保阅读教学设计排在第一位
+    const sortedSubTasks = [...subTasks].sort((a, b) => {
+        const orderA = a.order !== undefined ? a.order : (a.type === 'read_design' ? 0 : 999);
+        const orderB = b.order !== undefined ? b.order : (b.type === 'read_design' ? 0 : 999);
+        return orderA - orderB;
+    });
+
+    // 清空容器
+    taskListContainer.innerHTML = '';
+
+    if (!sortedSubTasks || sortedSubTasks.length === 0) {
+        taskListContainer.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-tasks"></i>
+                <h3>暂无子任务</h3>
+                <p>该任务还没有子任务</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // 显示每个子任务
+    sortedSubTasks.forEach((subTask, index) => {
+        // 判断子任务类型
+        const isReadDesignTask = subTask.type === 'read_design';
+        const isWatchTask = subTask.type === 'watch';
+        const isResearchTask = subTask.type === 'research';
+        
+        const statusClass = subTask.status === 'completed' ? 'task-status-complete' : 'task-status-incomplete';
+        const statusText = subTask.status === 'completed' ? '已完成 <i class="fas fa-check"></i>' : '未完成';
+        const subtaskId = subTask.subtaskId || subTask.id;
+        const description = subTask.description || '';
+        
+        // 根据任务类型设置平台信息
+        let platformInfo = '';
+        let buttonAction = '';
+        
+        if (isReadDesignTask) {
+            platformInfo = '<div style="font-size:14px; color:#666; margin-top:8px; display: flex; align-items: center; gap: 6px;"><i class="fas fa-file-pdf"></i> 点击查看教学设计文档</div>';
+            buttonAction = `onclick="previewTeachingDesign(${taskInfo.taskId})"`;
+        } else if (isWatchTask) {
+            // 修改这里：不再跳转到分秒帧平台，而是跳转到我们的视频播放器
+            platformInfo = '<div style="font-size:14px; color:#666; margin-top:8px; display: flex; align-items: center; gap: 6px;"><i class="fas fa-video"></i> 在教学视频平台观看视频</div>';
+            buttonAction = `onclick="goToVideoPlayer(${taskInfo.taskId}, '${taskInfo.title}')"`;
+        } else if (isResearchTask) {
+            platformInfo = '<div style="font-size:14px; color:#666; margin-top:8px; display: flex; align-items: center; gap: 6px;"><i class="fas fa-file-alt"></i> 请在石墨文档协同空间完成笔记</div>';
+            buttonAction = `onclick="goToPlatform(${subtaskId})"`;
+        }
+        
+        // 创建子任务卡片
+        const taskCardHTML = `
+            <div class="task-card-item" data-subtask-id="${subtaskId}" data-task-id="${taskInfo.taskId}">
+                <div class="task-card-header">
+                    <div class="task-card-title">${subTask.title}</div>
+                    <div class="task-card-status ${statusClass}">${statusText}</div>
+                </div>
+                <div class="task-card-description">
+                    ${description}
+                    ${platformInfo}
+                    ${subTask.status === 'completed' && subTask.submission ? `
+                    <div style="font-size:12px; color:#52c41a; margin-top:4px; padding:8px; background:rgba(82,196,26,0.1); border-radius:4px;">
+                        <i class="fas fa-check-circle"></i> 
+                        已完成于: ${formatDate(subTask.submission.completedAt)}
+                    </div>
+                    ` : ''}
+                </div>
+                <div class="task-card-actions">
+                    <!-- 任务操作按钮 -->
+                    ${isReadDesignTask ? `
+                    <button class="btn btn-primary" ${buttonAction}>
+                        <i class="fas fa-eye"></i> 
+                        查看教学设计
+                    </button>
+                    ` : isWatchTask ? `
+                    <button class="btn btn-primary" ${buttonAction}>
+                        <i class="fas fa-video"></i> 
+                        观看视频
+                    </button>
+                    ` : `
+                    <button class="btn btn-primary" ${buttonAction}>
+                        <i class="fas fa-file-alt"></i> 
+                        前往石墨文档协同空间
+                    </button>
+                    `}
+                    
+                    <!-- 标记完成按钮（未完成时才显示） -->
+                    ${subTask.status !== 'completed' ? `
+                    <button class="btn btn-success" onclick="completeSubTask(${taskInfo.taskId}, ${subtaskId}, ${isResearchTask})">
+                        <i class="fas fa-check-circle"></i> 标记完成
+                    </button>
+                    ` : `
+                    <button class="btn btn-outline" disabled>
+                        <i class="fas fa-check-circle"></i> 已完成
+                    </button>
+                    `}
+                </div>
+            </div>
+        `;
+        
+        taskListContainer.innerHTML += taskCardHTML;
+    });
+    
+    console.log('子任务显示完成，共', sortedSubTasks.length, '个子任务');
+}
+
+    // ========== 8. 跳转到视频播放页面 ==========
+async function goToVideoPlayer(taskId, title) {
+    console.log('跳转到视频播放页面，任务ID:', taskId, '标题:', title);
+    
+    try {
+        // 获取任务详情，包含视频URL
+        const taskDetail = await Tasks.getTaskDetail(taskId);
+        const taskInfo = taskDetail?.taskInfo || taskDetail;
+        
+        let videoUrl = '';
+        let videoTitle = title || '教学视频研讨';
+        
+        // 尝试从不同位置获取视频URL
+        if (taskInfo.videoUrl) {
+            videoUrl = taskInfo.videoUrl;
+        } else if (taskInfo.resource && taskInfo.resource.videoUrl) {
+            videoUrl = taskInfo.resource.videoUrl;
+        } else if (taskInfo.subTasks) {
+            const watchTask = taskInfo.subTasks.find(st => st.type === 'watch');
+            if (watchTask && watchTask.videoUrl) {
+                videoUrl = watchTask.videoUrl;
+            }
+        }
+        
+        // 如果没有视频URL，使用默认URL
+        if (!videoUrl) {
+            console.warn('没有找到视频URL，使用默认视频');
+            videoUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+        }
+        
+        console.log('视频播放参数:', { videoUrl, videoTitle, taskId });
+        
+        // 跳转到视频播放页面
+        if (window.App && window.App.navigateToWithParams) {
+            window.App.navigateToWithParams('video-player', {
+                videoUrl: encodeURIComponent(videoUrl),
+                taskId: taskId,
+                title: encodeURIComponent(videoTitle)
+            });
+        } else {
+            window.location.hash = `video-player?videoUrl=${encodeURIComponent(videoUrl)}&taskId=${taskId}&title=${encodeURIComponent(videoTitle)}`;
+        }
+    } catch (error) {
+        console.error('跳转到视频播放页面失败:', error);
+        showMessage('加载视频信息失败: ' + error.message, 'error');
+        
+        // 失败时使用默认视频
+        const defaultUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+        if (window.App && window.App.navigateToWithParams) {
+            window.App.navigateToWithParams('video-player', {
+                videoUrl: encodeURIComponent(defaultUrl),
+                taskId: taskId,
+                title: encodeURIComponent(title || '教学视频研讨')
+            });
+        } else {
+            window.location.hash = `video-player?videoUrl=${encodeURIComponent(defaultUrl)}&taskId=${taskId}&title=${encodeURIComponent(title || '教学视频研讨')}`;
+        }
+    }
+}
+
+    // ========== 8.1 跳转到平台（用于研视频任务） ==========
+    function goToPlatform(subtaskId) {
+        // 根据子任务ID找到对应的子任务信息
+        const taskCards = document.querySelectorAll('.task-card-item');
+        let targetTaskCard = null;
+        
+        // 查找包含当前subtaskId的任务卡片
+        for (const card of taskCards) {
+            const cardSubtaskId = card.getAttribute('data-subtask-id');
+            if (cardSubtaskId && parseInt(cardSubtaskId) === subtaskId) {
+                targetTaskCard = card;
+                break;
+            }
+        }
+        
+        let externalLink = '';
+        let platformName = '';
+        
+        // 检查是否为看视频任务（通过卡片内的图标判断）
+        if (targetTaskCard) {
+            const watchIcon = targetTaskCard.querySelector('.fa-video');
+            if (watchIcon) {
+                // 看视频任务 - 跳转到我们的视频播放页面
+                const taskId = targetTaskCard.getAttribute('data-task-id');
+                const taskTitle = targetTaskCard.querySelector('.task-card-title').textContent;
+                goToVideoPlayer(taskId, taskTitle);
+                return;
+            } else {
+                // 研视频任务 - 石墨文档
+                externalLink = 'https://shimo.im/space/2wAldmGZonhwbwAP';
+                platformName = '石墨文档协同空间';
+            }
+        } else {
+            // 如果没有找到任务卡片，使用原来的逻辑作为fallback
+            if (subtaskId === 1) {
+                // 看视频任务 - 跳转到我们的视频播放页面
+                const taskCards = document.querySelectorAll('.task-card-item');
+                if (taskCards.length > 0) {
+                    const taskId = taskCards[0].getAttribute('data-task-id');
+                    const taskTitle = taskCards[0].querySelector('.task-card-title').textContent;
+                    goToVideoPlayer(taskId, taskTitle);
+                }
+                return;
+            } else {
+                externalLink = 'https://shimo.im/space/2wAldmGZonhwbwAP';
+                platformName = '石墨文档协同空间';
+            }
+        }
+        
+        console.log('打开平台链接:', externalLink);
+        window.open(externalLink, '_blank');
+        
+        // 提示用户
+        const message = `请在${platformName}完成任务后，返回此页面点击"标记完成"按钮`;
+        showMessage(message, 'info');
+    }
+
+    // ========== 9. 完成子任务 ==========
+async function completeSubTask(taskId, subtaskId, isResearchTask = false) {
+    console.log('完成子任务:', { taskId, subtaskId, isResearchTask });
+    
+    // 根据子任务ID找到对应的子任务信息
+    const taskCards = document.querySelectorAll('.task-card-item');
+    let targetTaskCard = null;
+    
+    // 查找包含当前subtaskId的任务卡片
+    for (const card of taskCards) {
+        const cardSubtaskId = card.getAttribute('data-subtask-id');
+        if (cardSubtaskId && parseInt(cardSubtaskId) === subtaskId) {
+            targetTaskCard = card;
+            break;
+        }
+    }
+    
+    // 判断子任务类型
+    let taskType = 'unknown';
+    let platformName = '';
+    let confirmMessage = '';
+    
+    if (targetTaskCard) {
+        // 检查任务类型
+        const readDesignIcon = targetTaskCard.querySelector('.fa-eye');
+        const watchIcon = targetTaskCard.querySelector('.fa-video');
+        const researchIcon = targetTaskCard.querySelector('.fa-file-alt');
+        
+        if (readDesignIcon) {
+            // 阅读教学设计任务
+            taskType = 'read_design';
+            platformName = '教学设计文档';
+            confirmMessage = `请确认：\n\n✅ 已认真阅读教学设计文档\n✅ 理解教学设计的核心要点\n\n确定标记为已完成吗？`;
+        } else if (watchIcon) {
+            // 看视频任务
+            taskType = 'watch';
+            platformName = '视频研讨平台';
+            confirmMessage = `请确认：\n\n✅ 已在 ${platformName} 完整观看视频\n✅ 视频研讨已完成\n\n确定标记为已完成吗？`;
+        } else if (researchIcon) {
+            // 研视频任务
+            taskType = 'research';
+            platformName = '石墨文档协同空间';
+            confirmMessage = `请确认：\n\n✅ 已在 ${platformName} 完成教研笔记\n✅ 笔记内容已提交\n\n确定标记为已完成吗？`;
+        }
+    }
+    
+    // 特殊处理阅读教学设计任务
+    if (taskType === 'read_design') {
+        return await completeReadDesignTask(taskId, subtaskId);
+    }
+    
+    if (!confirm(confirmMessage)) {
+        showMessage('请先完成任务', 'info');
+        return;
+    }
+    
+    try {
+        showMessage('正在提交任务...', 'info');
+        
+        // 准备提交数据
+        const completionData = {};
+        
+        // 调用API提交子任务
+        const result = await Tasks.completeSubTask(taskId, subtaskId, completionData);
+        
+        if (result.success) {
+            showMessage('任务提交成功！', 'success');
+            
+            // 重新加载任务详情
+            setTimeout(async () => {
+                await loadTaskDetail(taskId);
+                
+                // ========== 新增：通知视频页面更新 ==========
+                if (window.parent && window.parent.videoPageInitialized) {
+                    // 如果视频页面已初始化，刷新任务列表
+                    window.parent.loadVideoTasks && window.parent.loadVideoTasks();
+                }
+            }, 1000);
+        } else {
+            showMessage(result.message || '提交任务失败', 'error');
+        }
+    } catch (error) {
+        console.error('完成子任务失败:', error);
+        showMessage('提交任务失败: ' + error.message, 'error');
+    }
+}
+
+    // ========== 10. 格式化日期 ==========
+    function formatDate(dateString) {
+        if (!dateString) return '刚刚';
+        const date = new Date(dateString);
+        return date.toLocaleString('zh-CN', {
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    // ========== 11. 显示消息 ==========
+    function showMessage(message, type = 'info') {
+        if (window.Utils && window.Utils.showNotification) {
+            window.Utils.showNotification(message, type);
+            return;
+        }
+        
+        // 简单的通知实现
+        const notification = document.createElement('div');
+        notification.textContent = message;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'error' ? '#ff4d4f' : type === 'success' ? '#52c41a' : '#1890ff'};
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            z-index: 1000;
+            font-size: 14px;
+            max-width: 300px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        `;
+        
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 3000);
+    }
+
+    // ========== 12. 返回视频页 ==========
+    function goBackToHome() {
+        const clubId = currentClubId || getClubIdFromContext();
+        const clubName = currentClubName;
+        const targetHash = clubId ? `video?clubId=${clubId}${clubName ? `&clubName=${encodeURIComponent(clubName)}` : ''}` : 'home';
+
+        if (window.App && window.App.navigateToWithParams && clubId) {
+            window.App.navigateToWithParams('video', { clubId, clubName });
+            return;
+        }
+
+        if (window.App && window.App.navigateTo && !clubId) {
+            window.App.navigateTo('home');
+            return;
+        }
+
+        window.location.hash = targetHash;
+    }
+
+    // ========== 13.1 预览教学设计 ==========
+function previewTeachingDesign(taskId) {
+    console.log('预览教学设计，任务ID:', taskId);
+    
+    // 创建全屏预览模态框
+    const modalHTML = `
+        <div id="design-preview-modal" class="fullscreen-modal">
+            <div class="fullscreen-modal-content">
+                <div class="fullscreen-modal-header">
+                    <h3>教学设计文档预览</h3>
+                    <button class="btn-close-fullscreen" onclick="closeDesignPreview()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="fullscreen-modal-body">
+                    <iframe id="design-preview-frame" 
+                            style="width:100%; height:100%; border:none;" 
+                            title="教学设计文档预览">
+                    </iframe>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // 添加模态框到页面
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // 设置PDF预览URL（这里需要根据实际文件路径修改）
+    // 假设PDF文件存储在某个位置，可以根据taskId获取对应的PDF
+    const pdfUrl = `api/tasks/${taskId}/design-document`; // 这里需要根据实际API调整
+    // 或者如果是静态文件
+    // const pdfUrl = 'assets/design-documents/design-' + taskId + '.pdf';
+    
+    // 如果是测试，可以使用示例PDF
+    const testPdfUrl = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
+    
+    // 设置iframe的src
+    const iframe = document.getElementById('design-preview-frame');
+    iframe.src = testPdfUrl;
+    
+    // 显示模态框
+    setTimeout(() => {
+        document.getElementById('design-preview-modal').classList.add('active');
+    }, 10);
+    
+    // 阻止背景滚动
+    document.body.style.overflow = 'hidden';
+}
+
+// ========== 13.2 关闭教学设计预览 ==========
+function closeDesignPreview() {
+    const modal = document.getElementById('design-preview-modal');
+    if (modal) {
+        modal.classList.remove('active');
+        setTimeout(() => {
+            modal.remove();
+        }, 300);
+    }
+    
+    // 恢复背景滚动
+    document.body.style.overflow = 'auto';
+}
+
+// ========== 13.3 完成阅读教学设计子任务 ==========
+async function completeReadDesignTask(taskId, subtaskId) {
+    const confirmMessage = `请确认：\n\n✅ 已认真阅读教学设计文档\n✅ 理解教学设计的核心要点\n\n确定标记为已完成吗？`;
+    
+    if (!confirm(confirmMessage)) {
+        showMessage('请先阅读教学设计文档', 'info');
+        return;
+    }
+    
+    try {
+        showMessage('正在提交任务...', 'info');
+        
+        // 准备提交数据
+        const completionData = {
+            type: 'read_design',
+            notes: '已阅读教学设计文档'
+        };
+        
+        // 调用API提交子任务（这里需要适配API）
+        // 注意：API可能需要支持新的子任务类型
+        const result = await Tasks.completeSubTask(taskId, subtaskId, completionData);
+        
+        if (result.success) {
+            showMessage('教学设计阅读任务提交成功！', 'success');
+            
+            // 重新加载任务详情
+            setTimeout(async () => {
+                await loadTaskDetail(taskId);
+            }, 1000);
+        } else {
+            showMessage(result.message || '提交任务失败', 'error');
+        }
+    } catch (error) {
+        console.error('完成教学设计阅读任务失败:', error);
+        showMessage('提交任务失败: ' + error.message, 'error');
+    }
+}
+
+    // ========== 14. 确保函数在全局可用 ==========
+    window.goToPlatform = goToPlatform;
+    window.goToVideoPlayer = goToVideoPlayer;
+    window.completeSubTask = completeSubTask;
+    window.goBackToHome = goBackToHome;
+    window.initTaskPage = initTaskPage;
+    window.previewTeachingDesign = previewTeachingDesign; // 新增
+    window.closeDesignPreview = closeDesignPreview; // 新增
+    window.completeReadDesignTask = completeReadDesignTask; // 新增
+
+    // 立即尝试初始化（兼容 SPA 动态加载）
+    initTaskPage();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教师视频俱乐部 - 视频播放</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #1890ff;
+            --primary-light: #40a9ff;
+            --primary-dark: #096dd9;
+            --danger-color: #ff4d4f;
+            --warning-color: #faad14;
+            --success-color: #52c41a;
+            --text-main: #333;
+            --text-sub: #666;
+            --bg-light: #f5f7fa;
+            --border-color: #eee;
+            --card-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            --hover-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+            
+            /* 时间点标记颜色 */
+            --time-color-0: #1890ff;
+            --time-color-1: #52c41a;
+            --time-color-2: #faad14;
+            --time-color-3: #ff4d4f;
+            --time-color-4: #722ed1;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+        }
+        
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        body {
+            background-color: var(--bg-light);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            color: var(--text-main);
+        }
+        
+        /* 顶部导航栏 */
+        .header {
+            background: white;
+            padding: 0 24px;
+            height: 68px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            flex-shrink: 0;
+        }
+        
+        .logo {
+            color: var(--primary-color);
+            font-size: 22px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-color), #722ed1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            transition: background 0.3s;
+        }
+        
+        .user-info:hover {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary-color), #722ed1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* 主要内容区 */
+        .main-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            padding: 20px;
+        }
+        
+        /* 左侧视频区域 */
+        .video-container {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+            padding-right: 20px;
+            overflow: hidden;
+        }
+        
+        .video-player-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+            position: relative;
+        }
+        
+        .video-player {
+            background-color: #000;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        .video-player video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        /* ----------------------------------------------------------- */
+        /* 新增：进度条覆盖层样式 */
+        /* ----------------------------------------------------------- */
+        .video-progress-overlay {
+            position: absolute;
+            bottom: 45px; /* 对齐原生进度条的位置，可能需要根据浏览器微调 */
+            left: 12px;
+            right: 12px;
+            height: 10px;
+            pointer-events: none; /* 穿透点击，不影响视频控制 */
+            z-index: 10;
+        }
+
+        .marker-item {
+            position: absolute;
+            top: 0;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            transform: translateX(-50%);
+            cursor: pointer;
+            pointer-events: auto; /* 恢复标记点的点击交互 */
+            border: 2px solid #fff;
+            box-shadow: 0 0 4px rgba(0,0,0,0.3);
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .marker-item:hover {
+            transform: translateX(-50%) scale(1.6);
+            z-index: 20;
+        }
+
+        /* 悬浮气泡 */
+        .marker-tooltip {
+            position: absolute;
+            bottom: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .marker-item:hover .marker-tooltip {
+            display: block;
+        }
+
+        .marker-item.level-0 { background-color: var(--time-color-0); }
+        .marker-item.level-1 { background-color: var(--time-color-1); }
+        .marker-item.level-2 { background-color: var(--time-color-2); }
+        .marker-item.level-3 { background-color: var(--time-color-3); }
+        .marker-item.level-4 { background-color: var(--time-color-4); }
+        /* ----------------------------------------------------------- */
+        
+        .video-controls {
+            padding: 12px 20px;
+            background-color: #1a1a1a;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        
+        /* 右侧评论区域 */
+        .comments-container {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+        }
+        
+        .comments-header {
+            padding: 20px 20px 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            color: var(--text-main);
+            font-weight: 600;
+        }
+        
+        .stats-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 10px;
+            font-size: 13px;
+            color: var(--text-sub);
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        /* 评论列表 */
+        .comments-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 20px;
+        }
+        
+        .comments-list::-webkit-scrollbar { width: 6px; }
+        .comments-list::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px; }
+        .comments-list::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 3px; }
+        
+        .comment-item {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .comment-item:last-child { border-bottom: none; }
+        .comment-item:hover { background-color: #f9f9f9; }
+        
+        .comment-item.highlighted {
+            background-color: rgba(24, 144, 255, 0.08);
+            border-left: 4px solid var(--primary-color);
+            padding-left: 16px;
+            margin-left: -20px;
+            animation: highlightPulse 2s ease;
+        }
+        
+        @keyframes highlightPulse {
+            0% { background-color: rgba(24, 144, 255, 0.08); }
+            50% { background-color: rgba(24, 144, 255, 0.15); }
+            100% { background-color: rgba(24, 144, 255, 0.08); }
+        }
+        
+        .comment-header { display: flex; align-items: center; margin-bottom: 8px; }
+        
+        .comment-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), #722ed1);
+            margin-right: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+        
+        .comment-author { font-weight: 600; color: var(--text-main); font-size: 13px; }
+        
+        .time-marker {
+            display: inline-block;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-left: 10px;
+            vertical-align: middle;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: white;
+        }
+        
+        .time-marker:hover { transform: scale(1.05); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        .time-marker.level-0 { background-color: var(--time-color-0); }
+        .time-marker.level-1 { background-color: var(--time-color-1); }
+        .time-marker.level-2 { background-color: var(--time-color-2); }
+        .time-marker.level-3 { background-color: var(--time-color-3); }
+        .time-marker.level-4 { background-color: var(--time-color-4); }
+        
+        .comment-time { color: var(--text-sub); font-size: 11px; margin-left: 8px; opacity: 0.8; }
+        
+        .comment-content {
+            color: var(--text-main);
+            line-height: 1.5;
+            font-size: 13px;
+            margin-top: 8px;
+            padding-left: 36px;
+        }
+        
+        .reply-indicator { 
+            font-size: 11px; 
+            color: var(--primary-color); 
+            margin-left: 8px;
+            background: rgba(24, 144, 255, 0.1);
+            padding: 1px 6px;
+            border-radius: 3px;
+        }
+        
+        .reply-btn {
+            background: none; border: none; color: var(--primary-color); font-size: 12px;
+            cursor: pointer; padding: 4px 8px; border-radius: 4px; margin-top: 8px; transition: all 0.2s ease;
+            margin-left: 36px;
+        }
+        .reply-btn:hover { background-color: rgba(24, 144, 255, 0.1); }
+        
+        .reply-form {
+            margin-top: 8px;
+            padding-left: 36px;
+            display: none;
+        }
+        .reply-form.active { display: block; }
+        .reply-input {
+            width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px;
+            resize: none; min-height: 60px; margin-bottom: 8px; font-family: inherit; font-size: 13px;
+        }
+        .reply-input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2); }
+        .reply-actions { display: flex; justify-content: flex-end; gap: 8px; }
+        .reply-submit, .reply-cancel { padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500; }
+        .reply-submit { background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); color: white; }
+        .reply-cancel { background-color: #f0f0f0; color: var(--text-sub); }
+        
+        .reply-list { margin-top: 8px; padding-left: 0; }
+        .reply-item { padding: 8px 0; border-bottom: none; margin-bottom: 4px; }
+        
+        .comment-form {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+        .comment-form-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .comment-input-container { position: relative; }
+        .comment-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            resize: none;
+            min-height: 80px;
+            margin-bottom: 12px;
+            font-family: inherit;
+            font-size: 13px;
+        }
+        .timestamp-toggle {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .timestamp-toggle input { margin-right: 8px; accent-color: var(--primary-color); }
+        .timestamp-toggle label { font-size: 13px; color: var(--text-main); cursor: pointer; }
+        .timestamp-display { margin-left: 10px; font-size: 12px; color: var(--primary-color); font-weight: 500; display: none; }
+        .comment-submit {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 13px;
+            width: 100%;
+        }
+        
+        .current-time-indicator {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            font-size: 10px;
+            padding: 3px 6px;
+            border-radius: 4px;
+            display: none;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        .comment-item.current-playing .current-time-indicator { display: block; }
+        
+        @media (max-width: 992px) {
+            .main-container { flex-direction: column; }
+            .video-container { padding-right: 0; padding-bottom: 20px; }
+            .comments-container { min-height: 400px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">教师视频俱乐部</div>
+        <div class="user-info">
+            <div class="user-avatar" id="userAvatar">张</div>
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <div class="video-container">
+            <div class="video-player-wrapper">
+                <div class="video-player">
+                    <video id="mainVideo" controls poster="https://via.placeholder.com/800x450/3498db/ffffff?text=视频预览">
+                        <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="video/mp4">
+                    </video>
+                    
+                    <div class="video-progress-overlay" id="videoProgressOverlay">
+                        </div>
+
+                    <div class="video-controls">
+                        <div>当前时间: <span id="currentTimeDisplay">00:00</span> / 总时长: <span id="durationDisplay">00:00</span></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 15px; color: var(--text-sub); font-size: 13px; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-lightbulb" style="color: var(--warning-color);"></i>
+                <span>提示：视频进度条上的彩色圆点表示在该时刻有老师留下了教学评论。</span>
+            </div>
+        </div>
+        
+        <div class="comments-container">
+            <div class="comments-header">
+                <h2 class="section-title">评论 (<span id="commentCount">0</span>)</h2>
+                <div class="stats-container">
+
+                </div>
+            </div>
+            
+            <div class="comments-list" id="commentsList"></div>
+            
+            <div class="comment-form">
+                <div class="comment-form-header">
+                    <div class="comment-avatar" id="currentUserAvatar">你</div>
+                    <div class="comment-author">你</div>
+                </div>
+                
+                <div class="timestamp-toggle">
+                    <input type="checkbox" id="addTimestamp">
+                    <label for="addTimestamp">添加时间点标记</label>
+                    <span class="timestamp-display" id="timestampDisplay">00:00</span>
+                </div>
+                
+                <div class="comment-input-container">
+                    <textarea class="comment-input" id="commentInput" placeholder="请输入您的评论..."></textarea>
+                </div>
+                
+                <button class="comment-submit" id="commentSubmit">发表评论</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class VideoCommentSystem {
+            constructor() {
+                this.video = document.getElementById('mainVideo');
+                this.commentsList = document.getElementById('commentsList');
+                this.overlay = document.getElementById('videoProgressOverlay');
+                this.comments = [];
+                this.currentUser = { name: "张老师", avatar: "张" };
+                this.currentHighlightedComment = null;
+                this.isScrollingToComment = false;
+                this.timePointCounts = {};
+                this.replyInProgress = null;
+                this.videoDuration = 0;
+                
+                this.init();
+            }
+            
+            init() {
+                this.loadUserInfo();
+                this.loadExampleComments();
+                this.setupVideoEvents();
+                this.setupEventListeners();
+                this.renderComments();
+                this.initOverlay();
+            }
+            
+            loadUserInfo() {
+                const userAvatar = document.getElementById('userAvatar');
+                const currentUserAvatar = document.getElementById('currentUserAvatar');
+                const savedUserName = localStorage.getItem('userName');
+                if (savedUserName) {
+                    this.currentUser.name = savedUserName;
+                    this.currentUser.avatar = savedUserName.charAt(0);
+                }
+                userAvatar.textContent = this.currentUser.avatar;
+                currentUserAvatar.textContent = this.currentUser.avatar;
+            }
+            
+            loadExampleComments() {
+                this.comments = [
+                    { 
+                        id: 1, 
+                        author: "李老师", 
+                        avatar: "李", 
+                        content: "讲解非常清晰，特别是图像变化的演示！", 
+                        timestamp: 30, 
+                        time: "2023-10-16 14:30", 
+                        parentId: null,
+                        replies: [
+                            { 
+                                id: 11, 
+                                author: "王老师", 
+                                avatar: "王", 
+                                content: "是的，我也觉得很有帮助", 
+                                time: "2023-10-16 15:10", 
+                                parentId: 1,
+                                replies: [
+                                    { 
+                                        id: 111, 
+                                        author: "李老师", 
+                                        avatar: "李", 
+                                        content: "谢谢王老师的认可！", 
+                                        time: "2023-10-16 15:30", 
+                                        parentId: 11,
+                                        replies: []
+                                    }
+                                ]
+                            }
+                        ] 
+                    },
+                    { 
+                        id: 2, 
+                        author: "王老师", 
+                        avatar: "王", 
+                        content: "请问有没有配套的练习题可以提供？", 
+                        timestamp: 85, 
+                        time: "2023-10-15 20:15", 
+                        parentId: null,
+                        replies: [] 
+                    },
+                    { 
+                        id: 3, 
+                        author: "赵老师", 
+                        avatar: "赵", 
+                        content: "一次函数是初中数学的重点，讲解透彻！", 
+                        timestamp: 150, 
+                        time: "2023-10-15 18:42", 
+                        parentId: null,
+                        replies: [] 
+                    },
+                    { 
+                        id: 4, 
+                        author: "陈老师", 
+                        avatar: "陈", 
+                        content: "视频质量很高，谢谢分享。", 
+                        timestamp: 210, 
+                        time: "2023-10-15 16:20", 
+                        parentId: null,
+                        replies: [] 
+                    },
+                    { 
+                        id: 5, 
+                        author: "孙老师", 
+                        avatar: "孙", 
+                        content: "关于斜率k的讲解很到位。", 
+                        timestamp: 300, 
+                        time: "2023-10-15 14:05", 
+                        parentId: null,
+                        replies: [] 
+                    }
+                ];
+                this.comments.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+                this.updateTimePointCounts();
+            }
+            
+            updateTimePointCounts() {
+                this.timePointCounts = {};
+                // 递归计算所有评论的时间点
+                const countComments = (comments) => {
+                    comments.forEach(comment => {
+                        // 关键修改：所有评论（包括回复）都统计到时间点
+                        if (comment.timestamp !== undefined) {
+                            const timeKey = Math.floor(comment.timestamp);
+                            this.timePointCounts[timeKey] = (this.timePointCounts[timeKey] || 0) + 1;
+                        }
+                        if (comment.replies && comment.replies.length > 0) {
+                            countComments(comment.replies);
+                        }
+                    });
+                };
+                countComments(this.comments);
+            }
+            
+            getTimeMarkerLevel(timestamp) {
+                const count = this.timePointCounts[Math.floor(timestamp)] || 0;
+                if (count >= 5) return 4;
+                if (count >= 4) return 3;
+                if (count >= 3) return 2;
+                if (count >= 2) return 1;
+                return 0;
+            }
+            
+            initOverlay() {
+                if (this.video.duration) {
+                    this.videoDuration = this.video.duration;
+                    this.renderOverlayMarkers();
+                } else {
+                    this.video.addEventListener('loadedmetadata', () => {
+                        this.videoDuration = this.video.duration;
+                        this.renderOverlayMarkers();
+                    });
+                }
+            }
+            
+            // 渲染视频进度条上的标记
+            renderOverlayMarkers() {
+                if (!this.videoDuration) return;
+                this.overlay.innerHTML = '';
+                
+                const uniqueTimes = Object.keys(this.timePointCounts);
+                uniqueTimes.forEach(time => {
+                    const timestamp = parseFloat(time);
+                    const count = this.timePointCounts[time];
+                    const pos = (timestamp / this.videoDuration) * 100;
+                    
+                    const marker = document.createElement('div');
+                    marker.className = `marker-item level-${this.getTimeMarkerLevel(timestamp)}`;
+                    marker.style.left = `${pos}%`;
+                    
+                    // 悬浮气泡内容
+                    marker.innerHTML = `
+                        <div class="marker-tooltip">
+                            ${count} 条评论 @ ${this.formatTime(timestamp)}
+                        </div>
+                    `;
+                    
+                    marker.onclick = (e) => {
+                        e.stopPropagation();
+                        this.jumpToTime(timestamp);
+                    };
+                    
+                    this.overlay.appendChild(marker);
+                });
+            }
+            
+            setupVideoEvents() {
+                this.video.addEventListener('timeupdate', () => this.onVideoTimeUpdate());
+                this.video.addEventListener('loadedmetadata', () => {
+                    this.videoDuration = this.video.duration;
+                    document.getElementById('durationDisplay').textContent = this.formatTime(this.videoDuration);
+                    this.renderOverlayMarkers();
+                });
+            }
+            
+            setupEventListeners() {
+                document.getElementById('commentSubmit').addEventListener('click', () => this.submitComment());
+                document.getElementById('addTimestamp').addEventListener('change', (e) => {
+                    const display = document.getElementById('timestampDisplay');
+                    if (e.target.checked) {
+                        display.textContent = this.formatTime(this.video.currentTime);
+                        display.style.display = 'inline';
+                    } else {
+                        display.style.display = 'none';
+                    }
+                });
+                document.getElementById('commentInput').addEventListener('keydown', (e) => {
+                    if (e.ctrlKey && e.key === 'Enter') this.submitComment();
+                });
+            }
+            
+            onVideoTimeUpdate() {
+                const currentTime = Math.floor(this.video.currentTime);
+                document.getElementById('currentTimeDisplay').textContent = this.formatTime(currentTime);
+                
+                const display = document.getElementById('timestampDisplay');
+                if (document.getElementById('addTimestamp').checked) {
+                    display.textContent = this.formatTime(currentTime);
+                }
+                
+                this.highlightCommentByTime(currentTime);
+            }
+            
+            highlightCommentByTime(currentTime) {
+                if (this.isScrollingToComment) return;
+                
+                // 递归查找当前时间的评论
+                const findCommentByTime = (comments, time) => {
+                    for (const comment of comments) {
+                        if (comment.timestamp !== undefined && Math.abs(comment.timestamp - time) < 2) {
+                            return comment;
+                        }
+                        if (comment.replies && comment.replies.length > 0) {
+                            const found = findCommentByTime(comment.replies, time);
+                            if (found) return found;
+                        }
+                    }
+                    return null;
+                };
+                
+                const target = findCommentByTime(this.comments, currentTime);
+                
+                if (target && target.id !== this.currentHighlightedComment?.id) {
+                    const el = document.querySelector(`.comment-item[data-comment-id="${target.id}"]`);
+                    if (el) this.highlightComment(el, target);
+                }
+            }
+            
+            jumpToTime(t) {
+                this.video.currentTime = t;
+                this.video.play().catch(() => {});
+            }
+            
+            scrollToComment(el) {
+                this.isScrollingToComment = true;
+                const list = this.commentsList;
+                list.scrollTo({ top: el.offsetTop - 50, behavior: 'smooth' });
+                setTimeout(() => { this.isScrollingToComment = false; }, 800);
+            }
+            
+            renderComments() {
+                this.commentsList.innerHTML = '';
+                let marked = 0;
+                let totalReplies = 0;
+                
+                // 递归渲染评论树
+                const renderCommentTree = (comment, isReply = false) => {
+                    const el = this.createCommentElement(comment, isReply);
+                    this.commentsList.appendChild(el);
+                    
+                    // 关键修改：只统计有独立时间戳的评论
+                    if (comment.timestamp !== undefined && comment.parentId === null) {
+                        marked++;
+                    }
+                    
+                    // 递归渲染回复
+                    if (comment.replies && comment.replies.length > 0) {
+                        comment.replies.forEach(reply => {
+                            totalReplies++;
+                            renderCommentTree(reply, true);
+                        });
+                    }
+                };
+                
+                this.comments.forEach(comment => {
+                    renderCommentTree(comment, false);
+                });
+                
+                // 计算总评论数（包含所有回复）
+                const totalComments = this.countTotalComments(this.comments);
+                document.getElementById('commentCount').textContent = totalComments;
+                document.getElementById('timeMarkedComments').textContent = marked;
+                document.getElementById('totalReplies').textContent = totalReplies;
+            }
+            
+            // 递归计算总评论数（包含所有回复）
+            countTotalComments(comments) {
+                let count = 0;
+                comments.forEach(comment => {
+                    count++;
+                    if (comment.replies && comment.replies.length > 0) {
+                        count += this.countTotalComments(comment.replies);
+                    }
+                });
+                return count;
+            }
+            
+            createCommentElement(c, isReply = false) {
+                const div = document.createElement('div');
+                div.className = isReply ? 'comment-item reply-item' : 'comment-item';
+                div.setAttribute('data-comment-id', c.id);
+                const level = this.getTimeMarkerLevel(c.timestamp);
+                
+                // 构建回复指示器
+                let replyIndicator = '';
+                if (isReply) {
+                    // 查找父评论的作者
+                    const parentAuthor = this.findCommentAuthor(c.parentId);
+                    if (parentAuthor) {
+                        replyIndicator = `<span class="reply-indicator">回复 @${parentAuthor}</span>`;
+                    }
+                }
+                
+                div.innerHTML = `
+                    <div class="current-time-indicator">正在播放</div>
+                    <div class="comment-header">
+                        <div class="comment-avatar">${c.avatar}</div>
+                        <div class="comment-author">${c.author}</div>
+                        ${replyIndicator}
+                        ${c.timestamp !== undefined && c.parentId === null ? `<div class="time-marker level-${level}">${this.formatTime(c.timestamp)}</div>` : ''}
+                        <div class="comment-time">${c.time}</div>
+                    </div>
+                    <div class="comment-content">${c.content}</div>
+                    <button class="reply-btn" data-id="${c.id}">回复</button>
+                `;
+                
+                div.querySelector('.reply-btn').onclick = (e) => {
+                    e.stopPropagation();
+                    this.showReplyForm(c.id);
+                };
+                
+                // 关键修改：只有有独立时间戳的评论才支持点击跳转
+                if (c.timestamp !== undefined && c.parentId === null) {
+                    div.onclick = () => {
+                        this.jumpToTime(c.timestamp);
+                        this.highlightComment(div, c);
+                    }
+                }
+                return div;
+            }
+            
+            findCommentAuthor(commentId) {
+                // 递归查找评论作者
+                const findAuthor = (comments, id) => {
+                    for (const comment of comments) {
+                        if (comment.id === id) {
+                            return comment.author;
+                        }
+                        if (comment.replies && comment.replies.length > 0) {
+                            const author = findAuthor(comment.replies, id);
+                            if (author) return author;
+                        }
+                    }
+                    return null;
+                };
+                return findAuthor(this.comments, commentId);
+            }
+            
+            findComment(commentId) {
+                // 递归查找评论
+                const find = (comments, id) => {
+                    for (const comment of comments) {
+                        if (comment.id === id) {
+                            return comment;
+                        }
+                        if (comment.replies && comment.replies.length > 0) {
+                            const found = find(comment.replies, id);
+                            if (found) return found;
+                        }
+                    }
+                    return null;
+                };
+                return find(this.comments, commentId);
+            }
+            
+            // 递归查找评论的时间戳（查找最近的父评论的时间戳）
+            findCommentTimestamp(commentId) {
+                const comment = this.findComment(commentId);
+                if (!comment) return undefined;
+                
+                // 如果当前评论有独立时间戳，返回它
+                if (comment.timestamp !== undefined && comment.parentId === null) {
+                    return comment.timestamp;
+                }
+                
+                // 否则递归查找父评论的时间戳
+                if (comment.parentId !== null) {
+                    return this.findCommentTimestamp(comment.parentId);
+                }
+                
+                return undefined;
+            }
+            
+            showReplyForm(id) {
+                if (this.replyInProgress) {
+                    const old = document.querySelector(`.reply-form[data-parent="${this.replyInProgress}"]`);
+                    if (old) old.classList.remove('active');
+                }
+                
+                // 找到评论对应的元素
+                const commentElement = document.querySelector(`.comment-item[data-comment-id="${id}"]`);
+                if (!commentElement) return;
+                
+                // 查找是否已存在回复表单
+                let form = commentElement.querySelector('.reply-form');
+                if (!form) {
+                    form = document.createElement('div');
+                    form.className = 'reply-form';
+                    form.setAttribute('data-parent', id);
+                    form.innerHTML = `
+                        <textarea class="reply-input" placeholder="回复 ${this.findCommentAuthor(id)}..."></textarea>
+                        <div class="reply-actions">
+                            <button class="reply-cancel">取消</button>
+                            <button class="reply-submit">回复</button>
+                        </div>
+                    `;
+                    
+                    // 插入到回复按钮后面
+                    const replyBtn = commentElement.querySelector('.reply-btn');
+                    commentElement.insertBefore(form, replyBtn.nextSibling);
+                    
+                    form.querySelector('.reply-cancel').onclick = () => {
+                        form.classList.remove('active');
+                        this.replyInProgress = null;
+                    };
+                    
+                    form.querySelector('.reply-submit').onclick = () => {
+                        this.submitReply(id, form.querySelector('.reply-input').value.trim());
+                    };
+                }
+                
+                form.classList.add('active');
+                form.querySelector('.reply-input').focus();
+                this.replyInProgress = id;
+            }
+            
+            submitComment() {
+                const input = document.getElementById('commentInput');
+                const text = input.value.trim();
+                if (!text) return alert('请输入内容');
+                
+                const timestamp = document.getElementById('addTimestamp').checked ? Math.floor(this.video.currentTime) : undefined;
+                const newC = {
+                    id: Date.now(),
+                    author: this.currentUser.name,
+                    avatar: this.currentUser.avatar,
+                    content: text,
+                    timestamp: timestamp,
+                    time: new Date().toLocaleString(),
+                    parentId: null,
+                    replies: []
+                };
+                
+                this.comments.push(newC);
+                this.comments.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+                this.updateTimePointCounts();
+                this.renderComments();
+                this.renderOverlayMarkers();
+                
+                input.value = '';
+                document.getElementById('addTimestamp').checked = false;
+                document.getElementById('timestampDisplay').style.display = 'none';
+            }
+            
+            submitReply(parentId, text) {
+                if (!text) return;
+                
+                const parentComment = this.findComment(parentId);
+                if (!parentComment) return;
+                
+                // 关键修改：回复不继承父评论的时间戳，回复本身没有独立时间戳
+                const newReply = {
+                    id: Date.now(),
+                    author: this.currentUser.name,
+                    avatar: this.currentUser.avatar,
+                    content: text,
+                    time: new Date().toLocaleString(),
+                    parentId: parentId,
+                    replies: [],
+                    timestamp: undefined // 回复没有独立时间戳
+                };
+                
+                // 确保 replies 数组存在
+                if (!parentComment.replies) {
+                    parentComment.replies = [];
+                }
+                
+                parentComment.replies.push(newReply);
+                this.updateTimePointCounts();
+                this.renderComments();
+                this.renderOverlayMarkers(); // 更新进度条标记
+                this.replyInProgress = null;
+            }
+            
+            highlightComment(el, c) {
+                if (this.currentHighlightedComment) {
+                    const prev = document.querySelector(`.comment-item[data-comment-id="${this.currentHighlightedComment.id}"]`);
+                    if (prev) prev.classList.remove('highlighted', 'current-playing');
+                }
+                el.classList.add('highlighted', 'current-playing');
+                this.currentHighlightedComment = c;
+                this.scrollToComment(el);
+            }
+            
+            formatTime(s) {
+                const m = Math.floor(s / 60);
+                const sec = Math.floor(s % 60);
+                return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            window.videoCommentSystem = new VideoCommentSystem();
+        });
+    </script>
+</body>
+</html>
