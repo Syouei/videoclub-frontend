@@ -722,8 +722,13 @@ window.API = {
      * @returns {Promise} {code, msg, data: {list, total, page, pageSize}}
      */
     async getVideoComments(videoId, params = {}) {
-        const endpoint = `/videos/${videoId}/comments`;
-        const queryString = this.buildQueryString(params);
+        const endpoint = '/comments';
+        // 添加 videoId 作为查询参数
+        const queryParams = {
+            videoId: videoId,
+            ...params
+        };
+        const queryString = this.buildQueryString(queryParams);
         return await this.request(endpoint + queryString, 'GET');
     },
     
@@ -733,8 +738,18 @@ window.API = {
      * @returns {Promise} {code, msg, data: {commentId}}
      */
     async submitVideoComment(commentData) {
-        const endpoint = `/videos/${commentData.videoId}/comments`;
-        return await this.request(endpoint, 'POST', commentData);
+        const endpoint = '/comments';
+        // 转换参数名：timestamp -> videoTime
+        const requestData = {
+            videoId: parseInt(commentData.videoId),
+            content: commentData.content,
+            videoTime: commentData.timestamp || 0
+        };
+        // 如果有 parentId（回复），也添加进去
+        if (commentData.parentId) {
+            requestData.parentId = parseInt(commentData.parentId);
+        }
+        return await this.request(endpoint, 'POST', requestData);
     },
     
     /**
@@ -775,5 +790,34 @@ window.API = {
     async getVideoInfo(videoId) {
         const endpoint = `/videos/${videoId}`;
         return await this.request(endpoint, 'GET');
+    },
+
+    /**
+     * 秒传检测
+     * @param {object} data - 检测数据 {clubId, title, etag, duration}
+     * @returns {Promise} {code, msg, data: {videoId}}
+     */
+    async fastUpload(data) {
+        const endpoint = '/videos/fast-upload';
+        return await this.request(endpoint, 'POST', data);
+    },
+
+    /**
+     * 获取上传凭证
+     * @returns {Promise} {code, msg, data: {uploadToken, key, bucket, region}}
+     */
+    async getUploadToken() {
+        const endpoint = '/videos/token';
+        return await this.request(endpoint, 'GET');
+    },
+
+    /**
+     * 保存视频信息
+     * @param {object} data - 视频数据 {clubId, title, objectKey, etag, duration, bucket, region, fileSize, mimeType}
+     * @returns {Promise} {code, msg, data: {videoId}}
+     */
+    async saveVideoInfo(data) {
+        const endpoint = '/videos';
+        return await this.request(endpoint, 'POST', data);
     }
 };

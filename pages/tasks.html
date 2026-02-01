@@ -353,60 +353,79 @@ function displaySubTasks(taskInfo) {
     // ========== 8. 跳转到视频播放页面 ==========
 async function goToVideoPlayer(taskId, title) {
     console.log('跳转到视频播放页面，任务ID:', taskId, '标题:', title);
-    
+
     try {
-        // 获取任务详情，包含视频URL
+        // 获取任务详情，包含视频信息
         const taskDetail = await Tasks.getTaskDetail(taskId);
         const taskInfo = taskDetail?.taskInfo || taskDetail;
-        
+
         let videoUrl = '';
+        let videoId = null;
         let videoTitle = title || '教学视频研讨';
-        
-        // 尝试从不同位置获取视频URL
-        if (taskInfo.videoUrl) {
-            videoUrl = taskInfo.videoUrl;
-        } else if (taskInfo.resource && taskInfo.resource.videoUrl) {
-            videoUrl = taskInfo.resource.videoUrl;
-        } else if (taskInfo.subTasks) {
-            const watchTask = taskInfo.subTasks.find(st => st.type === 'watch');
-            if (watchTask && watchTask.videoUrl) {
-                videoUrl = watchTask.videoUrl;
+
+        // 优先从任务的 videoId 获取视频信息
+        if (taskInfo.videoId) {
+            videoId = taskInfo.videoId;
+            // 尝试从 video 字段获取视频URL
+            if (taskInfo.video && taskInfo.video.playUrl) {
+                videoUrl = taskInfo.video.playUrl;
+            } else if (taskInfo.video && taskInfo.video.sourceUrl) {
+                videoUrl = taskInfo.video.sourceUrl;
             }
         }
-        
+
+        // 如果没有获取到URL，尝试其他位置
+        if (!videoUrl) {
+            if (taskInfo.videoUrl) {
+                videoUrl = taskInfo.videoUrl;
+            } else if (taskInfo.resource && taskInfo.resource.videoUrl) {
+                videoUrl = taskInfo.resource.videoUrl;
+            } else if (taskInfo.subTasks) {
+                const watchTask = taskInfo.subTasks.find(st => st.type === 'watch');
+                if (watchTask && watchTask.videoUrl) {
+                    videoUrl = watchTask.videoUrl;
+                }
+            }
+        }
+
         // 如果没有视频URL，使用默认URL
         if (!videoUrl) {
             console.warn('没有找到视频URL，使用默认视频');
             videoUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
         }
-        
-        console.log('视频播放参数:', { videoUrl, videoTitle, taskId });
-        
-        // 跳转到视频播放页面
-        if (window.App && window.App.navigateToWithParams) {
-            window.App.navigateToWithParams('video-player', {
-                videoUrl: encodeURIComponent(videoUrl),
-                taskId: taskId,
-                title: encodeURIComponent(videoTitle)
-            });
-        } else {
-            window.location.hash = `video-player?videoUrl=${encodeURIComponent(videoUrl)}&taskId=${taskId}&title=${encodeURIComponent(videoTitle)}`;
+
+        console.log('视频播放参数:', { videoUrl, videoId, videoTitle, taskId });
+
+        // 构建跳转参数
+        const params = {
+            videoUrl: encodeURIComponent(videoUrl),
+            taskId: taskId,
+            title: encodeURIComponent(videoTitle)
+        };
+
+        // 如果有 videoId，也传递过去
+        if (videoId) {
+            params.videoId = videoId;
         }
+
+        // 跳转到视频播放页面 - 直接修改 hash，不使用 App 路由
+        const queryString = new URLSearchParams(params).toString();
+        const newHash = `video-player?${queryString}`;
+        console.log('即将跳转到:', newHash);
+        window.location.hash = newHash;
     } catch (error) {
         console.error('跳转到视频播放页面失败:', error);
         showMessage('加载视频信息失败: ' + error.message, 'error');
-        
+
         // 失败时使用默认视频
         const defaultUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
-        if (window.App && window.App.navigateToWithParams) {
-            window.App.navigateToWithParams('video-player', {
-                videoUrl: encodeURIComponent(defaultUrl),
-                taskId: taskId,
-                title: encodeURIComponent(title || '教学视频研讨')
-            });
-        } else {
-            window.location.hash = `video-player?videoUrl=${encodeURIComponent(defaultUrl)}&taskId=${taskId}&title=${encodeURIComponent(title || '教学视频研讨')}`;
-        }
+        const params = {
+            videoUrl: encodeURIComponent(defaultUrl),
+            taskId: taskId,
+            title: encodeURIComponent(title || '教学视频研讨')
+        };
+        const queryString = new URLSearchParams(params).toString();
+        window.location.hash = `video-player?${queryString}`;
     }
 }
 

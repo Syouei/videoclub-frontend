@@ -179,7 +179,10 @@ window.App = {
     loadPage: async function(pageName) {
         const container = document.getElementById('page-container');
         if (!container) return;
-        
+
+        // 清理之前页面添加的样式
+        this.clearPageStyles();
+
         // 显示加载状态
         this.state.isLoading = true;
         Utils.showLoading(container);
@@ -207,7 +210,10 @@ window.App = {
             
             // 更新页面容器
             container.innerHTML = pageContent;
-            
+
+            // 执行页面特定的样式
+            this.executePageStyles(doc);
+
             // 执行页面特定的脚本
             this.executePageScripts(doc);
             
@@ -256,6 +262,23 @@ window.App = {
                 }
             }
         });
+    },
+
+    // 执行页面样式
+    executePageStyles: function(doc) {
+        const styles = doc.querySelectorAll('style');
+        styles.forEach(style => {
+            const newStyle = document.createElement('style');
+            newStyle.textContent = style.textContent;
+            newStyle.setAttribute('data-page-style', 'true');
+            document.head.appendChild(newStyle);
+        });
+    },
+
+    // 清理页面样式
+    clearPageStyles: function() {
+        const pageStyles = document.querySelectorAll('style[data-page-style="true"]');
+        pageStyles.forEach(style => style.remove());
     },
     
     // 更新页面显示

@@ -249,6 +249,397 @@
     align-items: center;
     justify-content: center;
 }
+
+        /* 视频页面特定样式 */
+        .video-page-container {
+            padding: 32px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .welcome-section {
+            margin-bottom: 40px;
+            padding: 24px;
+            background: linear-gradient(135deg, rgba(24, 144, 255, 0.05), rgba(114, 46, 209, 0.05));
+            border-radius: 16px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .welcome-section h1 {
+            font-size: 28px;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+
+        .welcome-section p {
+            font-size: 16px;
+            color: var(--text-sub);
+        }
+
+        .video-list-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .video-task-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .video-task-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--hover-shadow);
+            border-color: var(--primary-light);
+        }
+
+        .video-task-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), #722ed1);
+        }
+
+        .video-task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .video-task-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-main);
+            flex: 1;
+            display: flex;
+            align-items: center;
+        }
+
+        .video-task-description {
+            font-size: 14px;
+            color: var(--text-sub);
+            line-height: 1.5;
+            margin-bottom: 20px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.02);
+            border-radius: 8px;
+        }
+
+        .video-task-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .video-task-subtasks {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .subtask-item {
+            font-size: 13px;
+            color: var(--text-sub);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: rgba(0, 0, 0, 0.03);
+            border-radius: 12px;
+        }
+
+        .usage-tips {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .usage-tips h4 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .usage-tips ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .usage-tips li {
+            font-size: 14px;
+            color: var(--text-sub);
+            margin-bottom: 10px;
+            padding-left: 24px;
+            position: relative;
+        }
+
+        .usage-tips li:before {
+            content: '•';
+            color: var(--primary-color);
+            font-size: 18px;
+            position: absolute;
+            left: 8px;
+        }
+
+        .task-preview {
+            margin-top: 20px;
+        }
+
+        .task-preview h4 {
+            font-size: 16px;
+            margin-bottom: 12px;
+            color: var(--text-sub);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .preview-card {
+            background: rgba(0, 0, 0, 0.02);
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px dashed var(--border-color);
+        }
+
+        .preview-title {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+
+        .preview-description {
+            font-size: 14px;
+            color: var(--text-sub);
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        .preview-tips {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .preview-tips p {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .preview-tips ul {
+            list-style: none;
+            padding-left: 20px;
+            margin-top: 8px;
+        }
+
+        .preview-tips li {
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .video-page-container {
+                padding: 20px;
+            }
+            
+            .video-list-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .video-task-header {
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .video-task-footer {
+                flex-direction: column;
+                gap: 16px;
+                align-items: stretch;
+            }
+            
+            .video-task-action {
+                align-self: flex-end;
+            }
+        }
+
+        /* 锁定状态的任务卡片 */
+        .video-task-card.locked {
+            background: #fafafa;
+            border-color: #e0e0e0;
+        }
+
+        .video-task-card.locked .video-task-title {
+            color: #999;
+        }
+
+        .video-task-card.locked::before {
+            background: #ccc;
+        }
+
+        .task-lock-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 1;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lock-icon {
+            color: #999;
+            font-size: 24px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 12px;
+            border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        /* 进度条样式 */
+        .progress-container {
+            width: 100%;
+            height: 6px;
+            background: #f0f0f0;
+            border-radius: 3px;
+            margin: 12px 0;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #1890ff, #722ed1);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-text {
+            font-size: 12px;
+            color: #666;
+            text-align: right;
+            margin-top: 4px;
+        }
+        /* 图标按钮样式 */
+.btn-icon {
+    padding: 6px;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    cursor: pointer;
+    background: #f5f5f5;
+    color: #666;
+}
+
+.btn-icon:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.btn-icon-lock {
+    background: #f6ffed;
+    color: #389e0d;
+    border-color: #b7eb8f;
+}
+
+.btn-icon-lock:hover {
+    background: #52c41a;
+    color: white;
+    border-color: #52c41a;
+}
+
+.btn-icon-unlock {
+    background: #fff2e8;
+    color: #d46b08;
+    border-color: #ffd8bf;
+}
+
+.btn-icon-unlock:hover {
+    background: #ff7a45;
+    color: white;
+    border-color: #ff7a45;
+}
+
+.btn-icon.btn-warning {
+    background: #fffbe6;
+    color: #d48806;
+    border-color: #ffe58f;
+}
+
+.btn-icon.btn-warning:hover {
+    background: #ffc53d;
+    color: white;
+    border-color: #ffc53d;
+}
+
+.btn-icon.btn-danger {
+    background: #fff2f0;
+    color: #ff4d4f;
+    border-color: #ffccc7;
+}
+
+.btn-icon.btn-danger:hover {
+    background: #ff7875;
+    color: white;
+    border-color: #ff7875;
+}
+
+        /* 可选提示样式 */
+        .optional-hint {
+            font-size: 12px;
+            color: #888;
+            margin-left: 4px;
+            font-weight: normal;
+        }
+
+        .upload-hint-box {
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #389e0d;
+        }
+
+        .upload-hint-box i {
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
@@ -296,6 +687,7 @@
                 <ul>
                     <li>点击"创建主题"按钮创建新的教学视频主题</li>
                     <li>创建主题时，需填写主题名称</li>
+                    <li>视频上传为可选，可以稍后添加</li>
                     <li>点击主题卡片可以进入主题详情页</li>
                 </ul>
             </div>
@@ -305,6 +697,13 @@
         <div id="create-task-modal" class="modal-overlay" style="display: none;">
             <div class="modal">
                 <h3 style="margin-bottom: 24px;"><i class="fas fa-plus-circle"></i> 创建新的视频主题</h3>
+                
+                <!-- 上传提示 -->
+                <div class="upload-hint-box">
+                    <i class="fas fa-info-circle"></i>
+                    <span>提示：视频上传为可选，可以稍后添加</span>
+                </div>
+                
                 <div class="form-item">
                     <label class="required">主题名称</label>
                     <input type="text" id="new-task-name" placeholder="请输入主题名称（例如：勾股定理）">
@@ -316,31 +715,10 @@
                     <label>主题描述（可选）</label>
                     <textarea id="new-task-description" placeholder="请简要描述这个主题..." rows="3"></textarea>
                 </div>
-                <!-- 新增：教学设计文档上传 -->
-<div class="form-item">
-    <label class="required">点击上传教学设计文档</label>
-    <div class="file-upload-area" id="pdf-upload-area">
-        <input type="file" id="pdf-file" accept=".pdf" style="display: none;">
-        <div class="upload-placeholder" onclick="document.getElementById('pdf-file').click()">
-            <i class="fas fa-file-pdf" style="font-size: 32px; color: #ff4d4f; margin-bottom: 12px;"></i>
-            <p style="color: #999; font-size: 14px;">仅支持PDF格式，最大100MB</p>
-        </div>
-        <div class="upload-progress" id="pdf-progress" style="display: none;">
-            <div class="progress-container">
-                <div class="progress-bar" id="pdf-progress-bar" style="width: 0%"></div>
-            </div>
-            <div class="progress-text" id="pdf-progress-text">0%</div>
-            <div class="file-info" id="pdf-file-info"></div>
-        </div>
-    </div>
-    <div class="error-message" id="pdf-error" style="display: none;">
-        <i class="fas fa-exclamation-circle"></i> <span id="pdf-error-text">请上传PDF文件</span>
-    </div>
-</div>
 
-<!-- 新增：教学视频上传 -->
+<!-- 教学视频上传（可选） -->
 <div class="form-item">
-    <label class="required">点击上传教学视频</label>
+    <label>点击上传教学视频<span class="optional-hint">（可选）</span></label>
     <div class="file-upload-area" id="video-upload-area">
         <input type="file" id="video-file" accept="video/*" style="display: none;">
         <div class="upload-placeholder" onclick="document.getElementById('video-file').click()">
@@ -367,25 +745,9 @@
     </div>
 </div>
 
-<!-- 新增：资源预览 -->
+<!-- 资源预览 -->
 <div class="form-item" id="upload-preview" style="display: none;">
     <div class="preview-container">
-        <!-- PDF预览项 -->
-<div class="preview-item" id="pdf-preview">
-    <div class="preview-icon">
-        <i class="fas fa-file-pdf"></i>
-    </div>
-    <div class="preview-info">
-        <div class="preview-title" id="pdf-preview-title"></div>
-        <div class="preview-size" id="pdf-preview-size"></div>
-        <div class="preview-actions">
-            <button class="btn-remove" onclick="removeFile('pdf')">
-                <i class="fas fa-times"></i> 移除
-            </button>
-        </div>
-    </div>
-</div>
-
 <!-- 视频预览项 -->
 <div class="preview-item" id="video-preview">
     <div class="preview-icon">
@@ -432,6 +794,7 @@
         let currentTaskId = null;
         let videoPageInitialized = false;
         let isClubCreator = false; // 新增：是否是俱乐部创建者
+        let uploadedVideoId = null; // 新增：保存上传后的视频ID
 
         // 页面初始化
         function initVideoPage() {
@@ -463,16 +826,32 @@
 
         // ================ 文件上传处理 ================
 
+// 计算文件的ETag（简化版：使用文件前1MB内容的SHA256哈希）
+async function calculateETag(file) {
+    return new Promise((resolve, reject) => {
+        const maxBytes = Math.min(file.size, 1024 * 1024); // 只取前1MB
+        const blob = file.slice(0, maxBytes);
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            const arrayBuffer = e.target.result;
+            crypto.subtle.digest('SHA-256', arrayBuffer).then(hashBuffer => {
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                // 添加文件大小信息，避免不同大小但相同开头的文件冲突
+                const etag = `${hashHex}-${file.size}`;
+                resolve(etag);
+            }).catch(reject);
+        };
+        
+        reader.onerror = () => reject(new Error('读取文件失败'));
+        reader.readAsArrayBuffer(blob);
+    });
+}
+
 // 初始化文件上传
 function initFileUpload() {
-    const pdfFileInput = document.getElementById('pdf-file');
     const videoFileInput = document.getElementById('video-file');
-    
-    if (pdfFileInput) {
-        pdfFileInput.addEventListener('change', function(e) {
-            handleFileSelect(e, 'pdf');
-        });
-    }
     
     if (videoFileInput) {
         videoFileInput.addEventListener('change', function(e) {
@@ -494,37 +873,210 @@ async function handleFileSelect(event, fileType) {
     // 显示文件信息和上传进度区域
     showFileInfo(file, fileType);
     
-    // 如果是视频，获取时长
+    // 如果是视频，进行真实上传流程
     if (fileType === 'video') {
         try {
             const duration = await getVideoDuration(file);
-            document.getElementById('video-duration').textContent = duration;
-            document.getElementById('video-duration-info').style.display = 'inline';
+            // 可选：更新UI显示时长（如果元素存在）
+            const durationEl = document.getElementById('video-duration');
+            const durationInfoEl = document.getElementById('video-duration-info');
+            if (durationEl) durationEl.textContent = duration;
+            if (durationInfoEl) durationInfoEl.style.display = 'inline';
+            
+            // 开始真实上传流程
+            await uploadVideo(file, duration);
         } catch (error) {
-            console.error('获取视频时长失败:', error);
+            console.error('视频处理失败:', error);
+            showFileError('video', '视频处理失败: ' + error.message);
         }
     }
+}
+
+// 真实视频上传流程
+async function uploadVideo(file, duration) {
+    const fileType = 'video';
     
-    // 模拟上传进度（实际开发中这里会调用API）
-    simulateUpload(file, fileType);
+    // 如果已经有上传成功的视频ID，不再重复上传
+    if (uploadedVideoId) {
+        console.log('视频已上传，使用已有的videoId:', uploadedVideoId);
+        Utils.showNotification('视频已上传，无需重复上传', 'info');
+        return;
+    }
+    
+    try {
+        // 步骤1: 计算ETag
+        Utils.showNotification('正在计算文件特征...', 'info');
+        const etag = await calculateETag(file);
+        console.log('文件ETag:', etag);
+        
+        // 步骤2: 秒传检测
+        Utils.showNotification('正在进行秒传检测...', 'info');
+        const clubId = currentClub ? parseInt(currentClub.id || currentClub.clubId) : null;
+        
+        // 使用直接 fetch 调用，绕过 API.request 的错误处理，以便正确处理 code=1
+        let fastUploadResult = null;
+        let isNetworkError = false;
+        try {
+            const config = window.AppConfig;
+            const token = Utils.getFromStorage(config.STORAGE_KEYS.USER_TOKEN);
+            
+            const response = await fetch(config.API_BASE_URL + '/videos/fast-upload', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    clubId: clubId,
+                    title: file.name,
+                    etag: etag,
+                    duration: duration
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP错误: ${response.status}`);
+            }
+            
+            fastUploadResult = await response.json();
+            console.log('秒传检测结果:', fastUploadResult);
+        } catch (error) {
+            // 只有网络错误才会到这里，业务错误 code=1 不会抛异常
+            console.warn('秒传检测请求失败，继续正常上传:', error);
+            isNetworkError = true;
+            Utils.showNotification('秒传检测不可用，继续正常上传...', 'warning');
+        }
+        
+        // 处理秒传检测结果
+        if (fastUploadResult && fastUploadResult.code === 0) {
+            // 秒传成功，直接使用返回的videoId
+            if (fastUploadResult.data && fastUploadResult.data.videoId) {
+                uploadedVideoId = fastUploadResult.data.videoId;
+                console.log('秒传成功，videoId:', uploadedVideoId);
+                showUploadComplete(fileType);
+                Utils.showNotification('秒传成功！视频已存在', 'success');
+                return;
+            }
+        }
+        
+        // code=1 或其他非0 code 表示需要上传，这是正常流程，不显示错误
+        if (!isNetworkError) {
+            console.log('秒传检测未通过（code=' + (fastUploadResult?.code || 'N/A') + '），继续正常上传流程');
+        }
+        Utils.showNotification('秒传检测未通过，准备上传...', 'info');
+        
+        // 步骤3: 获取上传凭证
+        const tokenResult = await API.getUploadToken();
+        if (!tokenResult || tokenResult.code !== 0) {
+            throw new Error(tokenResult?.msg || '获取上传凭证失败');
+        }
+        
+        const uploadData = tokenResult.data;
+        console.log('上传凭证:', uploadData);
+        
+        // 生成唯一的 objectKey
+        const objectKey = `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.mp4`;
+        console.log('生成的 objectKey:', objectKey);
+        
+        // 步骤4: 使用七牛云表单上传
+        await uploadToQiniu(file, uploadData, objectKey, fileType, (progress) => {
+            // 更新进度条
+            const progressBar = document.getElementById(`${fileType}-progress-bar`);
+            const progressText = document.getElementById(`${fileType}-progress-text`);
+            if (progressBar) progressBar.style.width = `${progress}%`;
+            if (progressText) progressText.textContent = `${Math.round(progress)}%`;
+        });
+        
+        // 步骤5: 保存视频信息
+        Utils.showNotification('正在保存视频信息...', 'info');
+        const saveResult = await API.saveVideoInfo({
+            clubId: clubId,
+            title: file.name,
+            objectKey: objectKey,
+            etag: etag,
+            duration: duration,
+            bucket: uploadData.bucket,
+            region: uploadData.region,
+            fileSize: file.size,
+            mimeType: file.type
+        });
+        
+        if (saveResult && saveResult.code === 0) {
+            uploadedVideoId = saveResult.data?.videoId;
+            console.log('视频保存成功，videoId:', uploadedVideoId);
+            showUploadComplete(fileType);
+            Utils.showNotification('视频上传成功！', 'success');
+        } else {
+            throw new Error(saveResult?.msg || '保存视频信息失败');
+        }
+        
+    } catch (error) {
+        console.error('视频上传失败:', error);
+        showFileError(fileType, '上传失败: ' + error.message);
+        throw error;
+    }
+}
+
+// 上传到七牛云（表单上传方式）
+async function uploadToQiniu(file, uploadData, objectKey, fileType, onProgress) {
+    return new Promise((resolve, reject) => {
+        const formData = new FormData();
+        formData.append('token', uploadData.uploadToken);
+        formData.append('key', objectKey);
+        formData.append('file', file);
+        
+        // 七牛云上传域名（根据region选择）
+        const uploadUrl = uploadData.uploadUrl || `https://up-${uploadData.region}.qiniup.com`;
+        
+        const xhr = new XMLHttpRequest();
+        
+        // 进度监听
+        xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+                const progress = (e.loaded / e.total) * 100;
+                onProgress(progress);
+            }
+        };
+        
+        xhr.onload = () => {
+            if (xhr.status === 200) {
+                const response = JSON.parse(xhr.responseText);
+                console.log('七牛云上传成功:', response);
+                onProgress(100);
+                resolve(response);
+            } else {
+                reject(new Error(`上传失败: ${xhr.status} ${xhr.statusText}`));
+            }
+        };
+        
+        xhr.onerror = () => {
+            reject(new Error('上传请求失败'));
+        };
+        
+        xhr.onabort = () => {
+            reject(new Error('上传已取消'));
+        };
+        
+        xhr.open('POST', uploadUrl);
+        xhr.send(formData);
+    });
 }
 
 // 验证文件
 function validateFile(file, fileType) {
-    const maxSize = fileType === 'pdf' ? 100 * 1024 * 1024 : 2 * 1024 * 1024 * 1024; // 100MB / 2GB
-    const allowedTypes = fileType === 'pdf' ? ['application/pdf'] : ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'];
+    const maxSize = 2 * 1024 * 1024 * 1024; // 2GB
+    const allowedTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'];
     
     // 检查文件大小
     if (file.size > maxSize) {
-        const sizeMB = (maxSize / (1024 * 1024)).toFixed(0);
-        showFileError(fileType, `文件太大，最大支持 ${sizeMB}MB`);
+        const sizeGB = (maxSize / (1024 * 1024 * 1024)).toFixed(0);
+        showFileError(fileType, `文件太大，最大支持 ${sizeGB}GB`);
         return false;
     }
     
     // 检查文件类型
     if (!allowedTypes.includes(file.type)) {
-        const typeName = fileType === 'pdf' ? 'PDF' : '视频';
-        showFileError(fileType, `请上传${typeName}格式文件`);
+        showFileError(fileType, `请上传视频格式文件`);
         return false;
     }
     
@@ -569,31 +1121,7 @@ function showFileInfo(file, fileType) {
     }
 }
 
-// 模拟上传进度（实际开发中这里会调用真正的上传API）
-function simulateUpload(file, fileType) {
-    const progressBar = document.getElementById(`${fileType}-progress-bar`);
-    const progressText = document.getElementById(`${fileType}-progress-text`);
-    
-    let progress = 0;
-    const interval = setInterval(() => {
-        progress += Math.random() * 10;
-        if (progress > 100) {
-            progress = 100;
-            clearInterval(interval);
-            
-            // 上传完成
-            setTimeout(() => {
-                showUploadComplete(fileType);
-            }, 300);
-        }
-        
-        if (progressBar) progressBar.style.width = `${progress}%`;
-        if (progressText) progressText.textContent = `${Math.round(progress)}%`;
-    }, 200);
-}
-
 // 显示上传完成
-
 function showUploadComplete(fileType) {
     const progress = document.getElementById(`${fileType}-progress`);
     if (progress) {
@@ -729,6 +1257,7 @@ function formatFileSize(bytes) {
                         <h4><i class="fas fa-lightbulb"></i> 使用提示</h4>
                         <ul>
                             <li>点击"创建主题"按钮创建新的视频主题</li>
+                            <li>视频上传为可选，可以稍后添加</li>
                             <li>创建主题后，可手动解锁供成员参与</li>
                             <li>点击主题卡片可以进入主题详情页</li>
                             <li>可以手动锁定/解锁已创建的主题</li>
@@ -775,6 +1304,35 @@ function formatFileSize(bytes) {
                     if (nameInput) nameInput.value = '';
                     if (descInput) descInput.value = '';
                     if (errorElement) errorElement.style.display = 'none';
+                    
+                    // 重置视频上传状态
+                    uploadedVideoId = null;
+                    const videoFileInput = document.getElementById('video-file');
+                    if (videoFileInput) videoFileInput.value = '';
+                    
+                    // 重置视频上传区域UI
+                    const videoPlaceholder = document.querySelector('#video-upload-area .upload-placeholder');
+                    const videoProgress = document.getElementById('video-progress');
+                    const videoPreview = document.getElementById('video-preview');
+                    const uploadPreview = document.getElementById('upload-preview');
+                    
+                    if (videoPlaceholder) videoPlaceholder.style.display = 'block';
+                    if (videoProgress) {
+                        videoProgress.style.display = 'none';
+                        videoProgress.innerHTML = `
+                            <div class="progress-container">
+                                <div class="progress-bar" id="video-progress-bar" style="width: 0%"></div>
+                            </div>
+                            <div class="progress-text" id="video-progress-text">0%</div>
+                            <div class="file-info" id="video-file-info">
+                                <span id="video-duration-info" style="display: none;">
+                                    <i class="fas fa-clock"></i> 时长: <span id="video-duration">0</span>秒
+                                </span>
+                            </div>
+                        `;
+                    }
+                    if (videoPreview) videoPreview.style.display = 'none';
+                    if (uploadPreview) uploadPreview.style.display = 'none';
                     
                     // 聚焦到名称输入框
                     setTimeout(() => {
@@ -1345,30 +1903,26 @@ function formatFileSize(bytes) {
         const taskName = nameInput.value.trim();
         const taskDescription = descInput ? descInput.value.trim() : '';
         
-        // 验证输入
+        // 验证输入 - 只验证主题名称
         if (!taskName) {
             Utils.showNotification('请输入任务名称', 'error');
             return;
         }
 
-         // 检查是否上传了文件
-    const pdfFile = document.getElementById('pdf-file').files[0];
-    const videoFile = document.getElementById('video-file').files[0];
-    
-    if (!pdfFile || !videoFile) {
-        Utils.showNotification('请上传教学设计文档和教学视频', 'error');
-        return;
-    }
-    
-    // 检查上传是否完成（在实际开发中，这里会检查真实的上传状态）
-    const pdfProgress = parseInt(document.getElementById('pdf-progress-text')?.textContent || '0');
-    const videoProgress = parseInt(document.getElementById('video-progress-text')?.textContent || '0');
-    
-    if (pdfProgress < 100 || videoProgress < 100) {
-        Utils.showNotification('请等待文件上传完成', 'warning');
-        return;
-    }
-    
+        // 检查是否有视频正在上传中（如果有视频文件且未上传完成）
+        const videoFile = document.getElementById('video-file').files[0];
+        if (videoFile) {
+            const videoProgress = parseInt(document.getElementById('video-progress-text')?.textContent || '0');
+            if (videoProgress < 100 && videoProgress > 0) {
+                Utils.showNotification('请等待视频上传完成', 'warning');
+                return;
+            }
+        }
+        
+        // 如果没有上传视频，显示提示但允许继续创建
+        if (!uploadedVideoId && !videoFile) {
+            console.log('用户未上传视频，创建任务但不关联视频');
+        }
         
         // 获取俱乐部ID
         const clubId = parseInt(currentClub.id || currentClub.clubId);
@@ -1378,28 +1932,33 @@ function formatFileSize(bytes) {
             return;
         }
         
-        console.log('创建任务请求参数:', { 
-            clubId, 
-            taskName, 
-            taskDescription,
-            type: 'all',
-            isUnlocked: false // 新增：默认创建时锁定状态
-        });
-        
-        Utils.showNotification('正在创建任务...', 'info');
-        
-        const result = await API.createTask({
+        // 构建请求参数
+        const requestParams = {
             clubId: clubId,
             title: taskName,
             description: taskDescription,
             type: 'all',
-            isUnlocked: false  // 新增：默认锁定状态
-        });
+            isUnlocked: false
+        };
+        
+        // 只有在有视频ID时才添加videoId参数
+        if (uploadedVideoId) {
+            requestParams.videoId = uploadedVideoId;
+        }
+        
+        console.log('创建任务请求参数:', requestParams);
+        
+        Utils.showNotification('正在创建任务...', 'info');
+        
+        const result = await API.createTask(requestParams);
         
         console.log('创建任务API完整响应:', result);
         
         if (result && result.code === 0) {
-            Utils.showNotification(`任务"${taskName}"创建成功！（默认锁定状态）`, 'success');
+            const successMsg = uploadedVideoId 
+                ? `任务"${taskName}"创建成功！（默认锁定状态）`
+                : `任务"${taskName}"创建成功！（默认锁定状态，您可以在任务详情中添加视频）`;
+            Utils.showNotification(successMsg, 'success');
             closeCreateTaskModal();
             
             // 直接添加到本地列表并渲染
@@ -1480,7 +2039,7 @@ function formatFileSize(bytes) {
 function removeFile(fileType) {
     console.log('removeFile函数被调用，文件类型:', fileType);
     
-    if (!confirm(`确定要移除已上传的${fileType === 'pdf' ? 'PDF文档' : '视频文件'}吗？`)) {
+    if (!confirm(`确定要移除已上传的${fileType === 'video' ? '视频文件' : '文件'}吗？`)) {
         return;
     }
     
@@ -1499,20 +2058,34 @@ function removeFile(fileType) {
     if (placeholder) placeholder.style.display = 'block';
     if (progress) {
         progress.style.display = 'none';
-        progress.innerHTML = '';
+        progress.innerHTML = `
+            <div class="progress-container">
+                <div class="progress-bar" id="${fileType}-progress-bar" style="width: 0%"></div>
+            </div>
+            <div class="progress-text" id="${fileType}-progress-text">0%</div>
+            <div class="file-info" id="${fileType}-file-info">
+                <span id="${fileType}-duration-info" style="display: none;">
+                    <i class="fas fa-clock"></i> 时长: <span id="${fileType}-duration">0</span>秒
+                </span>
+            </div>
+        `;
     }
     if (preview) preview.style.display = 'none';
     
+    // 如果是视频文件，重置uploadedVideoId
+    if (fileType === 'video') {
+        uploadedVideoId = null;
+    }
+    
     // 检查是否还有文件
-    const pdfFile = document.getElementById('pdf-file').files[0];
     const videoFile = document.getElementById('video-file').files[0];
     
-    if (!pdfFile && !videoFile) {
+    if (!videoFile) {
         const previewContainer = document.getElementById('upload-preview');
         if (previewContainer) previewContainer.style.display = 'none';
     }
     
-    alert(`${fileType === 'pdf' ? 'PDF文档' : '视频文件'}已移除`);
+    alert(`${fileType === 'video' ? '视频文件' : '文件'}已移除`);
 }
 
 
@@ -1580,28 +2153,10 @@ function showFileInfo(file, fileType) {
             if (modal) {
                 modal.style.display = 'none';
             }
-        }
-
-        // 打开创建任务模态框
-        function openCreateTaskModal() {
-            const modal = document.getElementById('create-task-modal');
-            if (modal) {
-                modal.style.display = 'flex';
-                
-                // 清空输入
-                const nameInput = document.getElementById('new-task-name');
-                const descInput = document.getElementById('new-task-description');
-                const errorElement = document.getElementById('task-name-error');
-                
-                if (nameInput) nameInput.value = '';
-                if (descInput) descInput.value = '';
-                if (errorElement) errorElement.style.display = 'none';
-                
-                // 聚焦到名称输入框
-                setTimeout(() => {
-                    if (nameInput) nameInput.focus();
-                }, 100);
-            }
+            
+            // 清空文件输入
+            const videoFileInput = document.getElementById('video-file');
+            if (videoFileInput) videoFileInput.value = '';
         }
 
         // 进入任务页面
@@ -1924,372 +2479,5 @@ document.addEventListener('DOMContentLoaded', function() {
         initVideoPage();
     </script>
 
-    <style>
-        /* 视频页面特定样式 */
-        .video-page-container {
-            padding: 32px;
-            max-width: 1200px;
-            margin: 0 auto;
-            width: 100%;
-        }
-
-        .welcome-section {
-            margin-bottom: 40px;
-            padding: 24px;
-            background: linear-gradient(135deg, rgba(24, 144, 255, 0.05), rgba(114, 46, 209, 0.05));
-            border-radius: 16px;
-            border-left: 4px solid var(--primary-color);
-        }
-
-        .welcome-section h1 {
-            font-size: 28px;
-            color: var(--text-main);
-            margin-bottom: 8px;
-        }
-
-        .welcome-section p {
-            font-size: 16px;
-            color: var(--text-sub);
-        }
-
-        .video-list-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-            gap: 24px;
-            margin-bottom: 40px;
-        }
-
-        .video-task-card {
-            background: white;
-            border-radius: 16px;
-            padding: 24px;
-            box-shadow: var(--card-shadow);
-            transition: all 0.3s ease;
-            cursor: pointer;
-            border: 1px solid rgba(0, 0, 0, 0.05);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .video-task-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--hover-shadow);
-            border-color: var(--primary-light);
-        }
-
-        .video-task-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
-            background: linear-gradient(90deg, var(--primary-color), #722ed1);
-        }
-
-        .video-task-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 16px;
-        }
-
-        .video-task-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--text-main);
-            flex: 1;
-            display: flex;
-            align-items: center;
-        }
-
-        .video-task-description {
-            font-size: 14px;
-            color: var(--text-sub);
-            line-height: 1.5;
-            margin-bottom: 20px;
-            padding: 12px;
-            background: rgba(0, 0, 0, 0.02);
-            border-radius: 8px;
-        }
-
-        .video-task-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-top: 16px;
-            border-top: 1px solid var(--border-color);
-        }
-
-        .video-task-subtasks {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-
-        .subtask-item {
-            font-size: 13px;
-            color: var(--text-sub);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 10px;
-            background: rgba(0, 0, 0, 0.03);
-            border-radius: 12px;
-        }
-
-        .usage-tips {
-            background: white;
-            border-radius: 16px;
-            padding: 24px;
-            box-shadow: var(--card-shadow);
-            border: 1px solid rgba(0, 0, 0, 0.05);
-        }
-
-        .usage-tips h4 {
-            font-size: 18px;
-            margin-bottom: 16px;
-            color: var(--text-main);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .usage-tips ul {
-            list-style: none;
-            padding-left: 0;
-        }
-
-        .usage-tips li {
-            font-size: 14px;
-            color: var(--text-sub);
-            margin-bottom: 10px;
-            padding-left: 24px;
-            position: relative;
-        }
-
-        .usage-tips li:before {
-            content: '•';
-            color: var(--primary-color);
-            font-size: 18px;
-            position: absolute;
-            left: 8px;
-        }
-
-        .task-preview {
-            margin-top: 20px;
-        }
-
-        .task-preview h4 {
-            font-size: 16px;
-            margin-bottom: 12px;
-            color: var(--text-sub);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .preview-card {
-            background: rgba(0, 0, 0, 0.02);
-            border-radius: 12px;
-            padding: 16px;
-            border: 1px dashed var(--border-color);
-        }
-
-        .preview-title {
-            font-weight: 600;
-            font-size: 16px;
-            margin-bottom: 8px;
-            color: var(--text-main);
-        }
-
-        .preview-description {
-            font-size: 14px;
-            color: var(--text-sub);
-            margin-bottom: 16px;
-            line-height: 1.5;
-        }
-
-        .preview-tips {
-            font-size: 13px;
-            color: #666;
-        }
-
-        .preview-tips p {
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .preview-tips ul {
-            list-style: none;
-            padding-left: 20px;
-            margin-top: 8px;
-        }
-
-        .preview-tips li {
-            margin-bottom: 4px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        /* 响应式调整 */
-        @media (max-width: 768px) {
-            .video-page-container {
-                padding: 20px;
-            }
-            
-            .video-list-container {
-                grid-template-columns: 1fr;
-            }
-            
-            .video-task-header {
-                flex-direction: column;
-                gap: 12px;
-            }
-            
-            .video-task-footer {
-                flex-direction: column;
-                gap: 16px;
-                align-items: stretch;
-            }
-            
-            .video-task-action {
-                align-self: flex-end;
-            }
-        }
-
-        /* 锁定状态的任务卡片 */
-        .video-task-card.locked {
-            background: #fafafa;
-            border-color: #e0e0e0;
-        }
-
-        .video-task-card.locked .video-task-title {
-            color: #999;
-        }
-
-        .video-task-card.locked::before {
-            background: #ccc;
-        }
-
-        .task-lock-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255, 255, 255, 0.8);
-            z-index: 1;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .lock-icon {
-            color: #999;
-            font-size: 24px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 12px;
-            border-radius: 50%;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        /* 进度条样式 */
-        .progress-container {
-            width: 100%;
-            height: 6px;
-            background: #f0f0f0;
-            border-radius: 3px;
-            margin: 12px 0;
-            overflow: hidden;
-        }
-        
-        .progress-bar {
-            height: 100%;
-            background: linear-gradient(90deg, #1890ff, #722ed1);
-            border-radius: 3px;
-            transition: width 0.3s ease;
-        }
-        
-        .progress-text {
-            font-size: 12px;
-            color: #666;
-            text-align: right;
-            margin-top: 4px;
-        }
-        /* 图标按钮样式 */
-.btn-icon {
-    padding: 6px;
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    transition: all 0.2s ease;
-    border: 1px solid transparent;
-    cursor: pointer;
-    background: #f5f5f5;
-    color: #666;
-}
-
-.btn-icon:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.btn-icon-lock {
-    background: #f6ffed;
-    color: #389e0d;
-    border-color: #b7eb8f;
-}
-
-.btn-icon-lock:hover {
-    background: #52c41a;
-    color: white;
-    border-color: #52c41a;
-}
-
-.btn-icon-unlock {
-    background: #fff2e8;
-    color: #d46b08;
-    border-color: #ffd8bf;
-}
-
-.btn-icon-unlock:hover {
-    background: #ff7a45;
-    color: white;
-    border-color: #ff7a45;
-}
-
-.btn-icon.btn-warning {
-    background: #fffbe6;
-    color: #d48806;
-    border-color: #ffe58f;
-}
-
-.btn-icon.btn-warning:hover {
-    background: #ffc53d;
-    color: white;
-    border-color: #ffc53d;
-}
-
-.btn-icon.btn-danger {
-    background: #fff2f0;
-    color: #ff4d4f;
-    border-color: #ffccc7;
-}
-
-.btn-icon.btn-danger:hover {
-    background: #ff7875;
-    color: white;
-    border-color: #ff7875;
-}
-    </style>
 </body>
 </html>

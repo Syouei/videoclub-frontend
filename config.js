@@ -96,11 +96,12 @@ window.AppConfig = {
         LOGIN: 'pages/login.html',
         REGISTER: 'pages/register.html',
         HOME: 'pages/home.html',
-        VIDEO: 'pages/video.html', 
+        VIDEO: 'pages/video.html',
         TASKS: 'pages/tasks.html',
         PROFILE: 'pages/profile.html',
         NOTIFICATIONS: 'pages/notifications.html',
-        VIDEO_PLAYER: 'pages/video-player.html'  // 新增：视频播放页面
+        VIDEO_PLAYER: 'pages/video-player.html',  // 新增：视频播放页面
+        'VIDEO-PLAYER': 'pages/video-player.html'  // 兼容连字符格式
     },
 
     // 修改用户信息字段配置，使用API文档的字段名：
