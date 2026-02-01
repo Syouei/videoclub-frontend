@@ -1,4 +1,4 @@
-
+﻿
 // API调用模块
 window.API = {
     /**
@@ -475,6 +475,17 @@ window.API = {
         const queryString = this.buildQueryString(params);
         return await this.request(endpoint + queryString, 'GET');
     },
+
+    /**
+     * 8.2 查询埋点事件（行为日志）
+     * @param {object} params - {clubId, startTime, endTime, limit, offset}
+     * @returns {Promise} {code, msg, data: {list, total}}
+     */
+    async getAnalyticsEvents(params = {}) {
+        const endpoint = window.AppConfig.API_ENDPOINTS.GET_ANALYTICS_EVENTS;
+        const queryString = this.buildQueryString(params);
+        return await this.request(endpoint + queryString, 'GET');
+    },
     
     /**
      * 4.3 查询俱乐部详情
@@ -821,3 +832,4 @@ window.API = {
         return await this.request(endpoint, 'POST', data);
     }
 };
+

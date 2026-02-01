@@ -1,6 +1,28 @@
-// å·¥å…·å‡½æ•°æ¨¡å—
+// ¹¤¾ßº¯ÊıÄ£¿é
+const ANALYTICS_EVENT_TYPES = [
+    'click',
+    'input',
+    'change',
+    'submit',
+    'page_view',
+    'route_change',
+    'scroll_depth',
+    'page_visible',
+    'page_hidden',
+    'js_error',
+    'resource_error',
+    'unhandled_rejection',
+    'page_performance'
+];
+
+const ANALYTICS_EVENT_MAP = {
+    user_login: { event: 'submit', module: 'auth' },
+    user_logout: { event: 'click', module: 'auth' },
+    profile_updated: { event: 'change', module: 'profile' },
+    privacy_agreement_accepted: { event: 'submit', module: 'privacy' }
+};
 window.Utils = {
-    // è·å–å…ƒç´ 
+    // »ñÈ¡ÔªËØ
     $: function(selector) {
         return document.querySelector(selector);
     },
@@ -9,7 +31,7 @@ window.Utils = {
         return document.querySelectorAll(selector);
     },
     
-    // åˆ›å»ºå…ƒç´ 
+    // ´´½¨ÔªËØ
     createElement: function(tag, className, innerHTML) {
         const element = document.createElement(tag);
         if (className) element.className = className;
@@ -17,7 +39,7 @@ window.Utils = {
         return element;
     },
     
-    // æ˜¾ç¤º/éšè—å…ƒç´ 
+    // ÏÔÊ¾/Òş²ØÔªËØ
     showElement: function(element) {
         if (element) element.style.display = 'block';
     },
@@ -26,7 +48,7 @@ window.Utils = {
         if (element) element.style.display = 'none';
     },
     
-    // æ ¼å¼åŒ–æ—¥æœŸ
+    // ¸ñÊ½»¯ÈÕÆÚ
     formatDate: function(date) {
         const d = new Date(date);
         const year = d.getFullYear();
@@ -35,7 +57,7 @@ window.Utils = {
         return `${year}-${month}-${day}`;
     },
     
-    // æ ¼å¼åŒ–æ—¶é—´
+    // ¸ñÊ½»¯Ê±¼ä
     formatTime: function(date) {
         const d = new Date(date);
         const hours = String(d.getHours()).padStart(2, '0');
@@ -43,7 +65,7 @@ window.Utils = {
         return `${hours}:${minutes}`;
     },
     
-    // æ˜¾ç¤ºé€šçŸ¥
+    // ÏÔÊ¾Í¨Öª
     showNotification: function(message, type = 'info') {
         const notification = document.getElementById('taskNotification');
         if (!notification) {
@@ -60,7 +82,7 @@ window.Utils = {
         }, 3000);
     },
     
-    // æ˜¾ç¤ºåŠ è½½åŠ¨ç”»
+    // ÏÔÊ¾¼ÓÔØ¶¯»­
     showLoading: function(element) {
         if (!element) return;
         const spinner = this.createElement('div', 'loading-spinner');
@@ -68,13 +90,13 @@ window.Utils = {
         element.appendChild(spinner);
     },
     
-    // ç§»é™¤åŠ è½½åŠ¨ç”»
+    // ÒÆ³ı¼ÓÔØ¶¯»­
     hideLoading: function(element, content) {
         if (!element) return;
         element.innerHTML = content || '';
     },
     
-    // é˜²æŠ–å‡½æ•°
+    // ·À¶¶º¯Êı
     debounce: function(func, wait) {
         let timeout;
         return function executedFunction(...args) {
@@ -87,7 +109,7 @@ window.Utils = {
         };
     },
     
-    // èŠ‚æµå‡½æ•°
+    // ½ÚÁ÷º¯Êı
     throttle: function(func, limit) {
         let inThrottle;
         return function(...args) {
@@ -99,54 +121,54 @@ window.Utils = {
         };
     },
     
-    // æ·±æ‹·è´
+    // Éî¿½±´
     deepClone: function(obj) {
         return JSON.parse(JSON.stringify(obj));
     },
     
-    // éªŒè¯é‚®ç®±
+    // ÑéÖ¤ÓÊÏä
     isValidEmail: function(email) {
         const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return re.test(email);
     },
     
-    // éªŒè¯æ‰‹æœºå·
+    // ÑéÖ¤ÊÖ»úºÅ
     isValidPhone: function(phone) {
         const re = /^1[3-9]\d{9}$/;
         return re.test(phone);
     },
     
-    // ç”ŸæˆéšæœºID
+    // Éú³ÉËæ»úID
     generateId: function() {
         return Date.now().toString(36) + Math.random().toString(36).substr(2);
     },
     
-    // è·å–URLå‚æ•°
+    // »ñÈ¡URL²ÎÊı
     getUrlParam: function(name) {
         const urlParams = new URLSearchParams(window.location.search);
         return urlParams.get(name);
     },
     
-    // è®¾ç½®URLå‚æ•°
+    // ÉèÖÃURL²ÎÊı
     setUrlParam: function(key, value) {
         const url = new URL(window.location);
         url.searchParams.set(key, value);
         window.history.pushState({}, '', url);
     },
     
-    // ç§»é™¤URLå‚æ•°
+    // ÒÆ³ıURL²ÎÊı
     removeUrlParam: function(key) {
         const url = new URL(window.location);
         url.searchParams.delete(key);
         window.history.pushState({}, '', url);
     },
     
-    // å¤åˆ¶åˆ°å‰ªè´´æ¿
+    // ¸´ÖÆµ½¼ôÌù°å
     copyToClipboard: function(text) {
         return navigator.clipboard.writeText(text);
     },
     
-    // æ£€æŸ¥å¯†ç å¼ºåº¦
+    // ¼ì²éÃÜÂëÇ¿¶È
     checkPasswordStrength: function(password) {
         let strength = 0;
         
@@ -162,74 +184,74 @@ window.Utils = {
         return 'strong';
     },
     
-    // å­˜å‚¨æ•°æ®åˆ°æœ¬åœ°å­˜å‚¨
+    // ´æ´¢Êı¾İµ½±¾µØ´æ´¢
     saveToStorage: function(key, data) {
         try {
             localStorage.setItem(key, JSON.stringify(data));
             return true;
         } catch (error) {
-            console.error('ä¿å­˜åˆ°æœ¬åœ°å­˜å‚¨å¤±è´¥:', error);
+            console.error('±£´æµ½±¾µØ´æ´¢Ê§°Ü:', error);
             return false;
         }
     },
     
-    // ä»æœ¬åœ°å­˜å‚¨è¯»å–æ•°æ®
+    // ´Ó±¾µØ´æ´¢¶ÁÈ¡Êı¾İ
     getFromStorage: function(key) {
         try {
             const data = localStorage.getItem(key);
             return data ? JSON.parse(data) : null;
         } catch (error) {
-            console.error('ä»æœ¬åœ°å­˜å‚¨è¯»å–å¤±è´¥:', error);
+            console.error('´Ó±¾µØ´æ´¢¶ÁÈ¡Ê§°Ü:', error);
             return null;
         }
     },
     
-    // ä»æœ¬åœ°å­˜å‚¨ç§»é™¤æ•°æ®
+    // ´Ó±¾µØ´æ´¢ÒÆ³ıÊı¾İ
     removeFromStorage: function(key) {
         try {
             localStorage.removeItem(key);
             return true;
         } catch (error) {
-            console.error('ä»æœ¬åœ°å­˜å‚¨ç§»é™¤å¤±è´¥:', error);
+            console.error('´Ó±¾µØ´æ´¢ÒÆ³ıÊ§°Ü:', error);
             return false;
         }
     },
     
-    // æ¸…ç©ºæ‰€æœ‰æœ¬åœ°å­˜å‚¨
+    // Çå¿ÕËùÓĞ±¾µØ´æ´¢
     clearStorage: function() {
         try {
             localStorage.clear();
             return true;
         } catch (error) {
-            console.error('æ¸…ç©ºæœ¬åœ°å­˜å‚¨å¤±è´¥:', error);
+            console.error('Çå¿Õ±¾µØ´æ´¢Ê§°Ü:', error);
             return false;
         }
     },
     
-    // ================ éšç§ç›¸å…³åŠŸèƒ½ ================
+    // ================ ÒşË½Ïà¹Ø¹¦ÄÜ ================
     
-    // æ£€æŸ¥éšç§åè®®æ˜¯å¦å·²åŒæ„
+    // ¼ì²éÒşË½Ğ­ÒéÊÇ·ñÒÑÍ¬Òâ
     isPrivacyAgreed: function() {
         const privacyData = this.getFromStorage('privacy_agreed');
         return !!(privacyData && privacyData.agreed);
     },
     
-    // è·å–éšç§åè®®åŒæ„æ—¶é—´
+    // »ñÈ¡ÒşË½Ğ­ÒéÍ¬ÒâÊ±¼ä
     getPrivacyAgreementTime: function() {
         const privacyData = this.getFromStorage('privacy_agreed');
         return privacyData ? privacyData.agreedAt : null;
     },
     
-    // è·å–éšç§åè®®ç‰ˆæœ¬
+    // »ñÈ¡ÒşË½Ğ­Òé°æ±¾
     getPrivacyVersion: function() {
         const privacyData = this.getFromStorage('privacy_agreed');
         return privacyData ? privacyData.version : null;
     },
     
-    // æ’¤å›éšç§åè®®åŒæ„
+    // ³·»ØÒşË½Ğ­ÒéÍ¬Òâ
     withdrawPrivacyAgreement: function() {
         try {
-            // ä¿ç•™ç”¨æˆ·IDä½†æ ‡è®°ä¸ºæ’¤å›åŒæ„
+            // ±£ÁôÓÃ»§IDµ«±ê¼ÇÎª³·»ØÍ¬Òâ
             const privacyData = this.getFromStorage('privacy_agreed') || {};
             const updatedData = {
                 ...privacyData,
@@ -240,21 +262,21 @@ window.Utils = {
             
             this.saveToStorage('privacy_agreed', updatedData);
             
-            // è§¦å‘å­˜å‚¨äº‹ä»¶ï¼Œè®©å…¶ä»–é¡µé¢çŸ¥é“
+            // ´¥·¢´æ´¢ÊÂ¼ş£¬ÈÃÆäËûÒ³ÃæÖªµÀ
             window.dispatchEvent(new StorageEvent('storage', {
                 key: 'privacy_agreed',
                 newValue: JSON.stringify(updatedData)
             }));
             
-            console.log('[éšç§] éšç§åè®®åŒæ„å·²æ’¤å›');
+            console.log('[ÒşË½] ÒşË½Ğ­ÒéÍ¬ÒâÒÑ³·»Ø');
             return true;
         } catch (error) {
-            console.error('[éšç§] æ’¤å›éšç§åè®®åŒæ„å¤±è´¥:', error);
+            console.error('[ÒşË½] ³·»ØÒşË½Ğ­ÒéÍ¬ÒâÊ§°Ü:', error);
             return false;
         }
     },
     
-    // å¯¼å‡ºç”¨æˆ·æ•°æ®
+    // µ¼³öÓÃ»§Êı¾İ
     exportUserData: function() {
         try {
             const userData = {
@@ -265,10 +287,10 @@ window.Utils = {
                 exportDate: new Date().toISOString()
             };
             
-            // è½¬æ¢ä¸ºJSONå­—ç¬¦ä¸²
+            // ×ª»»ÎªJSON×Ö·û´®
             const jsonData = JSON.stringify(userData, null, 2);
             
-            // åˆ›å»ºä¸‹è½½é“¾æ¥
+            // ´´½¨ÏÂÔØÁ´½Ó
             const blob = new Blob([jsonData], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -279,28 +301,28 @@ window.Utils = {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            console.log('[éšç§] ç”¨æˆ·æ•°æ®å¯¼å‡ºæˆåŠŸ');
+            console.log('[ÒşË½] ÓÃ»§Êı¾İµ¼³ö³É¹¦');
             return true;
         } catch (error) {
-            console.error('[éšç§] å¯¼å‡ºç”¨æˆ·æ•°æ®å¤±è´¥:', error);
+            console.error('[ÒşË½] µ¼³öÓÃ»§Êı¾İÊ§°Ü:', error);
             return false;
         }
     },
     
-    // åˆ é™¤ç”¨æˆ·æ•°æ®
+    // É¾³ıÓÃ»§Êı¾İ
     deleteUserData: function() {
-        if (!confirm('ç¡®å®šè¦åˆ é™¤æ‰€æœ‰æœ¬åœ°ç”¨æˆ·æ•°æ®å—ï¼Ÿæ­¤æ“ä½œä¸å¯æ’¤é”€ã€‚')) {
+        if (!confirm('È·¶¨ÒªÉ¾³ıËùÓĞ±¾µØÓÃ»§Êı¾İÂğ£¿´Ë²Ù×÷²»¿É³·Ïú¡£')) {
             return false;
         }
         
         try {
-            // æ¸…é™¤æ‰€æœ‰ç”¨æˆ·ç›¸å…³æ•°æ®
+            // Çå³ıËùÓĞÓÃ»§Ïà¹ØÊı¾İ
             this.removeFromStorage(AppConfig.STORAGE_KEYS.USER_TOKEN);
             this.removeFromStorage(AppConfig.STORAGE_KEYS.USER_INFO);
             this.removeFromStorage(AppConfig.STORAGE_KEYS.CLUBS_CACHE);
             this.removeFromStorage(AppConfig.STORAGE_KEYS.TASKS_CACHE);
             
-            // ä¿ç•™éšç§åè®®è®°å½•ä½†æ ‡è®°ä¸ºå·²åˆ é™¤
+            // ±£ÁôÒşË½Ğ­Òé¼ÇÂ¼µ«±ê¼ÇÎªÒÑÉ¾³ı
             const privacyData = this.getFromStorage('privacy_agreed') || {};
             const updatedPrivacyData = {
                 ...privacyData,
@@ -309,56 +331,108 @@ window.Utils = {
             };
             this.saveToStorage('privacy_agreed', updatedPrivacyData);
             
-            // è§¦å‘å­˜å‚¨äº‹ä»¶
+            // ´¥·¢´æ´¢ÊÂ¼ş
             window.dispatchEvent(new StorageEvent('storage', {
                 key: 'privacy_agreed',
                 newValue: JSON.stringify(updatedPrivacyData)
             }));
             
-            console.log('[éšç§] ç”¨æˆ·æ•°æ®å·²åˆ é™¤');
+            console.log('[ÒşË½] ÓÃ»§Êı¾İÒÑÉ¾³ı');
             return true;
         } catch (error) {
-            console.error('[éšç§] åˆ é™¤ç”¨æˆ·æ•°æ®å¤±è´¥:', error);
+            console.error('[ÒşË½] É¾³ıÓÃ»§Êı¾İÊ§°Ü:', error);
             return false;
         }
     },
     
-    // å‘é€éšç§äº‹ä»¶åˆ°æœåŠ¡å™¨ï¼ˆåŸ‹ç‚¹ï¼‰
+    // ·¢ËÍÒşË½ÊÂ¼şµ½·şÎñÆ÷£¨Âñµã£©
     sendPrivacyEvent: function(eventName, eventData = {}) {
         if (!this.isPrivacyAgreed()) {
-            console.log('[åŸ‹ç‚¹] éšç§åè®®æœªåŒæ„ï¼Œä¸å‘é€äº‹ä»¶');
+            console.log('[Âñµã] ÒşË½Ğ­ÒéÎ´Í¬Òâ£¬²»·¢ËÍÊÂ¼ş');
             return;
         }
-        
-        const user = window.Auth ? window.Auth.getUser() : null;
-        
-        const eventPayload = {
-            event: eventName,
-            timestamp: new Date().toISOString(),
-            userId: user ? user.userId : 'anonymous',
-            sessionId: this.getSessionId(),
-            data: eventData
-        };
-        
-        console.log('[åŸ‹ç‚¹] éšç§äº‹ä»¶:', eventPayload);
-        
-        // åœ¨å®é™…åº”ç”¨ä¸­ï¼Œè¿™é‡Œåº”è¯¥å‘é€åˆ°åˆ†ææœåŠ¡å™¨
-        /*
+
+        const payload = this.buildAnalyticsPayload(eventName, eventData);
+        if (!payload) return;
+
+        console.log('[Âñµã] ÒşË½ÊÂ¼ş:', payload);
+
+        // ÔÚÊµ¼ÊÓ¦ÓÃÖĞ£¬ÕâÀïÓ¦¸Ã·¢ËÍµ½·ÖÎö·şÎñÆ÷
         if (window.AppConfig.ANALYTICS_ENABLED) {
             fetch(window.AppConfig.ANALYTICS_ENDPOINT, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(eventPayload)
+                body: JSON.stringify(payload)
             }).catch(error => {
-                console.error('[åŸ‹ç‚¹] å‘é€éšç§äº‹ä»¶å¤±è´¥:', error);
+                console.error('[Âñµã] ·¢ËÍÒşË½ÊÂ¼şÊ§°Ü:', error);
             });
         }
-        */
     },
-    
-    // ç”Ÿæˆä¼šè¯ID
+
+    // ½«×Ô¶¨ÒåÊÂ¼şÃûÓ³Éäµ½ºó¶ËÔÊĞíµÄÃ¶¾Ù
+    normalizeAnalyticsEvent: function(eventName, eventData = {}) {
+        const name = String(eventName || '').trim();
+        if (!name) {
+            return { event: 'click' };
+        }
+        if (ANALYTICS_EVENT_TYPES.includes(name)) {
+            return {
+                event: name,
+                subEvent: eventData.sub_event || eventData.subEvent || undefined,
+                module: eventData.module || undefined
+            };
+        }
+
+        const mapped = ANALYTICS_EVENT_MAP[name];
+        return {
+            event: mapped ? mapped.event : 'click',
+            subEvent: mapped?.subEvent || name,
+            module: mapped?.module
+        };
+    },
+
+    // ¹¹½¨·ûºÏºó¶Ë DTO µÄÂñµã payload£¨snake_case£©
+    buildAnalyticsPayload: function(eventName, eventData = {}) {
+        const normalized = this.normalizeAnalyticsEvent(eventName, eventData);
+        const user = window.Auth ? window.Auth.getUser() : null;
+        const fallbackUserId = eventData.user_id ?? eventData.userId;
+        const fallbackUserName = eventData.user_name ?? eventData.userName ?? eventData.username;
+        const fallbackUserTrueName = eventData.user_true_name ?? eventData.userTrueName;
+        const appState = window.App && window.App.state ? window.App.state : null;
+        const clubId = eventData.club_id ?? eventData.clubId ?? appState?.currentClubId;
+        const pageValue = eventData.page || (window.location.hash || window.location.pathname);
+        const resolvedUserId = user ? user.userId : fallbackUserId;
+        const resolvedUserName = user?.username || user?.name || fallbackUserName;
+        const resolvedUserTrueName = user?.profile?.realname || user?.profile?.realName || fallbackUserTrueName;
+
+        let targetObject;
+        try {
+            if (eventData && Object.keys(eventData).length) {
+                targetObject = JSON.stringify(eventData);
+            }
+        } catch (error) {
+            targetObject = String(eventData);
+        }
+
+        const payload = {
+            event: normalized.event,
+            sub_event: normalized.subEvent,
+            event_time: Date.now(),
+            user_id: resolvedUserId !== undefined && resolvedUserId !== null ? Number(resolvedUserId) : undefined,
+            user_name: resolvedUserName,
+            user_true_name: resolvedUserTrueName,
+            club_id: clubId !== undefined && clubId !== null ? Number(clubId) : undefined,
+            page: pageValue,
+            module: normalized.module || eventData.module,
+            target_object: targetObject
+        };
+
+        return payload;
+    },
+
+    // Éú³É»á»°ID
     getSessionId: function() {
         let sessionId = this.getFromStorage('session_id');
         if (!sessionId) {

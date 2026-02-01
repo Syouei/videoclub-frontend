@@ -1,4 +1,4 @@
-// 俱乐部管理模块
+﻿// 俱乐部管理模块
 window.Clubs = {
     // 我的俱乐部列表
     myClubs: [],
@@ -596,6 +596,139 @@ window.Clubs = {
         return club ? club.members : 0;
     },
     
+    // 是否允许导出行为日志（管理员或系统管理员）
+    canExportBehaviorLogs: function(clubId) {
+        const isManager = this.isClubOwner(clubId);
+        const isAdmin = window.Auth && typeof window.Auth.getUserRole === 'function' && window.Auth.getUserRole() === 'admin';
+        return isManager || isAdmin;
+    },
+
+    // 导出俱乐部行为日志
+    exportBehaviorLogs: async function(clubId) {
+        try {
+            const id = Number(clubId);
+            const club = this.myClubs.find(c => c.id === id) || this.allClubs.find(c => c.id === id);
+            if (!club) {
+                throw new Error('未找到俱乐部信息');
+            }
+
+            if (!this.canExportBehaviorLogs(id)) {
+                if (window.Utils) {
+                    Utils.showNotification('仅俱乐部管理员可导出行为日志', 'warning');
+                }
+                return;
+            }
+
+            if (!confirm(`确定导出「${club.name}」的行为日志吗？`)) {
+                return;
+            }
+
+            const response = await API.getAnalyticsEvents({ clubId: id });
+            const payload = response && response.data ? response.data : null;
+            const events = payload && Array.isArray(payload.list) ? payload.list : (Array.isArray(payload) ? payload : []);
+            if (!events || events.length === 0) {
+                if (window.Utils) {
+                    Utils.showNotification('暂无可导出的行为日志', 'info');
+                }
+                return;
+            }
+
+            const csv = this.buildBehaviorCsv(events);
+            const safeClubName = this.sanitizeFilename(club.name || `club-${id}`);
+            const dateTag = new Date().toISOString().slice(0, 10);
+            const filename = `行为日志_${safeClubName}_${dateTag}.csv`;
+
+            this.downloadFile(csv, filename, 'text/csv');
+            if (window.Utils) {
+                Utils.showNotification('行为日志已导出', 'success');
+            }
+        } catch (error) {
+            console.error('导出行为日志失败:', error);
+            if (window.Utils) {
+                Utils.showNotification(error.message || '导出行为日志失败', 'error');
+            }
+        }
+    },
+
+    // 构建CSV内容
+    buildBehaviorCsv: function(events) {
+        const headers = [
+            'eventId',
+            'userId',
+            'clubId',
+            'eventTime',
+            'eventTimeISO',
+            'userName',
+            'userTrueName',
+            'page',
+            'module',
+            'event',
+            'subEvent',
+            'targetObject',
+            'createdAt'
+        ];
+
+        const rows = events.map(eventItem => {
+            const rawTime = eventItem.eventTime ?? eventItem.event_time ?? '';
+            const timeNumber = Number(rawTime);
+            const eventTimeIso = Number.isFinite(timeNumber) ? new Date(timeNumber).toISOString() : '';
+
+            const createdAtIso = eventItem.createdAt ? new Date(eventItem.createdAt).toISOString() : '';
+
+            const values = [
+                eventItem.eventId ?? eventItem.event_id ?? '',
+                eventItem.userId ?? eventItem.user_id ?? '',
+                eventItem.clubId ?? eventItem.club_id ?? '',
+                rawTime,
+                eventTimeIso,
+                eventItem.userName ?? eventItem.user_name ?? '',
+                eventItem.userTrueName ?? eventItem.user_true_name ?? '',
+                eventItem.page ?? '',
+                eventItem.module ?? '',
+                eventItem.event ?? '',
+                eventItem.subEvent ?? eventItem.sub_event ?? '',
+                eventItem.targetObject ?? eventItem.target_object ?? '',
+                createdAtIso
+            ];
+
+            return values.map(value => this.escapeCsv(value)).join(',');
+        });
+
+        return [headers.join(','), ...rows].join('\n');
+    },
+
+    escapeCsv: function(value) {
+        if (value === null || value === undefined) {
+            return '';
+        }
+        const text = String(value);
+        const quoteChar = String.fromCharCode(34);
+        if (text.indexOf(quoteChar) !== -1 || text.indexOf(',') !== -1 || text.indexOf('\n') !== -1) {
+            return quoteChar + text.split(quoteChar).join(quoteChar + quoteChar) + quoteChar;
+        }
+        return text;
+    },
+
+    sanitizeFilename: function(name) {
+        const quoteChar = String.fromCharCode(34);
+        const invalidChars = /[\\\\/:*?<>|]/g;
+        return String(name || '')
+            .split(quoteChar).join('_')
+            .replace(invalidChars, '_')
+            .trim() || 'club';
+    },
+
+    downloadFile: function(content, filename, mimeType) {
+        const blob = new Blob([content], { type: mimeType || 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    },
     renderClubList: function() {
         console.log('渲染俱乐部列表');
         
@@ -688,6 +821,12 @@ renderClubCard: function(club, container, isArchived) {
     
     let actionButtons = '';
     let archiveNotice = '';
+    const canExportLogs = this.canExportBehaviorLogs(club.id);
+    const exportButton = `
+                <button class='btn btn-outline btn-sm' onclick='window.Clubs.exportBehaviorLogs(${club.id})' ${canExportLogs ? '' : 'disabled'} title='${canExportLogs ? '导出行为日志' : '仅管理员可导出'}'>
+                    <i class='fas fa-download'></i> 导出日志
+                </button>
+            `;
     
     if (isArchived) {
         // 归档俱乐部：查看任务 + 恢复按钮
@@ -738,13 +877,17 @@ renderClubCard: function(club, container, isArchived) {
         // 默认：只有查看任务按钮
         actionButtons = `
             <div class="club-actions">
-                <button class="btn btn-primary" onclick="goToVideoPage(${club.id})" style="width:100%">
+                <button class="btn btn-primary" onclick="goToVideoPage(${club.id})" style="flex:1">
                     <i class="fas fa-video"></i> 查看活动
                 </button>
             </div>
         `;
     }
     
+    if (actionButtons) {
+        actionButtons = actionButtons.replace('</div>', `${exportButton}</div>`);
+    }
+
     // 如果有归档时间，显示归档时间
     const archiveTime = isArchived && club.archivedAt ? 
         `<div style="font-size: 12px; color: #999; margin-top: 8px;"><i class="fas fa-clock"></i> 归档于：${this.formatDate(club.archivedAt)}</div>` : '';
@@ -1454,3 +1597,5 @@ renderClubCard: function(club, container, isArchived) {
         return true;
     }
 };
+
+

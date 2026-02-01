@@ -1,8 +1,8 @@
-
+﻿
 window.AppConfig = {
     // API基础URL - 修改为你后端的地址
     // 注意：API文档指定基础路径为 /api/v1
-    API_BASE_URL: 'http://videohub.rhuey.org/api/v1',
+    API_BASE_URL: 'http://localhost:3000/api/v1',
     
     // API端点配置（完全按照API文档）
     API_ENDPOINTS: {
@@ -48,6 +48,11 @@ window.AppConfig = {
         // 4.11 驳回入会申请
         REJECT_JOIN_REQUEST: '/clubs/{id}/join-requests/{requestId}/reject',
         
+
+        // ================ 统计模块（需Token） ================
+        // 8.2 导出/查询埋点事件
+        GET_ANALYTICS_EVENTS: '/analytics/events',
+
         // ================ 通知模块（需Token） ================
         // 9.1 站内信列表
         GET_NOTIFICATIONS: '/notifications',
@@ -190,7 +195,7 @@ window.AppConfig = {
     ANALYTICS_ENABLED: true,
     
     // 分析服务器端点（可根据需要配置）
-    ANALYTICS_ENDPOINT: 'https://analytics.teachervideoclub.com/events',
+    ANALYTICS_ENDPOINT: 'http://localhost:3000/api/v1/analytics/events',
     
     // 隐私政策版本
     PRIVACY_VERSION: '2026-01',
@@ -215,3 +220,6 @@ window.AppConfig = {
         OFFLINE_MODE_ENABLED: true
     }
 };
+
+
+
