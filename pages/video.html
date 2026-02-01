@@ -1305,8 +1305,10 @@ function formatFileSize(bytes) {
                     if (descInput) descInput.value = '';
                     if (errorElement) errorElement.style.display = 'none';
                     
-                    // 重置视频上传状态
-                    uploadedVideoId = null;
+                    // 重置视频上传状态 - 只在没有已上传视频时重置
+                    if (!uploadedVideoId) {
+                        uploadedVideoId = null;
+                    }
                     const videoFileInput = document.getElementById('video-file');
                     if (videoFileInput) videoFileInput.value = '';
                     
