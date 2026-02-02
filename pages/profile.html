@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>完善个人信息 - 教师视频俱乐部</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* 个人资料页面特有样式 */
+        .profile-container {
+            padding: 32px;
+            max-width: 600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        .profile-header {
+            margin-bottom: 32px;
+            text-align: center;
+        }
+        
+        .profile-header h1 {
+            font-size: 28px;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+        
+        .profile-header p {
+            font-size: 16px;
+            color: var(--text-sub);
+        }
+        
+        /* 完成度指示器 */
+        .completion-indicator {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .completion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .completion-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+        
+        .completion-percentage {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        .progress-bar-container {
+            height: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #1890ff, #722ed1);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        .progress-text {
+            font-size: 13px;
+            color: var(--text-sub);
+            text-align: right;
+        }
+        
+        /* 表单区域 */
+        .profile-form {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .form-section {
+            margin-bottom: 32px;
+        }
+        
+        .form-section h3 {
+            font-size: 18px;
+            color: var(--text-main);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary-light);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .form-section h3 i {
+            color: var(--primary-color);
+        }
+        
+        /* 表单组 */
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-row .form-item {
+            flex: 1;
+        }
+        
+        /* 标签样式 */
+        .form-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+        
+        .required-marker {
+            color: #ff4d4f;
+            font-size: 12px;
+        }
+        
+        /* 输入框样式 */
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--text-main);
+            background: white;
+            transition: all 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+        }
+        
+        .form-input.error {
+            border-color: #ff4d4f;
+        }
+        
+        /* 下拉选择框 */
+        .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--text-main);
+            background: white;
+            cursor: pointer;
+        }
+        
+        .form-select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+        }
+        
+        /* 错误消息 */
+        .error-message {
+            color: #ff4d4f;
+            font-size: 13px;
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        /* 帮助文本 */
+        .help-text {
+            color: var(--text-sub);
+            font-size: 13px;
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        /* 按钮区域 */
+        .form-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        /* 必填字段提示 */
+        .required-fields-note {
+            font-size: 13px;
+            color: var(--text-sub);
+            margin-top: 8px;
+            text-align: center;
+        }
+        
+        .required-fields-note .required-marker {
+            color: #ff4d4f;
+        }
+
+        /* 个性签名样式 - 与角色选择框保持一致 */
+.signature-textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--text-main);
+    background: white;
+    transition: all 0.3s ease;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 100px;
+    line-height: 1.5;
+    box-sizing: border-box;
+    display: block;
+}
+
+.signature-textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.signature-textarea::placeholder {
+    color: #999;
+    font-style: italic;
+}
+
+.signature-counter {
+    text-align: right;
+    font-size: 13px;
+    color: var(--text-sub);
+    margin-top: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.signature-counter .counter-text {
+    font-size: 13px;
+    color: var(--text-sub);
+}
+
+.signature-counter .counter-number {
+    font-weight: 500;
+}
+
+.signature-counter .counter-number.limit {
+    color: #ff4d4f;
+    font-weight: bold;
+}
+
+/* 个性签名帮助文本 - 与其他帮助文本保持一致 */
+.signature-help {
+    color: var(--text-sub);
+    font-size: 13px;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1.4;
+}
+
+/* 个性签名容器 - 确保与表单项目一致 */
+.signature-container {
+    margin-bottom: 20px;
+}
+
+.signature-container .form-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-main);
+}
+    </style>
+</head>
+<body>
+    <div id="page-profile" class="page active">
+        <!-- 头部导航 -->
+        <div class="header">
+            <div class="header-left">
+                <button class="btn btn-text" onclick="goBackToPreviousPage()" style="margin-right:10px;">
+                    <i class="fas fa-arrow-left"></i> 返回
+                </button>
+                <span class="platform-name">教师视频俱乐部</span>
+                <span style="color: #999; font-weight: normal;"> | 完善个人信息</span>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <div class="avatar" id="profile-user-avatar">王</div>
+                    <span id="profile-user-name">王老师</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 个人资料内容 -->
+        <div class="profile-container">
+            <!-- 头部标题 -->
+            <div class="profile-header">
+                <h1><i class="fas fa-user-circle"></i> 完善个人真实信息</h1>
+                <p>请填写以下信息，以便更好地为您提供服务</p>
+            </div>
+
+            <!-- 完成度指示器 -->
+            <div class="completion-indicator" id="completion-indicator">
+                <div class="completion-header">
+                    <div class="completion-title">信息完整度</div>
+                    <div class="completion-percentage" id="completion-percentage">0%</div>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+                </div>
+                <div class="progress-text">
+                    <span id="completed-fields">0</span>/<span id="total-fields">6</span> 个字段已填写
+                </div>
+            </div>
+
+            <!-- 表单 -->
+            <form id="profile-form" class="profile-form" onsubmit="return false;">
+                <!-- 基础信息部分 -->
+                <div class="form-section">
+                    <h3><i class="fas fa-id-card"></i> 基础信息</h3>
+                    
+                    <!-- 真实姓名 -->
+                    <div class="form-item">
+                        <label class="form-label">
+                            真实姓名
+                            <span class="required-marker">*</span>
+                        </label>
+                        <input type="text" 
+                               id="real-name" 
+                               class="form-input" 
+                               placeholder="请输入您的真实姓名"
+                               maxlength="20">
+                        <div class="error-message" id="real-name-error" style="display: none;">
+                            <i class="fas fa-exclamation-circle"></i> 请输入真实姓名
+                        </div>
+                    </div>
+                    
+                    <!-- 性别和年龄 -->
+                    <div class="form-row">
+                        <div class="form-item">
+                            <label class="form-label">
+    性别
+    <span class="required-marker">*</span>
+</label>
+<select id="gender" class="form-select" required>
+    <option value="">请选择性别</option>
+    <option value="male">男</option>
+    <option value="female">女</option>
+</select>
+<div class="error-message" id="gender-error" style="display: none;">
+    <i class="fas fa-exclamation-circle"></i> 请选择性别
+</div>
+                        </div>
+                        
+                        <div class="form-item">
+                            <label class="form-label">
+                                年龄
+                                <span class="required-marker">*</span>
+                            </label>
+                            <input type="number" 
+                                   id="age" 
+                                   class="form-input" 
+                                   placeholder="请输入年龄"
+                                   min="1" 
+                                   max="100"
+                                   oninput="validateAge(this)">
+                            <div class="error-message" id="age-error" style="display: none;">
+                                <i class="fas fa-exclamation-circle"></i> 请输入有效的年龄（1-100岁）
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 学校信息部分 -->
+                <div class="form-section">
+                    <h3><i class="fas fa-school"></i> 学校信息</h3>
+                    
+                    <!-- 学校 -->
+                    <div class="form-item">
+                        <label class="form-label">
+                            学校
+                            <span class="required-marker">*</span>
+                        </label>
+                        <input type="text" 
+                               id="school" 
+                               class="form-input" 
+                               placeholder="请输入您所在的学校名称"
+                               maxlength="50">
+                        <div class="error-message" id="school-error" style="display: none;">
+                            <i class="fas fa-exclamation-circle"></i> 请输入学校名称
+                        </div>
+                    </div>
+                    
+                    <!-- 学号（非必填） -->
+                    <div class="form-item">
+                        <label class="form-label">
+                            学号（选填）
+                        </label>
+                        <input type="text" 
+                               id="student-id" 
+                               class="form-input" 
+                               placeholder="请输入学号"
+                               maxlength="20">
+                        <div class="help-text">
+                            <i class="fas fa-info-circle"></i> 如为学生身份，请填写学号
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 联系方式部分 -->
+                <div class="form-section">
+                    <h3><i class="fas fa-phone-alt"></i> 联系方式</h3>
+                    
+                    <!-- 手机号 -->
+                    <div class="form-item">
+                        <label class="form-label">
+                            手机号
+                            <span class="required-marker">*</span>
+                        </label>
+                        <input type="tel" 
+                               id="phone" 
+                               class="form-input" 
+                               placeholder="请输入您的手机号码"
+                               maxlength="11"
+                               oninput="validatePhone(this)">
+                        <div class="error-message" id="phone-error" style="display: none;">
+                            <i class="fas fa-exclamation-circle"></i> 请输入有效的手机号码
+                        </div>
+                    </div>
+                    
+                    <!-- 邮箱 -->
+                    <div class="form-item">
+                        <label class="form-label">
+                            邮箱
+                            <span class="required-marker">*</span>
+                        </label>
+                        <input type="email" 
+                               id="email" 
+                               class="form-input" 
+                               placeholder="请输入您的邮箱地址"
+                               oninput="validateEmail(this)">
+                        <div class="error-message" id="email-error" style="display: none;">
+                            <i class="fas fa-exclamation-circle"></i> 请输入有效的邮箱地址
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 职业信息部分 -->
+                <div class="form-section">
+                    <h3><i class="fas fa-briefcase"></i> 职业信息</h3>
+                    
+                    <!-- 角色（非必填） -->
+                    <div class="form-item">
+                        <label class="form-label">
+                            角色选择（选填）
+                        </label>
+                        <select id="job-title" class="form-select">
+                            <option value="">请选择职业（可选）</option>
+                            <option value="student">学生</option>
+                            <option value="teacher">教师</option>
+                        </select>
+                        <div class="help-text">
+                            <i class="fas fa-info-circle"></i> 选择您当前的身份
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 个性签名部分 -->
+<div class="form-section">
+    <h3><i class="fas fa-pen-nib"></i> 个性签名</h3>
+    
+    <div class="form-item signature-container">
+        <label class="form-label">
+            个性签名（选填）
+        </label>
+        <textarea 
+            id="signature" 
+            class="signature-textarea form-input" 
+            placeholder="写下您的座右铭、教学理念或个人简介..."
+            maxlength="50"
+            oninput="updateSignatureCounter(this)"></textarea>
+        <div class="signature-counter" id="signature-counter">
+            <div class="signature-help">
+                <i class="fas fa-info-circle"></i> 50字以内，展现您的个性与教学风格
+            </div>
+        </div>
+    </div>
+</div>
+
+                <!-- 表单操作按钮 -->
+                <div class="form-actions">
+                    <button type="button" class="btn btn-outline" onclick="goBackToPreviousPage()">
+                        <i class="fas fa-times"></i> 取消
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="saveProfile()">
+                        <i class="fas fa-save"></i> 保存信息
+                    </button>
+                </div>
+
+                <!-- 必填字段提示 -->
+                <div class="required-fields-note">
+                    <span class="required-marker">*</span> 表示必填字段
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let userProfileData = {};
+        let profilePageInitialized = false;
+
+        // 页面初始化
+        function initProfilePage() {
+            if (profilePageInitialized) return;
+            profilePageInitialized = true;
+            
+            console.log('个人资料页面初始化');
+            
+            // 更新用户显示
+            updateUserDisplay();
+            
+            // 加载现有用户资料
+            loadUserProfile();
+            
+            // 绑定输入事件
+            bindInputEvents();
+            
+            // 初始化完成度指示器
+            updateCompletionIndicator();
+        }
+
+        // 更新用户显示
+        function updateUserDisplay() {
+            if (window.Auth && window.Auth.getUser()) {
+                const user = window.Auth.getUser();
+                const avatarElements = document.querySelectorAll('#profile-user-avatar');
+                const nameElements = document.querySelectorAll('#profile-user-name');
+                
+                avatarElements.forEach(element => {
+                    if (element) element.textContent = user.name.charAt(0);
+                });
+                nameElements.forEach(element => {
+                    if (element) element.textContent = user.name;
+                });
+            }
+        }
+
+       // 加载用户资料
+async function loadUserProfile() {
+    try {
+        // 优先从API获取最新数据
+        if (window.Auth && window.Auth.isLoggedIn()) {
+            try {
+                console.log('尝试从API加载用户资料...');
+                const result = await API.getMyInfo();
+                if (result.code === 0 && result.data) {
+                    userProfileData = result.data;
+                    console.log('从API加载用户资料成功:', userProfileData);
+                    
+                    // 同步到Auth与本地缓存，确保与Home一致
+                    if (window.Auth && window.Auth.currentUser) {
+                        const currentUser = window.Auth.currentUser;
+                        currentUser.userId = userProfileData.userId ?? currentUser.userId;
+                        currentUser.username = userProfileData.username ?? currentUser.username;
+                        currentUser.role = userProfileData.role ?? currentUser.role;
+                        currentUser.avatarUrl = userProfileData.avatarUrl ?? currentUser.avatarUrl;
+                        currentUser.name = userProfileData.username ?? currentUser.name;
+                        currentUser.profile = { ...(currentUser.profile || {}), ...userProfileData };
+                        Utils.saveToStorage(AppConfig.STORAGE_KEYS.USER_INFO, currentUser);
+                    }
+                    
+                    // 同步到Profile模块与本地存储
+                    if (window.Profile) {
+                        const mergedProfile = { ...(window.Profile.currentProfile || {}), ...userProfileData };
+                        window.Profile.currentProfile = mergedProfile;
+                        Utils.saveToStorage('user_profile', mergedProfile);
+                    }
+                    
+                    if (window.Auth && window.Auth.updateUserDisplay) {
+                        window.Auth.updateUserDisplay();
+                    }
+                    
+                    // 填充表单
+                    fillFormWithUserData();
+                    // 更新完成度指示器（API成功路径避免早退导致不更新）
+                    updateCompletionIndicator();
+                    return;
+                }
+            } catch (apiError) {
+                console.warn('API获取用户资料失败，使用本地数据:', apiError);
+            }
+        }
+        
+        // 从本地存储加载
+        if (window.Profile && window.Profile.getUserProfile) {
+            userProfileData = window.Profile.getUserProfile() || {};
+            console.log('从本地加载用户资料:', userProfileData);
+        } else {
+            // 如果Profile模块不存在，尝试从Auth获取
+            const user = window.Auth ? window.Auth.getUser() : null;
+            if (user && user.profile) {
+                userProfileData = user.profile;
+            }
+        }
+        
+        // 填充表单
+        fillFormWithUserData();
+        
+    } catch (error) {
+        console.error('加载用户资料失败:', error);
+        // 显示错误但继续加载本地数据
+        userProfileData = {};
+        fillFormWithUserData();
+    }
+    
+    // 更新完成度指示器
+    setTimeout(updateCompletionIndicator, 100);
+}
+
+        // 用现有数据填充表单
+function fillFormWithUserData() {
+    if (!userProfileData) return;
+    
+    console.log('填充表单数据:', userProfileData);
+    
+    // 基础信息
+    document.getElementById('real-name').value = userProfileData.realname || '';
+    document.getElementById('gender').value = userProfileData.gender || '';
+    document.getElementById('age').value = userProfileData.age || '';
+    
+    // 学校信息
+    document.getElementById('school').value = userProfileData.school || '';
+    document.getElementById('student-id').value = userProfileData.studentId || '';
+    
+    // 联系方式
+    document.getElementById('phone').value = userProfileData.phone || '';
+    document.getElementById('email').value = userProfileData.email || '';
+    
+    // 职业信息
+    document.getElementById('job-title').value = userProfileData.job || '';
+    
+    // 个性签名
+    const signatureInput = document.getElementById('signature');
+    if (signatureInput && userProfileData.signature) {
+        signatureInput.value = userProfileData.signature;
+        updateSignatureCounter(signatureInput);
+    }
+}
+
+        // 绑定输入事件
+        function bindInputEvents() {
+            // 监听所有输入框的变化，实时更新完成度
+            const inputs = document.querySelectorAll('.form-input, .form-select');
+            inputs.forEach(input => {
+                input.addEventListener('input', updateCompletionIndicator);
+                input.addEventListener('change', updateCompletionIndicator);
+            });
+        }
+
+        // 更新完成度指示器
+        function updateCompletionIndicator() {
+            // 收集表单数据
+            const formData = collectFormData();
+            
+            // 计算完成度
+            const completion = calculateCompletion(formData);
+            
+            // 更新UI
+            document.getElementById('completion-percentage').textContent = completion.percentage + '%';
+            document.getElementById('progress-bar').style.width = completion.percentage + '%';
+            document.getElementById('completed-fields').textContent = completion.completedCount;
+            document.getElementById('total-fields').textContent = completion.totalCount;
+            
+            // 根据完成度设置进度条颜色
+            const progressBar = document.getElementById('progress-bar');
+            if (completion.percentage < 60) {
+                progressBar.style.background = 'linear-gradient(90deg, #ff4d4f, #ff7a45)';
+            } else if (completion.percentage < 80) {
+                progressBar.style.background = 'linear-gradient(90deg, #ffa940, #ffc53d)';
+            } else {
+                progressBar.style.background = 'linear-gradient(90deg, #1890ff, #722ed1)';
+            }
+        }
+
+        // 收集表单数据
+        function collectFormData() {
+            const data = {
+                // 严格按照API文档的字段名
+                realname: document.getElementById('real-name').value.trim(),
+                gender: document.getElementById('gender').value,
+                school: document.getElementById('school').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                signature: document.getElementById('signature').value.trim(),
+                job: document.getElementById('job-title').value
+            };
+            
+            // 处理数字类型字段
+            const ageVal = document.getElementById('age').value.trim();
+            if (ageVal) {
+                data.age = parseInt(ageVal);
+            }
+            
+            const phoneVal = document.getElementById('phone').value.trim();
+            if (phoneVal) {
+                // 根据API文档，phone应该是数字
+                data.phone = phoneVal;
+            }
+            
+            const studentIdVal = document.getElementById('student-id').value.trim();
+            if (studentIdVal) {
+                // 根据API文档，studentId应该是数字
+                const numStudentId = parseInt(studentIdVal);
+                data.studentId = isNaN(numStudentId) ? studentIdVal : numStudentId;
+            }
+            
+            return data;
+        }
+
+        // 计算完成度
+        function calculateCompletion(formData) {
+            const requiredFields = (window.AppConfig &&
+                Array.isArray(AppConfig.USER_INFO_FIELDS?.required) &&
+                AppConfig.USER_INFO_FIELDS.required.length > 0)
+                ? AppConfig.USER_INFO_FIELDS.required
+                : ['realname', 'gender', 'age', 'school', 'phone', 'email'];
+            const totalFields = requiredFields.length;
+            let completedCount = 0;
+            
+            requiredFields.forEach(field => {
+                if (formData[field] !== undefined && formData[field] !== null && formData[field].toString().trim() !== '') {
+                    // 特殊验证
+                    if (field === 'age') {
+                        const age = parseInt(formData[field]);
+                        if (age >= 1 && age <= 100) {
+                            completedCount++;
+                        }
+                    } else if (field === 'phone') {
+                        if (validatePhoneFormat(formData[field])) {
+                            completedCount++;
+                        }
+                    } else if (field === 'gender') {
+                        if (validateGenderFormat(formData[field])) {
+                            completedCount++;
+                        }
+                    } else if (field === 'email') {
+                        if (validateEmailFormat(formData[field])) {
+                            completedCount++;
+                        }
+                    } else {
+                        completedCount++;
+                    }
+                }
+            });
+            
+            const percentage = Math.round((completedCount / totalFields) * 100);
+            
+            return {
+                completedCount,
+                totalCount: totalFields,
+                percentage
+            };
+        }
+
+        // 表单验证
+        function validateForm() {
+            let isValid = true;
+            const formData = collectFormData();
+            
+            // 重置错误信息
+            hideAllErrors();
+            
+            // 验证真实姓名
+            if (!formData.realname) {
+                showError('real-name-error', '请输入真实姓名');
+                isValid = false;
+            }
+
+            // 验证性别
+            if (!formData.gender || !validateGenderFormat(formData.gender)) {
+    showError('gender-error', '请选择性别');
+    isValid = false;
+}
+            
+            // 验证年龄
+            if (!formData.age) {
+                showError('age-error', '请输入年龄');
+                isValid = false;
+            } else {
+                const age = parseInt(formData.age);
+                if (isNaN(age) || age < 1 || age > 100) {
+                    showError('age-error', '年龄必须在1-100岁之间');
+                    isValid = false;
+                }
+            }
+            
+            // 验证学校
+            if (!formData.school) {
+                showError('school-error', '请输入学校名称');
+                isValid = false;
+            }
+            
+            // 验证手机号
+            if (!formData.phone) {
+                showError('phone-error', '请输入手机号');
+                isValid = false;
+            } else if (!validatePhoneFormat(formData.phone)) {
+                showError('phone-error', '请输入有效的手机号码');
+                isValid = false;
+            }
+            
+            // 验证邮箱
+            if (!formData.email) {
+                showError('email-error', '请输入邮箱地址');
+                isValid = false;
+            } else if (!validateEmailFormat(formData.email)) {
+                showError('email-error', '请输入有效的邮箱地址');
+                isValid = false;
+            }
+            
+            return isValid;
+        }
+
+        // 显示错误信息
+        function showError(elementId, message) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                const textElement = element.querySelector('span') || element;
+                if (textElement.tagName === 'DIV') {
+                    textElement.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+                } else {
+                    textElement.textContent = message;
+                }
+                element.style.display = 'flex';
+            }
+        }
+
+        // 隐藏所有错误信息
+        function hideAllErrors() {
+            const errorElements = document.querySelectorAll('.error-message');
+            errorElements.forEach(element => {
+                element.style.display = 'none';
+            });
+        }
+
+        // 验证手机号格式
+        function validatePhoneFormat(phone) {
+            const phoneStr = phone.toString();
+            const phoneRegex = /^1[3-9]\d{9}$/;
+            return phoneRegex.test(phoneStr);
+        }
+
+        // 验证邮箱格式
+        function validateEmailFormat(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+        
+        // 验证性别格式
+        function validateGenderFormat(gender) {
+            if (!gender) return false;
+            
+            const allowed = AppConfig?.USER_INFO_FIELDS?.genders?.map(item => item.value);
+            if (Array.isArray(allowed) && allowed.length > 0) {
+                return allowed.includes(gender);
+            }
+            
+            return true;
+        }
+
+        // 实时验证手机号
+        function validatePhone(input) {
+            const phone = input.value.trim();
+            const errorElement = document.getElementById('phone-error');
+            
+            if (!phone) {
+                errorElement.style.display = 'none';
+                return;
+            }
+            
+            if (!validatePhoneFormat(phone)) {
+                showError('phone-error', '请输入有效的手机号码');
+            } else {
+                errorElement.style.display = 'none';
+            }
+            
+            updateCompletionIndicator();
+        }
+
+        // 实时验证邮箱
+        function validateEmail(input) {
+            const email = input.value.trim();
+            const errorElement = document.getElementById('email-error');
+            
+            if (!email) {
+                errorElement.style.display = 'none';
+                return;
+            }
+            
+            if (!validateEmailFormat(email)) {
+                showError('email-error', '请输入有效的邮箱地址');
+            } else {
+                errorElement.style.display = 'none';
+            }
+            
+            updateCompletionIndicator();
+        }
+
+        // 实时验证年龄
+        function validateAge(input) {
+            const age = input.value.trim();
+            const errorElement = document.getElementById('age-error');
+            
+            if (!age) {
+                errorElement.style.display = 'none';
+                return;
+            }
+            
+            const ageNum = parseInt(age);
+            if (isNaN(ageNum) || ageNum < 1 || ageNum > 100) {
+                showError('age-error', '年龄必须在1-100岁之间');
+            } else {
+                errorElement.style.display = 'none';
+            }
+            
+            updateCompletionIndicator();
+        }
+
+        // 保存个人资料
+async function saveProfile() {
+    console.log('开始保存个人资料...');
+    
+    // 验证表单
+    if (!validateForm()) {
+        Utils.showNotification('请完善必填信息', 'error');
+        return;
+    }
+    
+    // 收集数据
+    const formData = collectFormData();
+    
+    console.log('收集的表单数据:', formData);
+    
+    try {
+        // 显示加载状态
+        Utils.showNotification('正在保存个人信息...', 'info');
+        
+        // 准备API数据
+        const apiData = {};
+        
+        // 只发送有值的字段
+        Object.keys(formData).forEach(key => {
+            if (formData[key] !== undefined && formData[key] !== null && formData[key].toString().trim() !== '') {
+                apiData[key] = formData[key];
+            }
+        });
+        
+        console.log('发送到API的数据:', apiData);
+        
+        // 调用API更新个人资料
+        const result = await API.updateMyInfo(apiData);
+        
+        console.log('API响应:', result);
+        
+        if (result.code === 0) {
+            // API更新成功
+            console.log('API更新成功');
+            
+            // 更新本地用户数据
+            userProfileData = { ...userProfileData, ...formData };
+            
+            // 保存到Profile模块（不触发验证）
+            if (window.Profile && window.Profile.currentProfile) {
+                window.Profile.currentProfile = { ...window.Profile.currentProfile, ...formData };
+                Utils.saveToStorage('user_profile', window.Profile.currentProfile);
+            }
+            
+            // 更新Auth模块中的用户信息
+            if (window.Auth && window.Auth.updateUserProfile) {
+                await window.Auth.updateUserProfile(formData);
+            }
+            
+            Utils.showNotification('个人信息保存成功！', 'success');
+            
+            // 等待1秒后返回
+            setTimeout(() => {
+                goBackToPreviousPage();
+            }, 1000);
+            
+        } else {
+            console.error('API返回错误:', result.msg);
+            Utils.showNotification(result.msg || '保存失败', 'error');
+        }
+        
+    } catch (error) {
+        console.error('保存个人资料失败:', error);
+        Utils.showNotification('保存失败: ' + error.message, 'error');
+    }
+}
+
+        // 返回上一页
+        function goBackToPreviousPage() {
+            // 优先使用App的路由
+            if (window.App && window.App.navigateTo) {
+                window.App.navigateTo('home');
+                return;
+            }
+            
+            // 尝试从referrer获取
+            if (document.referrer && document.referrer.includes(window.location.origin)) {
+                window.history.back();
+            } else {
+                // 默认返回首页
+                window.location.hash = 'home';
+            }
+        }
+
+        // 全局函数
+        window.initProfilePage = initProfilePage;
+        window.saveProfile = saveProfile;
+        window.goBackToPreviousPage = goBackToPreviousPage;
+        window.validatePhone = validatePhone;
+        window.validateEmail = validateEmail;
+        window.validateAge = validateAge;
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', initProfilePage);
+        
+        // 立即初始化（支持SPA动态加载）
+        setTimeout(initProfilePage, 100);
+
+        // 更新个性签名字数统计
+function updateSignatureCounter(textarea) {
+    const count = textarea.value.length;
+    const counterElement = document.getElementById('signature-counter');
+    const countElement = document.getElementById('signature-count');
+    
+    if (countElement) {
+        countElement.textContent = count;
+    }
+    
+    if (counterElement) {
+        if (count > 255) {
+            counterElement.classList.add('limit');
+            textarea.value = textarea.value.substring(0, 255);
+            countElement.textContent = '255';
+        } else {
+            counterElement.classList.remove('limit');
+        }
+    }
+    
+    updateCompletionIndicator();
+}
+
+// 确保全局函数存在
+window.updateSignatureCounter = updateSignatureCounter;
+    </script>
+</body>
+</html>
