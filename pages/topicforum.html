@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>话题讨论 - 教师视频俱乐部</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* 保持与tasks.html完全一致的基础样式 */
+        body {
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+
+        .page {
+            background: #f5f7fa;
+        }
+
+        .header {
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .forum-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .discussion-topic {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        }
+
+        .topic-label {
+            background: #1890ff;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            display: inline-block;
+            margin-bottom: 12px;
+        }
+
+        .topic-title {
+            font-size: 1.3rem;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .topic-desc {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .compose-section {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        }
+
+        .compose-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .compose-title {
+            font-size: 1.1rem;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .compose-title .icon {
+            font-size: 1.3rem;
+        }
+
+        .scaffold-selector {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .scaffold-btn {
+            padding: 8px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 20px;
+            background: white;
+            color: #555;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .scaffold-btn:hover {
+            border-color: #1890ff;
+            color: #1890ff;
+            transform: translateY(-2px);
+        }
+
+        .scaffold-btn.active {
+            background: #1890ff;
+            color: white;
+            border-color: transparent;
+        }
+
+        .textarea-wrapper {
+            position: relative;
+        }
+
+        .compose-textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 16px;
+            border: 2px solid #e8e8e8;
+            border-radius: 12px;
+            font-size: 1rem;
+            line-height: 1.8;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+            font-family: inherit;
+        }
+
+        .compose-textarea:focus {
+            outline: none;
+            border-color: #1890ff;
+        }
+
+        .compose-textarea::placeholder {
+            color: #aaa;
+        }
+
+        .scaffold-hint {
+            background: #f0f8ff;
+            border-left: 4px solid #1890ff;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        .scaffold-hint strong {
+            color: #1890ff;
+        }
+
+        .compose-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+        }
+
+        .char-count {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #555;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-primary {
+            background: #1890ff;
+            color: white;
+            box-shadow: 0 4px 15px rgba(24, 144, 255, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: #40a9ff;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(24, 144, 255, 0.4);
+        }
+
+        .comments-section {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        }
+
+        .comments-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .comments-title {
+            font-size: 1.1rem;
+            color: #333;
+        }
+
+        .comments-count {
+            background: #f0f0f0;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .comment-card {
+            padding: 20px;
+            border-radius: 12px;
+            background: #f8f9fa;
+            margin-bottom: 16px;
+            transition: transform 0.3s ease;
+        }
+
+        .comment-card:hover {
+            transform: translateX(5px);
+        }
+
+        .comment-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: #1890ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        .comment-meta {
+            flex: 1;
+        }
+
+        .comment-author {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .comment-time {
+            font-size: 0.85rem;
+            color: #999;
+        }
+
+        .scaffold-tag {
+            background: #1890ff;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .comment-content {
+            color: #444;
+            line-height: 1.8;
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+        }
+
+        .scaffold-text {
+            color: #1890ff;
+            font-weight: 600;
+        }
+
+        .comment-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .action-btn {
+            padding: 6px 14px;
+            border: 1px solid #e0e0e0;
+            background: white;
+            border-radius: 16px;
+            font-size: 0.85rem;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            border-color: #1890ff;
+            color: #1890ff;
+            transform: translateY(-2px);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1890ff;
+            color: white;
+            padding: 16px 32px;
+            border-radius: 50px;
+            box-shadow: 0 10px 30px rgba(24, 144, 255, 0.3);
+            font-size: 1rem;
+            opacity: 0;
+            transition: all 0.4s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .empty-comments {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .empty-comments i {
+            font-size: 48px;
+            margin-bottom: 12px;
+            color: #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div id="page-topic-forum" class="page active">
+        <div class="header">
+            <div class="header-left">
+                <button class="btn btn-text" onclick="goBackToTopicList()" style="margin-right:10px;">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <span class="platform-name">教师视频俱乐部</span>
+                <span style="color: #999; font-weight: normal;"> | 话题讨论</span>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <div class="avatar" id="forum-user-avatar">王</div>
+                    <span id="forum-user-name">王老师</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="forum-container">
+            <!-- 话题信息 -->
+            <div class="discussion-topic">
+                <span class="topic-label">📌 讨论话题</span>
+                <h2 class="topic-title" id="topicTitle">话题标题</h2>
+                <p class="topic-desc" id="topicDescription">话题描述</p>
+            </div>
+
+            <!-- 发表评论区 -->
+            <div class="compose-section">
+                <div class="compose-header">
+                    <h3 class="compose-title">
+                        <span class="icon">✍️</span>
+                        发表你的观点
+                    </h3>
+                </div>
+
+                <!-- 支架选择器 -->
+                <div class="scaffold-selector">
+                    <button class="scaffold-btn" data-scaffold="argument">💡 论证观点</button>
+                    <button class="scaffold-btn" data-scaffold="question">❓ 提出质疑</button>
+                    <button class="scaffold-btn" data-scaffold="connect">🔗 建立联系</button>
+                    <button class="scaffold-btn" data-scaffold="reflect">🪞 深度反思</button>
+                    <button class="scaffold-btn" data-scaffold="build">🧱 延伸发展</button>
+                </div>
+
+                <!-- 支架提示 -->
+                <div class="scaffold-hint" id="scaffoldHint">
+                    <strong>提示：</strong>点击上方按钮选择一个思考支架，系统将自动生成引导框架帮助你组织思路。
+                </div>
+
+                <!-- 文本输入区 -->
+                <div class="textarea-wrapper">
+                    <textarea 
+                        id="commentTextarea" 
+                        class="compose-textarea" 
+                        placeholder="选择一个思考支架开始写作..."></textarea>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="compose-actions">
+                    <div class="char-count">已输入 <span id="charCount">0</span> 字</div>
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" id="clearBtn">清空</button>
+                        <button class="btn btn-primary" id="submitBtn">发布观点</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 评论列表 -->
+            <div class="comments-section">
+                <div class="comments-header">
+                    <h3 class="comments-title">💬 讨论区</h3>
+                    <span class="comments-count" id="commentsCount">0 条观点</span>
+                </div>
+
+                <div id="commentsList">
+                    <div class="empty-comments" id="emptyComments">
+                        <i class="fas fa-comments"></i>
+                        <p>暂无评论，快来发表第一条观点吧！</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">发布成功！</div>
+
+    <script>
+        // ========== 思考支架模板（保持不变） ==========
+        const scaffolds = {
+            argument: {
+                name: '💡 论证观点',
+                hint: '<strong>论证观点支架</strong>：帮助你清晰地表达观点、阐述理由并提供证据支持。',
+                template: `【我认为】
+（在此写下你的核心观点）
+
+【我的理由是】
+（解释为什么你这样认为）
+
+【支持我观点的证据是】
+（列举事实、数据或例子来支持你的观点）
+
+【可能的反对意见是……但我的回应是】
+（思考可能的质疑并给出回应）`
+            },
+            question: {
+                name: '❓ 提出质疑',
+                hint: '<strong>提出质疑支架</strong>：帮助你系统地表达疑问和进行批判性思考。',
+                template: `【我对……持怀疑态度】
+（指出你质疑的观点或现象）
+
+【我的疑问是】
+（具体说明你的疑问是什么）
+
+【让我产生疑问的原因是】
+（解释为什么你会有这个疑问）
+
+【我认为需要进一步思考的是】
+（提出需要深入探讨的方向）`
+            },
+            connect: {
+                name: '🔗 建立联系',
+                hint: '<strong>建立联系支架</strong>：帮助你将新知识与已有经验或其他领域联系起来。',
+                template: `【这让我想到了】
+（联系到的相关经验、知识或案例）
+
+【它们之间的相似之处是】
+（分析两者的共同点）
+
+【不同之处在于】
+（比较两者的差异）
+
+【这种联系让我有了新的理解】
+（总结通过联系获得的新认识）`
+            },
+            reflect: {
+                name: '🪞 深度反思',
+                hint: '<strong>深度反思支架</strong>：帮助你对学习过程和认知变化进行元认知思考。',
+                template: `【在这个话题中，我原来的想法是】
+（描述你之前的认知或假设）
+
+【现在我的想法发生了这样的变化】
+（说明你的认知是如何改变的）
+
+【促使我改变想法的关键点是】
+（分析是什么导致了你的认知转变）
+
+【我还想深入了解的是】
+（提出你希望继续探索的方向）`
+            },
+            build: {
+                name: '🧱 延伸发展',
+                hint: '<strong>延伸发展支架</strong>：帮助你在他人观点基础上进行建设性拓展。',
+                template: `【我同意……的观点】
+（指明你认同的观点及其作者）
+
+【在此基础上，我想补充】
+（添加新的角度或信息）
+
+【进一步思考，我认为】
+（深化或延伸原有观点）
+
+【这对实际应用的启示是】
+（思考理论如何指导实践）`
+            }
+        };
+
+        // ========== 页面状态 ==========
+        let currentTaskId = null;
+        let currentTopicId = null;
+        let currentClubId = null;
+        let currentUserId = null;
+        let currentUserName = '';
+        let currentScaffold = null;
+        let commentsList = [];
+
+        // ========== DOM 元素 ==========
+        const scaffoldBtns = document.querySelectorAll('.scaffold-btn');
+        const scaffoldHint = document.getElementById('scaffoldHint');
+        const commentTextarea = document.getElementById('commentTextarea');
+        const charCount = document.getElementById('charCount');
+        const clearBtn = document.getElementById('clearBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const commentsListEl = document.getElementById('commentsList');
+        const commentsCount = document.getElementById('commentsCount');
+        const toast = document.getElementById('toast');
+
+        // ========== 页面初始化 ==========
+        async function initTopicForumPage() {
+            console.log('话题论坛页面初始化');
+            
+            // 更新用户显示
+            updateUserDisplay();
+            
+            // 获取参数
+            currentTaskId = getTaskIdFromURL();
+            currentTopicId = getTopicIdFromURL();
+            currentClubId = getClubIdFromURL();
+            
+            if (!currentTaskId || !currentTopicId) {
+                showToast('无法获取话题信息');
+                setTimeout(() => goBackToTopicList(), 2000);
+                return;
+            }
+
+            // 获取当前用户信息
+            if (window.Auth && window.Auth.getUser()) {
+                const user = window.Auth.getUser();
+                currentUserId = user.id || user.userId;
+                currentUserName = user.name;
+            }
+
+            // 加载话题详情
+            await loadTopicDetail();
+            
+            // 加载评论列表
+            await loadComments();
+        }
+
+        document.addEventListener('DOMContentLoaded', initTopicForumPage);
+
+        // ========== 更新用户显示 ==========
+        function updateUserDisplay() {
+            if (window.Auth && window.Auth.getUser()) {
+                const user = window.Auth.getUser();
+                document.getElementById('forum-user-avatar').textContent = user.name.charAt(0);
+                document.getElementById('forum-user-name').textContent = user.name;
+            }
+        }
+
+        // ========== 获取URL参数 ==========
+        function getTaskIdFromURL() {
+            const hash = window.location.hash;
+            const params = new URLSearchParams(hash.split('?')[1]);
+            return params.get('taskId') ? parseInt(params.get('taskId')) : null;
+        }
+
+        function getTopicIdFromURL() {
+            const hash = window.location.hash;
+            const params = new URLSearchParams(hash.split('?')[1]);
+            return params.get('topicId') ? parseInt(params.get('topicId')) : null;
+        }
+
+        function getClubIdFromURL() {
+            const hash = window.location.hash;
+            const params = new URLSearchParams(hash.split('?')[1]);
+            return params.get('clubId') ? parseInt(params.get('clubId')) : null;
+        }
+
+        // ========== 加载话题详情 ==========
+        async function loadTopicDetail() {
+            try {
+                if (!window.Tasks || !Tasks.getTopicDetail) {
+                    throw new Error('话题模块未加载');
+                }
+
+                const topicDetail = await Tasks.getTopicDetail(currentTopicId);
+                
+                if (topicDetail) {
+                    document.getElementById('topicTitle').textContent = topicDetail.title;
+                    document.getElementById('topicDescription').textContent = topicDetail.description || '暂无描述';
+                }
+            } catch (error) {
+                console.error('加载话题详情失败:', error);
+                showToast('加载话题失败');
+            }
+        }
+
+        // ========== 加载评论列表 ==========
+        async function loadComments() {
+            try {
+                if (!window.Tasks || !Tasks.getTopicComments) {
+                    throw new Error('评论模块未加载');
+                }
+
+                commentsList = await Tasks.getTopicComments(currentTopicId);
+                
+                displayComments(commentsList);
+                
+            } catch (error) {
+                console.error('加载评论列表失败:', error);
+                showToast('加载评论失败');
+            }
+        }
+
+        // ========== 显示评论列表 ==========
+        function displayComments(comments) {
+            const emptyComments = document.getElementById('emptyComments');
+            
+            if (!comments || comments.length === 0) {
+                commentsListEl.innerHTML = `
+                    <div class="empty-comments">
+                        <i class="fas fa-comments"></i>
+                        <p>暂无评论，快来发表第一条观点吧！</p>
+                    </div>
+                `;
+                commentsCount.textContent = '0 条观点';
+                return;
+            }
+
+            commentsCount.textContent = `${comments.length} 条观点`;
+            
+            commentsListEl.innerHTML = comments.map(comment => {
+                // 处理评论内容，将支架标记转换为高亮显示
+                let formattedContent = escapeHtml(comment.content || '')
+                    .replace(/【([^】]+)】/g, '<span class="scaffold-text">$1</span>')
+                    .replace(/\n/g, '<br>');
+
+                return `
+                    <div class="comment-card">
+                        <div class="comment-header">
+                            <div class="avatar">${escapeHtml(comment.userName || '未知').charAt(0)}</div>
+                            <div class="comment-meta">
+                                <div class="comment-author">${escapeHtml(comment.userName || '未知')}</div>
+                                <div class="comment-time">${formatDate(comment.createdAt)}</div>
+                            </div>
+                            <span class="scaffold-tag">${escapeHtml(comment.scaffoldType || '观点')}</span>
+                        </div>
+                        <div class="comment-content">
+                            ${formattedContent}
+                        </div>
+                        <div class="comment-actions">
+                            <button class="action-btn" onclick="likeComment(${comment.commentId})">
+                                👍 赞同 (${comment.likeCount || 0})
+                            </button>
+                            <button class="action-btn">💬 回复</button>
+                            <button class="action-btn">📌 收藏</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ========== 支架按钮点击事件（保持不变） ==========
+        scaffoldBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                scaffoldBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+
+                const scaffoldType = this.dataset.scaffold;
+                currentScaffold = scaffolds[scaffoldType];
+
+                scaffoldHint.innerHTML = currentScaffold.hint;
+                commentTextarea.value = currentScaffold.template;
+                updateCharCount();
+                commentTextarea.focus();
+            });
+        });
+
+        // ========== 更新字数统计（保持不变） ==========
+        function updateCharCount() {
+            const text = commentTextarea.value;
+            const cleanText = text.replace(/【[^】]+】/g, '').replace(/（[^）]+）/g, '');
+            charCount.textContent = cleanText.trim().length;
+        }
+
+        commentTextarea.addEventListener('input', updateCharCount);
+
+        // ========== 清空按钮（保持不变） ==========
+        clearBtn.addEventListener('click', function() {
+            commentTextarea.value = '';
+            scaffoldBtns.forEach(b => b.classList.remove('active'));
+            scaffoldHint.innerHTML = '<strong>提示：</strong>点击上方按钮选择一个思考支架，系统将自动生成引导框架帮助你组织思路。';
+            currentScaffold = null;
+            updateCharCount();
+        });
+
+        // ========== 发布评论 ==========
+        submitBtn.addEventListener('click', async function() {
+            const content = commentTextarea.value.trim();
+
+            if (!content) {
+                showToast('请先写下你的观点！');
+                return;
+            }
+
+            if (!currentScaffold) {
+                showToast('请先选择一个思考支架！');
+                return;
+            }
+
+            const hasContent = content.replace(/【[^】]+】/g, '').replace(/（[^）]+）/g, '').trim().length > 0;
+            if (!hasContent) {
+                showToast('请在支架框架中填写你的想法！');
+                return;
+            }
+
+            try {
+                const commentData = {
+                    topicId: currentTopicId,
+                    content: content,
+                    scaffoldType: currentScaffold.name
+                };
+
+                const result = await Tasks.createTopicComment(commentData);
+
+                if (result.success) {
+                    showToast('发布成功！感谢你的深度思考 ✨');
+                    
+                    // 清空表单
+                    commentTextarea.value = '';
+                    scaffoldBtns.forEach(b => b.classList.remove('active'));
+                    scaffoldHint.innerHTML = '<strong>提示：</strong>点击上方按钮选择一个思考支架，系统将自动生成引导框架帮助你组织思路。';
+                    currentScaffold = null;
+                    updateCharCount();
+
+                    // 重新加载评论列表
+                    setTimeout(() => loadComments(), 500);
+                } else {
+                    showToast(result.message || '发布失败');
+                }
+            } catch (error) {
+                console.error('发布评论失败:', error);
+                showToast('发布失败: ' + error.message);
+            }
+        });
+
+        // ========== 点赞评论 ==========
+        async function likeComment(commentId) {
+            try {
+                // 这里可以调用API点赞
+                // const result = await Tasks.likeComment(commentId);
+                
+                // 暂时只是前端更新
+                showToast('点赞成功！');
+            } catch (error) {
+                console.error('点赞失败:', error);
+            }
+        }
+
+        // ========== 显示 Toast（保持不变） ==========
+        function showToast(message) {
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // ========== 返回话题列表 ==========
+        function goBackToTopicList() {
+            const hash = `topic-list?taskId=${currentTaskId}&clubId=${currentClubId}`;
+            window.location.hash = hash;
+        }
+
+        // ========== 工具函数 ==========
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '刚刚';
+            const date = new Date(dateString);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) return '刚刚';
+            if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前';
+            if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前';
+            if (diff < 2592000000) return Math.floor(diff / 86400000) + '天前';
+            
+            return date.toLocaleDateString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+        }
+
+        // ========== 全局函数 ==========
+        window.likeComment = likeComment;
+        window.goBackToTopicList = goBackToTopicList;
+        window.initTopicForumPage = initTopicForumPage;
+
+        // 立即初始化
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initTopicForumPage);
+        } else {
+            initTopicForumPage();
+        }
+    </script>
+</body>
+</html>
