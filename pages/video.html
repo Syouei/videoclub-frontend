@@ -2454,7 +2454,7 @@ function formatFileSize(bytes) {
         if (result && result.code === 0) {
             const successMsg = `任务"${taskName}"创建成功！（默认锁定状态）`;
             Utils.showNotification(successMsg, 'success');
-            closeCreateTaskModal();
+            closeCreateTaskModal(false); // 创建成功，不删除视频和PDF
             
             // 直接添加到本地列表并渲染
             if (result.data && result.data.taskId) {
@@ -2679,30 +2679,32 @@ function showFileInfo(file, fileType) {
     }
 }
         // 关闭创建任务模态框
-        async function closeCreateTaskModal() {
+        async function closeCreateTaskModal(shouldCleanup = true) {
             const modal = document.getElementById('create-task-modal');
             if (modal) {
                 modal.style.display = 'none';
             }
 
-            // 如果已上传视频或资源但未发布任务，则删除它们
-            if (uploadedVideoId) {
-                try {
-                    console.log('删除未发布的视频:', uploadedVideoId);
-                    await API.deleteVideo(uploadedVideoId);
-                    console.log('视频删除成功');
-                } catch (error) {
-                    console.error('删除视频失败:', error);
+            // 如果需要清理（取消时），则删除已上传的视频和资源
+            if (shouldCleanup) {
+                if (uploadedVideoId) {
+                    try {
+                        console.log('删除未发布的视频:', uploadedVideoId);
+                        await API.deleteVideo(uploadedVideoId);
+                        console.log('视频删除成功');
+                    } catch (error) {
+                        console.error('删除视频失败:', error);
+                    }
                 }
-            }
 
-            if (uploadedPdfId) {
-                try {
-                    console.log('删除未发布的资源:', uploadedPdfId);
-                    await API.deleteResource(uploadedPdfId);
-                    console.log('资源删除成功');
-                } catch (error) {
-                    console.error('删除资源失败:', error);
+                if (uploadedPdfId) {
+                    try {
+                        console.log('删除未发布的资源:', uploadedPdfId);
+                        await API.deleteResource(uploadedPdfId);
+                        console.log('资源删除成功');
+                    } catch (error) {
+                        console.error('删除资源失败:', error);
+                    }
                 }
             }
 
