@@ -782,22 +782,14 @@
                 </div>
 
                 <!-- 操作工具栏 -->
-                <div class="topic-toolbar">
-                    <div class="topic-stats">
-                        <div class="stat-item">
-                            <i class="fas fa-comments"></i>
-                            <span>共 <span class="stat-number" id="topicCount">0</span> 个话题</span>
-                        </div>
-                        <div class="stat-item">
-                            <i class="fas fa-users"></i>
-                            <span><span class="stat-number" id="participantCount">0</span> 人参与</span>
-                        </div>
-                        <div class="stat-item">
-                            <i class="fas fa-fire"></i>
-                            <span><span class="stat-number" id="hotTopicCount">0</span> 个热门话题</span>
-                        </div>
-                    </div>
-                </div>
+<div class="topic-toolbar">
+    <div class="topic-stats">
+        <div class="stat-item">
+            <i class="fas fa-comments"></i>
+            <span>共 <span class="stat-number" id="topicCount">0</span> 个话题</span>
+        </div>
+    </div>
+</div>
                 
                 <!-- 话题列表 -->
                 <div class="topic-list" id="topicList">
@@ -1004,9 +996,6 @@
 
         topicCount.textContent = topics.length;
         
-        // 计算热门话题数量（评论数大于10）
-        const hotTopics = topics.filter(topic => (topic.commentCount || 0) > 10);
-        hotTopicCount.textContent = hotTopics.length;
 
         if (!topics || topics.length === 0) {
             topicListEl.innerHTML = '';
@@ -1018,16 +1007,6 @@
         emptyState.style.display = 'none';
         topicListEl.style.display = 'grid';
         
-        // 计算参与人数（去重用户）
-        const participants = new Set();
-        topics.forEach(topic => {
-            participants.add(topic.creatorId);
-            // 如果有参与者数据，也可以加入
-            if (topic.participants && Array.isArray(topic.participants)) {
-                topic.participants.forEach(p => participants.add(p.userId || p.id));
-            }
-        });
-        document.getElementById('participantCount').textContent = participants.size;
         
         topicListEl.innerHTML = topics.map((topic, index) => {
             const isHot = (topic.commentCount || 0) > 10;
@@ -1061,23 +1040,19 @@
                         ` : ''}
                     </div>
                     <div class="topic-meta">
-                        <div class="topic-meta-item">
-                            <i class="fas fa-user-circle"></i>
-                            <span>发起人：<strong>${escapeHtml(topic.creatorName || '未知')}</strong></span>
-                        </div>
-                        <div class="topic-meta-item">
-                            <i class="fas fa-comment-dots"></i>
-                            <span><strong>${topic.commentCount || 0}</strong> 条讨论</span>
-                        </div>
-                        <div class="topic-meta-item">
-                            <i class="fas fa-eye"></i>
-                            <span><strong>${topic.viewCount || 0}</strong> 次浏览</span>
-                        </div>
-                        <div class="topic-meta-item">
-                            <i class="fas fa-clock"></i>
-                            <span>${formatDate(topic.createdAt)}</span>
-                        </div>
-                    </div>
+    <div class="topic-meta-item">
+        <i class="fas fa-user-circle"></i>
+        <span>发起人：<strong>${escapeHtml(topic.creatorName || '未知')}</strong></span>
+    </div>
+    <div class="topic-meta-item">
+        <i class="fas fa-comment-dots"></i>
+        <span><strong>${topic.commentCount || 0}</strong> 条讨论</span>
+    </div>
+    <div class="topic-meta-item">
+        <i class="fas fa-clock"></i>
+        <span>${formatDate(topic.createdAt)}</span>
+    </div>
+</div>
                 </div>
             `;
         }).join('');
