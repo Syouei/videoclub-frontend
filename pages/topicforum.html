@@ -914,52 +914,58 @@ function displayComments(comments) {
         
         // 获取父评论作者名（如果是回复）
         let replyToInfo = '';
-        if (comment.parentId) {
-            const parentComment = allComments.find(c => c.commentId === comment.parentId);
-            if (parentComment) {
-                replyToInfo = `<span style="color: #999; margin-left: 4px;">回复 <strong>${escapeHtml(parentComment.userName || '未知')}</strong></span>`;
-            }
-        }
+if (comment.parentId) {
+    const parentComment = allComments.find(c => c.commentId === comment.parentId);
+    if (parentComment) {
+        // 修改这里：使用真实姓名优先
+        const parentDisplayName = parentComment.userName || parentComment.username || '未知';
+        replyToInfo = `<span style="color: #999; margin-left: 4px;">回复 <strong>${escapeHtml(parentDisplayName)}</strong></span>`;
+    }
+}
         
         // 只对第一条回复缩进，后续回复不继续缩进
         const marginLeft = (depth === 1 && isFirstReply) ? 40 : 0;
         
         return `
-            <div class="comment-card" data-comment-id="${comment.commentId}" style="margin-left: ${marginLeft}px;">
-                <div class="comment-header">
-                    <div class="avatar" style="width: ${depth > 0 ? '32px' : '44px'}; height: ${depth > 0 ? '32px' : '44px'}; font-size: ${depth > 0 ? '0.9rem' : '1.1rem'}">
-                        ${escapeHtml(comment.userName || '未知').charAt(0)}
-                    </div>
-                    <div class="comment-meta">
-                        <div class="comment-author" style="font-size: ${depth > 0 ? '0.9rem' : '1rem'}">
-                            ${escapeHtml(comment.userName || '未知')}
-                            ${replyToInfo}
-                        </div>
-                        <div class="comment-time" style="font-size: ${depth > 0 ? '0.8rem' : '0.85rem'}">
-                            ${formatDate(comment.createdAt)}
-                        </div>
-                    </div>
-                    <span class="scaffold-tag">${escapeHtml(comment.scaffoldType || '观点')}</span>
-                </div>
-                <div class="comment-content" style="font-size: ${depth > 0 ? '0.9rem' : '1rem'}">
-                    ${formattedContent}
-                </div>
-                <div class="comment-actions" style="${depth > 0 ? 'font-size: 0.85rem;' : ''}">
-                    <button class="action-btn ${comment.isLiked ? 'liked' : ''}" 
-                            onclick="likeComment(${comment.commentId}, this)">
-                        👍 赞同 (${comment.likeCount || 0})
-                    </button>
-                    <button class="action-btn" onclick="showReplyForm(${comment.commentId})">
-                        💬 回复
-                    </button>
-                </div>
-                ${directReplies.length > 0 ? 
-                    directReplies.map((reply, index) => 
-                        generateCommentTree(reply, allComments, depth + 1, index === 0)
-                    ).join('') 
-                    : ''}
+    <div class="comment-card" data-comment-id="${comment.commentId}" style="margin-left: ${marginLeft}px;">
+        <div class="comment-header">
+            <div class="avatar" style="width: ${depth > 0 ? '32px' : '44px'}; height: ${depth > 0 ? '32px' : '44px'}; font-size: ${depth > 0 ? '0.9rem' : '1.1rem'}">
+                ${escapeHtml(comment.userName || comment.username || '未知').charAt(0)}
             </div>
-        `;
+            <div class="comment-meta">
+                <div class="comment-author" style="font-size: ${depth > 0 ? '0.9rem' : '1rem'}">
+                    ${escapeHtml(comment.userName || comment.username || '未知')}
+                    ${replyToInfo}
+                </div>
+                <!-- 可选：添加一个小的用户名提示 -->
+                ${comment.username && comment.userName && comment.username !== comment.userName ? 
+                    `<div style="font-size: 0.8rem; color: #999; margin-top: 2px;">@${escapeHtml(comment.username)}</div>` : 
+                    ''}
+                <div class="comment-time" style="font-size: ${depth > 0 ? '0.8rem' : '0.85rem'}">
+                    ${formatDate(comment.createdAt)}
+                </div>
+            </div>
+            <span class="scaffold-tag">${escapeHtml(comment.scaffoldType || '观点')}</span>
+        </div>
+        <div class="comment-content" style="font-size: ${depth > 0 ? '0.9rem' : '1rem'}">
+            ${formattedContent}
+        </div>
+        <div class="comment-actions" style="${depth > 0 ? 'font-size: 0.85rem;' : ''}">
+            <button class="action-btn ${comment.isLiked ? 'liked' : ''}" 
+                    onclick="likeComment(${comment.commentId}, this)">
+                👍 赞同 (${comment.likeCount || 0})
+            </button>
+            <button class="action-btn" onclick="showReplyForm(${comment.commentId})">
+                💬 回复
+            </button>
+        </div>
+        ${directReplies.length > 0 ? 
+            directReplies.map((reply, index) => 
+                generateCommentTree(reply, allComments, depth + 1, index === 0)
+            ).join('') 
+            : ''}
+    </div>
+`;
     }
     
     // 生成所有评论树
@@ -1111,10 +1117,14 @@ function showReplyForm(commentId) {
     const commentCard = document.querySelector(`.comment-card[data-comment-id="${commentId}"]`);
     if (!commentCard) return;
     
-    // 获取评论作者名
-    const authorName = commentCard.querySelector('.comment-author').textContent.trim();
+    // 获取评论作者名 - 优先显示在评论中的名字
+    const authorNameEl = commentCard.querySelector('.comment-author');
+    const authorName = authorNameEl ? 
+        // 只取主名字，去掉可能的回复信息
+        authorNameEl.textContent.split('回复')[0].trim() : 
+        '未知用户';
     
-    // 创建回复表单 - 简化版，去掉支架选择器
+    // 创建回复表单
     const replyForm = document.createElement('div');
     replyForm.className = 'reply-form';
     replyForm.innerHTML = `
@@ -1146,7 +1156,7 @@ function showReplyForm(commentId) {
         commentActions.parentNode.insertBefore(replyForm, commentActions.nextSibling);
     }
     
-    // 初始化回复字数统计（移除支架初始化）
+    // 初始化回复字数统计
     initReplyCharCount(replyForm);
 }
 

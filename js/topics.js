@@ -195,42 +195,45 @@ window.Topics = {
      * @param {object} params - 分页参数 {page?, pageSize?}
      * @returns {Promise<Array>} 评论列表
      */
-    async getTopicComments(topicId, params = {}) {
-        try {
-            console.log('[Topics] 获取评论列表请求:', topicId);
+    // 在 topics.js 的 getTopicComments 方法中修改：
+async getTopicComments(topicId, params = {}) {
+    try {
+        console.log('[Topics] 获取评论列表请求:', topicId);
+        
+        const result = await API.getTopicComments(topicId, params);
+        
+        if (result.code === 0) {
+            const comments = result.data.list || result.data || [];
             
-            const result = await API.getTopicComments(topicId, params);
+            // 适配前端字段
+            const formattedComments = comments.map(comment => ({
+                commentId: comment.commentId,
+                topicId: comment.topicId,
+                content: comment.content,
+                parentId: comment.parentId,
+                likeCount: comment.likeCount || 0,
+                isLiked: comment.isLiked || false,
+                createdAt: comment.createdAt,
+                userId: comment.user?.userId || comment.userId,
+                // 修改这里：优先显示真实姓名，如果没有则显示用户名
+                userName: comment.user?.realname || comment.user?.username || '未知',
+                username: comment.user?.username || '未知', // 保留用户名字段
+                userAvatar: comment.user?.avatarUrl,
+                userRole: comment.user?.role,
+                scaffoldType: comment.scaffoldType || '观点'
+            }));
             
-            if (result.code === 0) {
-                const comments = result.data.list || result.data || [];
-                
-                // 适配前端字段
-                const formattedComments = comments.map(comment => ({
-                    commentId: comment.commentId,
-                    topicId: comment.topicId,
-                    content: comment.content,
-                    parentId: comment.parentId,
-                    likeCount: comment.likeCount || 0,
-                    isLiked: comment.isLiked || false,
-                    createdAt: comment.createdAt,
-                    userId: comment.user?.userId || comment.userId,
-                    userName: comment.user?.username || '未知',
-                    userAvatar: comment.user?.avatarUrl,
-                    userRole: comment.user?.role,
-                    scaffoldType: comment.scaffoldType || '观点' // 如果有思考支架类型
-                }));
-                
-                console.log('[Topics] 获取评论列表成功:', formattedComments.length);
-                return formattedComments;
-            }
-            
-            throw new Error(result.msg || '获取评论列表失败');
-            
-        } catch (error) {
-            console.error('[Topics] 获取评论列表失败:', error);
-            return [];
+            console.log('[Topics] 获取评论列表成功:', formattedComments.length);
+            return formattedComments;
         }
-    },
+        
+        throw new Error(result.msg || '获取评论列表失败');
+        
+    } catch (error) {
+        console.error('[Topics] 获取评论列表失败:', error);
+        return [];
+    }
+},
 
     /**
      * 创建话题评论
