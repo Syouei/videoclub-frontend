@@ -829,90 +829,129 @@ window.API = {
     async saveVideoInfo(data) {
         const endpoint = '/videos';
         return await this.request(endpoint, 'POST', data);
+    },
+
+
+
+
+    // ================ 话题模块（需Token） ================
+    
+/**
+     * 11.1 创建话题
+     * @param {object} topicData - {taskId, title, content}
+     * @returns {Promise} {code, msg, data: {topicId, taskId, creatorId, title, content, createdAt}}
+     */
+async createTopic(topicData) {
+        const endpoint = AppConfig.API_ENDPOINTS.CREATE_TOPIC;
+        // API文档要求的字段: taskId, title, content
+        const requestData = {
+            taskId: parseInt(topicData.taskId),
+            title: topicData.title,
+            content: topicData.content || topicData.description || '' // 兼容description字段
+        };
+        console.log('[API] 创建话题请求:', requestData);
+        return await this.request(endpoint, 'POST', requestData);
+    },
+    
+    /**
+     * 11.2 获取话题列表
+     * @param {number} taskId - 任务ID
+     * @param {object} params - {page?, pageSize?}
+     * @returns {Promise} {code, msg, data: {list, total, page, pageSize}}
+     */
+    async getTopics(taskId, params = {}) {
+        const endpoint = AppConfig.API_ENDPOINTS.GET_TOPICS;
+        const queryParams = {
+            taskId: parseInt(taskId),
+            ...params
+        };
+        const queryString = this.buildQueryString(queryParams);
+        console.log('[API] 获取话题列表请求:', endpoint + queryString);
+        return await this.request(endpoint + queryString, 'GET');
+    },
+    
+    /**
+     * 11.3 获取话题详情
+     * @param {number} topicId - 话题ID
+     * @returns {Promise} {code, msg, data: {topicId, taskId, creatorId, title, content, createdAt}}
+     */
+    async getTopicDetail(topicId) {
+        const endpoint = AppConfig.API_ENDPOINTS.GET_TOPIC_DETAIL.replace('{id}', topicId);
+        console.log('[API] 获取话题详情请求:', endpoint);
+        return await this.request(endpoint, 'GET');
+    },
+    
+    /**
+     * 11.4 编辑话题
+     * @param {number} topicId - 话题ID
+     * @param {object} topicData - {title?, content?}
+     * @returns {Promise} {code, msg, data: {topicId, taskId, creatorId, title, content, createdAt}}
+     */
+    async updateTopic(topicId, topicData) {
+        const endpoint = AppConfig.API_ENDPOINTS.UPDATE_TOPIC.replace('{id}', topicId);
+        // API文档要求的字段: title, content (都是可选的)
+        const requestData = {};
+        if (topicData.title) {
+            requestData.title = topicData.title;
+        }
+        if (topicData.content !== undefined || topicData.description !== undefined) {
+            requestData.content = topicData.content || topicData.description || '';
+        }
+        console.log('[API] 编辑话题请求:', endpoint, requestData);
+        return await this.request(endpoint, 'PATCH', requestData);
+    },
+    
+    /**
+     * 11.5 删除话题
+     * @param {number} topicId - 话题ID
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async deleteTopic(topicId) {
+        const endpoint = AppConfig.API_ENDPOINTS.DELETE_TOPIC.replace('{id}', topicId);
+        console.log('[API] 删除话题请求:', endpoint);
+        return await this.request(endpoint, 'DELETE');
+    },
+    
+    /**
+     * 11.6 获取评论列表
+     * @param {number} topicId - 话题ID
+     * @param {object} params - {page?, pageSize?}
+     * @returns {Promise} {code, msg, data: {list, total, page, pageSize}}
+     */
+    async getTopicComments(topicId, params = {}) {
+        const endpoint = AppConfig.API_ENDPOINTS.GET_TOPIC_COMMENTS.replace('{topicId}', topicId);
+        const queryString = this.buildQueryString(params);
+        console.log('[API] 获取评论列表请求:', endpoint + queryString);
+        return await this.request(endpoint + queryString, 'GET');
+    },
+    
+    /**
+     * 11.7 发表评论
+     * @param {number} topicId - 话题ID
+     * @param {object} commentData - {content, parentId?}
+     * @returns {Promise} {code, msg, data: {commentId, topicId, userId, content, parentId, likeCount, createdAt}}
+     */
+    async createTopicComment(topicId, commentData) {
+        const endpoint = AppConfig.API_ENDPOINTS.CREATE_TOPIC_COMMENT.replace('{topicId}', topicId);
+        // API文档要求的字段: content, parentId (可选)
+        const requestData = {
+            content: commentData.content
+        };
+        if (commentData.parentId) {
+            requestData.parentId = parseInt(commentData.parentId);
+        }
+        console.log('[API] 发表评论请求:', endpoint, requestData);
+        return await this.request(endpoint, 'POST', requestData);
+    },
+    
+    /**
+     * 11.8 点赞/取消点赞
+     * @param {number} commentId - 评论ID
+     * @returns {Promise} {code, msg, data: {liked: boolean}}
+     */
+    async likeTopicComment(commentId) {
+        const endpoint = `/topic-comments/${commentId}/like`;
+        console.log('[API] 点赞评论请求:', endpoint);
+        return await this.request(endpoint, 'POST');
     }
-};
-
-// ==================== 话题模块API扩展 ====================
-// 将这些方法添加到你的 api.js 文件的 window.API 对象中
-
-/**
- * 创建话题
- * @param {object} topicData - {taskId, title, description}
- */
-API.createTopic = async function(topicData) {
-    const endpoint = AppConfig.API_ENDPOINTS.CREATE_TOPIC;
-    return await this.request(endpoint, {
-        method: 'POST',
-        body: JSON.stringify(topicData)
-    });
-};
-
-/**
- * 获取话题列表
- * @param {number} taskId - 任务ID
- */
-API.getTopics = async function(taskId) {
-    const endpoint = AppConfig.API_ENDPOINTS.GET_TOPICS + `?taskId=${taskId}`;
-    return await this.request(endpoint, {
-        method: 'GET'
-    });
-};
-
-/**
- * 获取话题详情
- * @param {number} topicId - 话题ID
- */
-API.getTopicDetail = async function(topicId) {
-    const endpoint = AppConfig.API_ENDPOINTS.GET_TOPIC_DETAIL.replace('{id}', topicId);
-    return await this.request(endpoint, {
-        method: 'GET'
-    });
-};
-
-/**
- * 更新话题
- * @param {number} topicId - 话题ID
- * @param {object} topicData - 更新的数据
- */
-API.updateTopic = async function(topicId, topicData) {
-    const endpoint = AppConfig.API_ENDPOINTS.UPDATE_TOPIC.replace('{id}', topicId);
-    return await this.request(endpoint, {
-        method: 'PUT',
-        body: JSON.stringify(topicData)
-    });
-};
-
-/**
- * 删除话题
- * @param {number} topicId - 话题ID
- */
-API.deleteTopic = async function(topicId) {
-    const endpoint = AppConfig.API_ENDPOINTS.DELETE_TOPIC.replace('{id}', topicId);
-    return await this.request(endpoint, {
-        method: 'DELETE'
-    });
-};
-
-/**
- * 获取话题评论列表
- * @param {number} topicId - 话题ID
- */
-API.getTopicComments = async function(topicId) {
-    const endpoint = AppConfig.API_ENDPOINTS.GET_TOPIC_COMMENTS.replace('{topicId}', topicId);
-    return await this.request(endpoint, {
-        method: 'GET'
-    });
-};
-
-/**
- * 创建话题评论
- * @param {object} commentData - {topicId, content, scaffoldType}
- */
-API.createTopicComment = async function(commentData) {
-    const topicId = commentData.topicId;
-    const endpoint = AppConfig.API_ENDPOINTS.CREATE_TOPIC_COMMENT.replace('{topicId}', topicId);
-    return await this.request(endpoint, {
-        method: 'POST',
-        body: JSON.stringify(commentData)
-    });
 };

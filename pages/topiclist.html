@@ -979,11 +979,11 @@
             topicListEl.style.display = 'none';
             emptyState.style.display = 'none';
 
-            if (!window.Tasks || !Tasks.getTopics) {
+            if (!window.Topics || !Topics.getTopics) {
                 throw new Error('话题模块未加载');
             }
 
-            topicList = await Tasks.getTopics(currentTaskId);
+            topicList = await Topics.getTopics(currentTaskId);
             
             loadingState.style.display = 'none';
             displayTopics(topicList);
@@ -1125,10 +1125,10 @@
             let result;
             if (topicId) {
                 // 编辑话题
-                result = await Tasks.updateTopic(parseInt(topicId), topicData);
+                result = await Topics.updateTopic(parseInt(topicId), topicData);
             } else {
                 // 创建话题
-                result = await Tasks.createTopic(topicData);
+                result = await Topics.createTopic(topicData);
             }
 
             if (result.success) {
@@ -1174,7 +1174,7 @@
         try {
             showMessage('正在删除...', 'info');
 
-            const result = await Tasks.deleteTopic(topicId);
+            const result = await Topics.deleteTopic(topicId);
             
             if (result.success) {
                 showMessage('话题删除成功', 'success');
@@ -1190,8 +1190,7 @@
 
     // ========== 跳转到话题论坛 ==========
     function goToTopicForum(topicId) {
-        const hash = `topicforum?taskId=${currentTaskId}&topicId=${topicId}&clubId=${currentClubId}`;
-        window.location.hash = hash;
+        window.location.hash = `topicforum?taskId=${currentTaskId}&topicId=${topicId}&clubId=${currentClubId}`;
     }
 
     // ========== 返回任务页 ==========
