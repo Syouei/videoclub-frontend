@@ -624,11 +624,8 @@ async function previewTeachingDesign(taskId) {
             return;
         }
         
-        // 2. 尝试从任务信息中获取resourceId (多种字段名兼容)
-        let resourceId = taskDetail.taskInfo.resourceId 
-                      || taskDetail.taskInfo.pdfId 
-                      || taskDetail.taskInfo.resource_id
-                      || taskDetail.taskInfo.pdf_id;
+        // 2. 从任务信息中获取pdfId（后端返回的字段名为pdfId）
+        const resourceId = taskDetail.taskInfo.pdfId;
         
         console.log('从任务详情获取到的resourceId:', resourceId);
         
@@ -670,19 +667,35 @@ async function previewTeachingDesign(taskId) {
             return;
         }
         
-        // 4. 创建全屏预览模态框
+        // 4. 创建全屏预览模态框（带下载按钮和加载状态）
         const modalHTML = `
             <div id="design-preview-modal" class="fullscreen-modal">
                 <div class="fullscreen-modal-content">
                     <div class="fullscreen-modal-header">
                         <h3>教学设计文档预览</h3>
-                        <button class="btn-close-fullscreen" onclick="closeDesignPreview()">
-                            <i class="fas fa-times"></i>
-                        </button>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <a href="${pdfUrl}" 
+                               target="_blank" 
+                               download="教学设计.pdf"
+                               class="btn-download-pdf"
+                               style="background:rgba(255,255,255,0.1); color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; text-decoration:none; display:flex; align-items:center; gap:6px; font-size:14px; transition:background 0.3s;">
+                                <i class="fas fa-download"></i> 下载PDF
+                            </a>
+                            <button class="btn-close-fullscreen" onclick="closeDesignPreview()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="fullscreen-modal-body">
+                        <div id="pdf-loading" style="display:flex; align-items:center; justify-content:center; height:100%; color:#666;">
+                            <div style="text-align:center;">
+                                <i class="fas fa-spinner fa-spin" style="font-size:48px; margin-bottom:16px; color:#1890ff;"></i>
+                                <p>正在加载PDF文档...</p>
+                                <p style="font-size:12px; color:#999; margin-top:8px;">如果加载较慢，请点击右上角下载按钮</p>
+                            </div>
+                        </div>
                         <iframe id="design-preview-frame" 
-                                style="width:100%; height:100%; border:none;" 
+                                style="width:100%; height:100%; border:none; display:none;" 
                                 title="教学设计文档预览"
                                 src="${pdfUrl}">
                         </iframe>
@@ -701,6 +714,61 @@ async function previewTeachingDesign(taskId) {
         
         // 7. 阻止背景滚动
         document.body.style.overflow = 'hidden';
+        
+        // 8. 监听iframe加载事件
+        const iframe = document.getElementById('design-preview-frame');
+        const loading = document.getElementById('pdf-loading');
+        
+        if (iframe) {
+            iframe.onload = function() {
+                console.log('PDF iframe加载完成');
+                if (loading) {
+                    loading.style.display = 'none';
+                }
+                if (iframe) {
+                    iframe.style.display = 'block';
+                }
+            };
+            
+            iframe.onerror = function() {
+                console.error('PDF iframe加载失败');
+                if (loading) {
+                    loading.innerHTML = `
+                        <div style="text-align:center;">
+                            <i class="fas fa-exclamation-triangle" style="font-size:48px; margin-bottom:16px; color:#ff4d4f;"></i>
+                            <p style="color:#ff4d4f;">PDF加载失败</p>
+                            <p style="font-size:12px; color:#999; margin:8px 0;">请点击右上角下载按钮直接查看</p>
+                            <a href="${pdfUrl}" 
+                               target="_blank" 
+                               class="btn btn-primary"
+                               style="margin-top:16px;">
+                                <i class="fas fa-download"></i> 下载PDF文档
+                            </a>
+                        </div>
+                    `;
+                }
+            };
+            
+            // 设置超时：如果10秒还没加载完成，显示下载提示
+            setTimeout(() => {
+                if (loading && loading.style.display !== 'none') {
+                    console.log('PDF加载超时，显示下载提示');
+                    loading.innerHTML = `
+                        <div style="text-align:center;">
+                            <i class="fas fa-file-pdf" style="font-size:48px; margin-bottom:16px; color:#722ed1;"></i>
+                            <p>PDF加载较慢</p>
+                            <p style="font-size:12px; color:#999; margin:8px 0;">请点击右上角下载按钮直接查看</p>
+                            <a href="${pdfUrl}" 
+                               target="_blank" 
+                               class="btn btn-primary"
+                               style="margin-top:16px;">
+                                <i class="fas fa-download"></i> 下载PDF文档
+                            </a>
+                        </div>
+                    `;
+                }
+            }, 10000);
+        }
         
     } catch (error) {
         console.error('预览教学设计失败:', error);
@@ -736,12 +804,10 @@ async function completeReadDesignTask(taskId, subtaskId) {
         
         // 准备提交数据
         const completionData = {
-            type: 'read_design',
-            notes: '已阅读教学设计文档'
+            researchNotes: '已阅读教学设计文档'
         };
         
-        // 调用API提交子任务（这里需要适配API）
-        // 注意：API可能需要支持新的子任务类型
+        // 调用API提交子任务
         const result = await Tasks.completeSubTask(taskId, subtaskId, completionData);
         
         if (result.success) {

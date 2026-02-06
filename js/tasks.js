@@ -13,7 +13,7 @@ window.Tasks = {
     
     /**
      * 7.1 创建任务（发布任务）
-     * @param {object} taskData - 任务数据 {clubId, title, description, type}
+     * @param {object} taskData - 任务数据 {clubId, videoId, pdfId, title, description, type}
      * @returns {Promise} {success: boolean, message: string, task: object}
      */
     createTask: async function(taskData) {
@@ -136,31 +136,15 @@ getTaskDetail: async function(taskId) {
         if (result && result.code === 0 && result.data) {
             console.log('获取任务详情成功:', result.data);
             
-            // 添加"阅读教学设计"子任务到任务详情中
+            // 后端已经自动创建3个子任务（包括read_design），无需手动添加
+            // 仅确保返回的数据格式正确
             const taskDetail = result.data;
-            if (taskDetail.taskInfo && Array.isArray(taskDetail.taskInfo.subTasks)) {
-                // 检查是否已经包含阅读教学设计子任务
-                const hasReadDesignTask = taskDetail.taskInfo.subTasks.some(
-                    subtask => subtask.type === 'read_design'
-                );
-                
-                if (!hasReadDesignTask) {
-                    // 添加"阅读教学设计"子任务作为第一个子任务
-                    taskDetail.taskInfo.subTasks.unshift({
-                        subtaskId: 0, // 使用0作为教学设计子任务的ID
-                        title: "阅读教学设计",
-                        type: "read_design",
-                        description: "阅读并理解本课的教学设计方案",
-                        status: "incomplete",
-                        order: 0 // 确保这是第一个子任务
-                    });
-                    
-                    // 重新排序其他子任务
-                    taskDetail.taskInfo.subTasks.forEach((subtask, index) => {
-                        if (subtask.type !== 'read_design') {
-                            subtask.order = index;
-                        }
-                    });
+            
+            // 兼容：确保taskInfo包含必要的字段
+            if (taskDetail.taskInfo) {
+                // 确保subTasks字段存在
+                if (!taskDetail.taskInfo.subTasks) {
+                    taskDetail.taskInfo.subTasks = [];
                 }
             }
             

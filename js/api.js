@@ -621,7 +621,7 @@ window.API = {
 
     /**
      * 7.1 发布任务
-     * @param {object} taskData - 任务数据 {clubId, videoId, type, title, description}
+     * @param {object} taskData - 任务数据 {clubId, videoId, pdfId, type, title, description}
      * @returns {Promise} {code, msg, data: {taskId}}
      */
     async createTask(taskData) {
@@ -643,6 +643,11 @@ window.API = {
     // 添加 videoId（如果有）- 修复视频关联问题
     if (taskData.videoId !== undefined && taskData.videoId !== null) {
         requestData.videoId = parseInt(taskData.videoId);
+    }
+    
+    // 添加 pdfId（如果有）- 关联教学设计PDF
+    if (taskData.pdfId !== undefined && taskData.pdfId !== null) {
+        requestData.pdfId = parseInt(taskData.pdfId);
     }
     
     // 添加 isUnlocked（如果有）- 用于手动解锁状态
@@ -691,7 +696,7 @@ window.API = {
     /**
      * 7.5 修改任务
      * @param {number} taskId - 任务ID
-     * @param {object} taskData - 更新的任务数据 {title, description, videoId}
+     * @param {object} taskData - 更新的任务数据 {title, description, videoId, pdfId}
      * @returns {Promise} {code, msg, data: null}
      */
     async updateTask(taskId, taskData) {
