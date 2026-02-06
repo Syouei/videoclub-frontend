@@ -571,22 +571,24 @@
                 <div class="compose-header">
                     <div class="compose-title">
                         <span class="icon">✍️</span>
-                        撰写你的深度观点
+                        发表你的观点
                     </div>
                 </div>
+                <p style="color: #666; margin-bottom: 12px; font-size: 0.95rem;">选择一个思考支架来组织你的想法：</p>
+
 
                 <!-- 思考支架选择器 -->
                 <div class="scaffold-selector">
-                    <button class="scaffold-btn" data-scaffold="opinion">💡 观点型</button>
-                    <button class="scaffold-btn" data-scaffold="question">❓ 问题型</button>
-                    <button class="scaffold-btn" data-scaffold="case">📝 案例型</button>
-                    <button class="scaffold-btn" data-scaffold="summary">📊 总结型</button>
-                    <button class="scaffold-btn" data-scaffold="reflection">🤔 反思型</button>
+                    <button class="scaffold-btn" data-scaffold="opinion">💡 论证观点</button>
+                    <button class="scaffold-btn" data-scaffold="question">❓ 提出质疑</button>
+                    <button class="scaffold-btn" data-scaffold="case">🔗 建立联系</button>
+                    <button class="scaffold-btn" data-scaffold="summary">🪞 深度反思</button>
+                    <button class="scaffold-btn" data-scaffold="reflection">🤔 延伸发展</button>
                 </div>
 
                 <!-- 支架提示 -->
                 <div class="scaffold-hint">
-                    <strong>提示：</strong>点击上方按钮选择一个思考支架，系统将自动生成引导框架帮助你组织思路。
+                    <strong>论证观点支架：</strong>帮助你清晰地表达观点、阐述理由并提供证据支持。
                 </div>
 
                 <!-- 写作区 -->
@@ -657,68 +659,79 @@
         // ========== 思考支架定义 ==========
         const scaffolds = {
             opinion: {
-                name: '观点型',
-                hint: '<strong>观点型支架：</strong>帮助你清晰表达核心观点和理由。',
-                template: `【我的核心观点】
-（在此写下你的主要观点）
+                name: '💡 论证观点',
+                hint: '<strong>论证观点支架</strong>：帮助你清晰地表达观点、阐述理由并提供证据支持。',
+                template: `【我认为】
+（在此写下你的核心观点）
 
-【支持理由】
-1. （理由一）
-2. （理由二）
-3. （理由三）
+【我的理由是】
+（解释为什么你这样认为）
 
-【可能的质疑与回应】
-（预设可能的反对意见，并给出你的回应）`
+【支持我观点的证据是】
+（列举事实、数据或例子来支持你的观点）
+
+【可能的反对意见是……但我的回应是】
+（思考可能的质疑并给出回应）`
             },
             question: {
-                name: '问题型',
-                hint: '<strong>问题型支架：</strong>通过提问引发更深层次的思考。',
-                template: `【我的关键问题】
-（提出一个值得探讨的核心问题）
+                name: '❓ 提出质疑',
+                hint: '<strong>提出质疑支架</strong>：帮助你系统地表达疑问和进行批判性思考。',
+                template: `【我对……持怀疑态度】
+（指出你质疑的观点或现象）
 
-【问题背景】
-（说明为什么提出这个问题）
+【我的疑问是】
+（具体说明你的疑问是什么）
 
-【可能的思考方向】
-1. （方向一）
-2. （方向二）
-3. （方向三）`
+【让我产生疑问的原因是】
+（解释为什么你会有这个疑问）
+
+【我认为需要进一步思考的是】
+（提出需要深入探讨的方向）`
             },
             case: {
-                name: '案例型',
-                hint: '<strong>案例型支架：</strong>结合具体案例说明你的想法。',
-                template: `【案例描述】
-（简要描述一个真实的教学案例）
+                name: '🔗 建立联系',
+                hint: '<strong>建立联系支架</strong>：帮助你将新知识与已有经验或其他领域联系起来。',
+                template: `【这让我想到了】
+（联系到的相关经验、知识或案例）
 
-【案例分析】
-（分析这个案例中的关键要素）
+【它们之间的相似之处是】
+（分析两者的共同点）
 
-【启示与思考】
-（从案例中得到的启发和思考）`
+【不同之处在于】
+（比较两者的差异）
+
+【这种联系让我有了新的理解】
+（总结通过联系获得的新认识）`
             },
             summary: {
-                name: '总结型',
-                hint: '<strong>总结型支架：</strong>整合多个观点，形成系统认识。',
-                template: `【关键发现】
-（总结讨论中的主要发现）
+                name: '🪞 深度反思',
+                hint: '<strong>深度反思支架</strong>：帮助你对学习过程和认知变化进行元认知思考。',
+                template: `【在这个话题中，我原来的想法是】
+（描述你之前的认知或假设）
 
-【不同观点对比】
-（比较不同的观点和角度）
+【现在我的想法发生了这样的变化】
+（说明你的认知是如何改变的）
 
-【我的综合理解】
-（基于上述内容，形成自己的综合理解）`
+【促使我改变想法的关键点是】
+（分析是什么导致了你的认知转变）
+
+【我还想深入了解的是】
+（提出你希望继续探索的方向）`
             },
             reflection: {
-                name: '反思型',
-                hint: '<strong>反思型支架：</strong>深度反思个人的教学实践。',
-                template: `【实践回顾】
-（回顾自己的相关教学实践）
+                name: '🧱 延伸发展',
+                hint: '<strong>延伸发展支架</strong>：帮助你在他人观点基础上进行建设性拓展。',
+                template: `【我同意……的观点】
+（指明你认同的观点及其作者）
 
-【发现的问题】
-（在实践中发现的问题或困惑）
+【在此基础上，我想补充】
+（添加新的角度或信息）
 
-【改进计划】
-（基于反思，制定具体的改进计划）`
+【进一步思考，我认为】
+（深化或延伸原有观点）
+
+【这对实际应用的启示是】
+（思考理论如何指导实践）`
             }
         };
 
