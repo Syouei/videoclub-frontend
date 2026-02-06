@@ -472,7 +472,7 @@ window.App = {
     validateRegisterForm: function() {
         const username = document.getElementById('register-name')?.value.trim();
         const password = document.getElementById('register-password')?.value;
-        const confirmPassword = document.getElementById('register-confirm-password')?.value;
+        const confirmPassword = document.getElementById('register-password-confirm')?.value;
         
         return {
             isValid: !!(username && password && confirmPassword && password === confirmPassword && password.length >= 6),
@@ -580,7 +580,7 @@ window.App = {
     // 检查密码匹配
     checkPasswordMatch: function() {
         const password = document.getElementById('register-password')?.value;
-        const confirmPassword = document.getElementById('register-confirm-password')?.value;
+        const confirmPassword = document.getElementById('register-password-confirm')?.value;
         
         if (!confirmPassword) {
             this.hideRegisterError('register-confirm-error');
@@ -603,7 +603,7 @@ window.App = {
     register: async function() {
         const username = document.getElementById('register-name')?.value.trim();
         const password = document.getElementById('register-password')?.value;
-        const confirmPassword = document.getElementById('register-confirm-password')?.value;
+        const confirmPassword = document.getElementById('register-password-confirm')?.value;
         
         // 验证表单
         if (!username || !password || !confirmPassword) {
@@ -647,7 +647,7 @@ window.App = {
                 // 清空表单
                 const nameInput = document.getElementById('register-name');
                 const pwdInput = document.getElementById('register-password');
-                const confirmInput = document.getElementById('register-confirm-password');
+                const confirmInput = document.getElementById('register-password-confirm');
                 
                 if (nameInput) nameInput.value = '';
                 if (pwdInput) pwdInput.value = '';
