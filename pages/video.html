@@ -2533,26 +2533,49 @@ function formatFileSize(bytes) {
 }
 
 // 移除文件
-function removeFile(fileType) {
+async function removeFile(fileType) {
     console.log('removeFile函数被调用，文件类型:', fileType);
-    
+
     const fileLabel = fileType === 'video' ? '视频文件' : fileType === 'pdf' ? 'PDF文件' : '文件';
     if (!confirm(`确定要移除已上传的${fileLabel}吗？`)) {
         return;
     }
-    
+
+    // 如果有已上传的ID，先删除后端数据
+    if (fileType === 'video' && uploadedVideoId) {
+        try {
+            console.log('删除视频:', uploadedVideoId);
+            await API.deleteVideo(uploadedVideoId);
+            console.log('视频删除成功');
+        } catch (error) {
+            console.error('删除视频失败:', error);
+            // 继续执行，不阻止UI重置
+        }
+    }
+
+    if (fileType === 'pdf' && uploadedPdfId) {
+        try {
+            console.log('删除PDF资源:', uploadedPdfId);
+            await API.deleteResource(uploadedPdfId);
+            console.log('PDF资源删除成功');
+        } catch (error) {
+            console.error('删除PDF资源失败:', error);
+            // 继续执行，不阻止UI重置
+        }
+    }
+
     // 重置文件输入
     const fileInput = document.getElementById(`${fileType}-file`);
     if (fileInput) {
         fileInput.value = '';
         console.log('文件输入已清空');
     }
-    
+
     // 重置UI显示
     const placeholder = document.querySelector(`#${fileType}-upload-area .upload-placeholder`);
     const progress = document.getElementById(`${fileType}-progress`);
     const preview = document.getElementById(`${fileType}-preview`);
-    
+
     if (placeholder) placeholder.style.display = 'block';
     if (progress) {
         progress.style.display = 'none';
@@ -2579,7 +2602,7 @@ function removeFile(fileType) {
         }
     }
     if (preview) preview.style.display = 'none';
-    
+
     // 重置对应的上传ID
     if (fileType === 'video') {
         uploadedVideoId = null;
@@ -2591,7 +2614,7 @@ function removeFile(fileType) {
         const previewContainer = document.getElementById('pdf-upload-preview');
         if (previewContainer) previewContainer.style.display = 'none';
     }
-    
+
     alert(`${fileLabel}已移除`);
 }
 
