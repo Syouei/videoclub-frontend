@@ -779,10 +779,7 @@
         <input type="file" id="video-file" accept="video/*" style="display: none;">
         <div class="upload-placeholder" onclick="document.getElementById('video-file').click()">
             <i class="fas fa-video" style="font-size: 32px; color: #1890ff; margin-bottom: 12px;"></i>
-            <p style="color: #999; font-size: 14px;">支持MP4、MOV等格式，最大2GB</p>
-            <p style="color: #666; font-size: 12px; margin-top: 8px;">
-                <i class="fas fa-info-circle"></i> 建议分辨率720P以上，时长不超过60分钟
-            </p>
+            <p style="color: #999; font-size: 14px;">支持MP4、MOV等格式，最大20GB</p>
         </div>
         <div class="upload-progress" id="video-progress" style="display: none;">
             <div class="progress-container">
@@ -830,7 +827,7 @@
         <div class="upload-placeholder" onclick="document.getElementById('pdf-file').click()">
             <i class="fas fa-file-pdf pdf-icon" style="font-size: 32px; margin-bottom: 12px;"></i>
             <h4 style="margin: 8px 0 4px; font-size: 15px; color: #333;">点击上传 PDF 文件</h4>
-            <p style="color: #999; font-size: 13px;">仅支持 PDF 格式，最大 50MB</p>
+            <p style="color: #999; font-size: 13px;">仅支持 PDF 格式</p>
         </div>
         <div class="upload-progress" id="pdf-progress" style="display: none;">
             <div class="progress-container">
@@ -1219,7 +1216,6 @@ async function uploadToQiniu(file, uploadData, objectKey, fileType, onProgress) 
 //     获取凭证  GET   /pdfs/token
 //     保存信息  POST  /pdfs              body: { clubId, title, objectKey, etag, bucket, region, fileSize, mimeType }
 //   响应结构与视频模块一致，成功返回 { code:0, data:{ pdfId } }
-
 async function uploadPdf(file) {
     if (uploadedPdfId) {
         console.log('PDF已上传，使用已有的pdfId:', uploadedPdfId);
@@ -1490,10 +1486,10 @@ function showEditUploadComplete(fileType, fileName) {
 }
 function validateFile(file, fileType) {
     if (fileType === 'video') {
-        const maxSize = 2 * 1024 * 1024 * 1024; // 2GB
+        const maxSize = 20 * 1024 * 1024 * 1024; // 20GB
         const allowedTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'];
         if (file.size > maxSize) {
-            showFileError(fileType, '文件太大，视频最大支持 2GB');
+            showFileError(fileType, '文件太大，视频最大支持 20GB');
             return false;
         }
         if (!allowedTypes.includes(file.type)) {
@@ -2805,7 +2801,7 @@ function showFileInfo(file, fileType) {
                                        onchange="handleEditFileSelect(event, 'video')">
                                 <i class="fas fa-video" style="font-size:24px; color:#1890ff;"></i>
                                 <p style="color:#999; font-size:13px; margin-top:8px;">${task.videoId ? '点击替换视频' : '点击上传视频（可选）'}</p>
-                                <p style="color:#bbb; font-size:12px;">支持MP4、MOV等，最大2GB</p>
+                                <p style="color:#bbb; font-size:12px;">支持MP4、MOV等，最大20GB</p>
                             </div>
                             <div id="edit-video-progress-container" style="display:none; margin-top:8px;">
                                 <div class="progress-container">
@@ -2825,7 +2821,7 @@ function showFileInfo(file, fileType) {
                                        onchange="handleEditFileSelect(event, 'pdf')">
                                 <i class="fas fa-file-pdf" style="font-size:24px; color:#722ed1;"></i>
                                 <p style="color:#999; font-size:13px; margin-top:8px;">${task.pdfId ? '点击替换PDF' : '点击上传PDF（可选）'}</p>
-                                <p style="color:#bbb; font-size:12px;">仅支持PDF格式，最大50MB</p>
+                                <p style="color:#bbb; font-size:12px;">仅支持PDF格式</p>
                             </div>
                             <div id="edit-pdf-progress-container" style="display:none; margin-top:8px;">
                                 <div class="progress-container">
