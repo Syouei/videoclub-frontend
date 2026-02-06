@@ -2656,12 +2656,33 @@ function showFileInfo(file, fileType) {
     }
 }
         // 关闭创建任务模态框
-        function closeCreateTaskModal() {
+        async function closeCreateTaskModal() {
             const modal = document.getElementById('create-task-modal');
             if (modal) {
                 modal.style.display = 'none';
             }
-            
+
+            // 如果已上传视频或资源但未发布任务，则删除它们
+            if (uploadedVideoId) {
+                try {
+                    console.log('删除未发布的视频:', uploadedVideoId);
+                    await API.deleteVideo(uploadedVideoId);
+                    console.log('视频删除成功');
+                } catch (error) {
+                    console.error('删除视频失败:', error);
+                }
+            }
+
+            if (uploadedPdfId) {
+                try {
+                    console.log('删除未发布的资源:', uploadedPdfId);
+                    await API.deleteResource(uploadedPdfId);
+                    console.log('资源删除成功');
+                } catch (error) {
+                    console.error('删除资源失败:', error);
+                }
+            }
+
             // 清空文件输入
             const videoFileInput = document.getElementById('video-file');
             if (videoFileInput) videoFileInput.value = '';
@@ -3018,7 +3039,7 @@ function showFileInfo(file, fileType) {
         // 删除任务
         async function deleteTask(taskId) {
             console.log('删除任务，任务ID:', taskId);
-            
+
             try {
                 // 检查权限
                 const hasPermission = await checkAndUpdatePermissions();
@@ -3026,17 +3047,53 @@ function showFileInfo(file, fileType) {
                     Utils.showNotification('只有俱乐部创建者可以删除任务', 'error');
                     return;
                 }
-                
+
+                // 获取任务详情，找出关联的视频和资源
+                const task = videoTasks.find(t => t.taskId === taskId || t.id === taskId);
+                if (!task) {
+                    Utils.showNotification('找不到该任务', 'error');
+                    return;
+                }
+
+                const videoId = task.videoId;
+                const pdfId = task.pdfId;
+
+                console.log('任务关联资源:', { videoId, pdfId });
+
                 Utils.showNotification('正在删除任务...', 'info');
-                
-                // 调用API删除任务
+
+                // 先删除关联的视频
+                if (videoId) {
+                    try {
+                        console.log('删除关联视频:', videoId);
+                        await API.deleteVideo(videoId);
+                        console.log('视频删除成功');
+                    } catch (error) {
+                        console.error('删除视频失败:', error);
+                        // 继续执行，不阻止任务删除
+                    }
+                }
+
+                // 再删除关联的PDF资源
+                if (pdfId) {
+                    try {
+                        console.log('删除关联PDF资源:', pdfId);
+                        await API.deleteResource(pdfId);
+                        console.log('PDF资源删除成功');
+                    } catch (error) {
+                        console.error('删除PDF资源失败:', error);
+                        // 继续执行，不阻止任务删除
+                    }
+                }
+
+                // 最后删除任务
                 const result = await API.deleteTask(taskId);
-                
+
                 console.log('删除任务API响应:', result);
-                
+
                 if (result && result.code === 0) {
                     Utils.showNotification('任务删除成功！', 'success');
-                    
+
                     // 刷新任务列表
                     await loadVideoTasks();
                 } else {

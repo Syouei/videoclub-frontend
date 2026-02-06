@@ -836,6 +836,26 @@ window.API = {
         return await this.request(endpoint, 'POST', data);
     },
 
+    /**
+     * 删除视频
+     * @param {number} videoId - 视频ID
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async deleteVideo(videoId) {
+        const endpoint = `/videos/${videoId}`;
+        return await this.request(endpoint, 'DELETE');
+    },
+
+    /**
+     * 删除资源
+     * @param {number} resourceId - 资源ID
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async deleteResource(resourceId) {
+        const endpoint = `/resources/${resourceId}`;
+        return await this.request(endpoint, 'DELETE');
+    },
+
 
 
 
