@@ -1070,7 +1070,7 @@ if (comment.parentId) {
                     showToast('发布成功！感谢你的深度思考 ✨');
 
                     if (window.Utils && Utils.sendAnalyticsEvent) {
-                        Utils.sendAnalyticsEvent('comment_submit', {
+                        Utils.sendAnalyticsEvent('reflection_submit', {
                             category: 'interaction',
                             target_type: 'topic',
                             target_id: currentTopicId,
@@ -1136,9 +1136,9 @@ if (comment.parentId) {
                     
                     showToast(result.message || (isLiked ? '点赞成功' : '取消点赞'));
                     if (window.Utils && Utils.sendAnalyticsEvent) {
-                        Utils.sendAnalyticsEvent('comment_like', {
+                        Utils.sendAnalyticsEvent('reflection_like', {
                             category: 'interaction',
-                            target_type: 'comment',
+                            target_type: 'reflection',
                             target_id: commentId
                         });
                     }
@@ -1269,9 +1269,9 @@ async function submitReply(parentCommentId, button) {
         if (result.success) {
             showToast('回复成功！');
             if (window.Utils && Utils.sendAnalyticsEvent) {
-                Utils.sendAnalyticsEvent('comment_reply_submit', {
+                Utils.sendAnalyticsEvent('reflection_reply_submit', {
                     category: 'interaction',
-                    target_type: 'comment',
+                    target_type: 'reflection',
                     target_id: parentCommentId,
                     target_object: {
                         content: content,
