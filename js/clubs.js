@@ -268,6 +268,13 @@ window.Clubs = {
                     this.saveClubsToStorage();
                     
                     console.log('俱乐部创建成功:', newClub);
+                    if (window.Utils && Utils.sendAnalyticsEvent) {
+                        Utils.sendAnalyticsEvent('create_club', {
+                            category: 'teaching',
+                            target_type: 'club',
+                            target_id: newClub.id || response.data.clubId
+                        });
+                    }
                     return { 
                         success: true, 
                         club: newClub,
@@ -363,6 +370,17 @@ window.Clubs = {
                     }
                 } else if (resultData.status === 'pending') {
                     // 申请已提交，等待审核
+                    if (window.Utils && Utils.sendAnalyticsEvent) {
+                        Utils.sendAnalyticsEvent('club_submit_join_request', {
+                            category: 'learning',
+                            target_type: 'club',
+                            target_id: clubId,
+                            target_object: {
+                                request_id: resultData.requestId,
+                                apply_message: applyMessage || ''
+                            }
+                        });
+                    }
                     return {
                         success: true,
                         message: '已提交申请，等待管理员审核',
@@ -407,10 +425,21 @@ window.Clubs = {
     },
 
     // 批准入会申请（管理员用）
-    approveJoinRequest: async function(clubId, requestId) {
+    approveJoinRequest: async function(clubId, requestId, applicantId = null) {
         try {
             const response = await API.approveJoinRequest(clubId, requestId);
             if (response && response.code === 0) {
+                if (window.Utils && Utils.sendAnalyticsEvent) {
+                    Utils.sendAnalyticsEvent('club_approve_join_request', {
+                        category: 'teaching',
+                        target_type: 'club',
+                        target_id: clubId,
+                        target_object: {
+                            request_id: requestId,
+                            applicant_id: applicantId
+                        }
+                    });
+                }
                 return { success: true, message: '已通过申请' };
             }
             return { success: false, message: response ? response.msg : '操作失败' };
@@ -1265,6 +1294,14 @@ renderClubCard: function(club, container, isArchived) {
                 });
                 this.saveClubsToStorage();
                 
+                if (window.Utils && Utils.sendAnalyticsEvent) {
+                    Utils.sendAnalyticsEvent('dissolve_club', {
+                        category: 'teaching',
+                        target_type: 'club',
+                        target_id: clubId
+                    });
+                }
+
                 Utils.showNotification('俱乐部已解散', 'success');
                 this.renderClubList(); // 重新渲染列表
             } else {
@@ -1290,6 +1327,13 @@ renderClubCard: function(club, container, isArchived) {
             console.log('归档俱乐部API响应:', response);
             
             if (response && response.code === 0) {
+                if (window.Utils && Utils.sendAnalyticsEvent) {
+                    Utils.sendAnalyticsEvent('archive_club', {
+                        category: 'teaching',
+                        target_type: 'club',
+                        target_id: clubId
+                    });
+                }
                 // 更新本地俱乐部状态
                 const clubIndex = this.myClubs.findIndex(c => {
                     const cid = c.id || c.clubId || c.clubID;

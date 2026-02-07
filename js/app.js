@@ -423,6 +423,14 @@ window.App = {
             Utils.saveToStorage('privacy_agreed', updatedData);
             
             // 这里可以发送埋点数据到服务器
+            Utils.sendAnalyticsEvent('privacy_agreement_accepted', {
+                category: 'session',
+                user_id: userId,
+                page: 'login',
+                target_object: {
+                    version: updatedData.version
+                }
+            });
             this.sendPrivacyAnalytics(userId, updatedData);
             
             console.log('[隐私] 隐私协议同意记录已更新');

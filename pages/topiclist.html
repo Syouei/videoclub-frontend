@@ -882,6 +882,15 @@
             return;
         }
 
+        if (window.Utils && Utils.sendAnalyticsEvent) {
+            Utils.sendAnalyticsEvent('topic_open_list', {
+                category: 'interaction',
+                target_type: 'task',
+                target_id: currentTaskId,
+                club_id: currentClubId
+            });
+        }
+
         // 获取当前用户信息
         if (window.Auth && window.Auth.getUser()) {
             const user = window.Auth.getUser();
@@ -1107,6 +1116,33 @@
             }
 
             if (result.success) {
+                if (window.Utils && Utils.sendAnalyticsEvent) {
+                    if (topicId) {
+                        Utils.sendAnalyticsEvent('topic_edit', {
+                            category: 'interaction',
+                            target_type: 'topic',
+                            target_id: parseInt(topicId),
+                            club_id: currentClubId,
+                            target_object: {
+                                title: title,
+                                content: description,
+                                content_length: description.length
+                            }
+                        });
+                    } else {
+                        Utils.sendAnalyticsEvent('topic_create', {
+                            category: 'interaction',
+                            target_type: 'topic',
+                            target_id: result.data?.topicId,
+                            club_id: currentClubId,
+                            target_object: {
+                                title: title,
+                                content: description,
+                                content_length: description.length
+                            }
+                        });
+                    }
+                }
                 showMessage(topicId ? '话题更新成功' : '话题发布成功！', 'success');
                 closeTopicModal();
                 await loadTopics();
@@ -1152,6 +1188,14 @@
             const result = await Topics.deleteTopic(topicId);
             
             if (result.success) {
+                if (window.Utils && Utils.sendAnalyticsEvent) {
+                    Utils.sendAnalyticsEvent('topic_delete', {
+                        category: 'interaction',
+                        target_type: 'topic',
+                        target_id: topicId,
+                        club_id: currentClubId
+                    });
+                }
                 showMessage('话题删除成功', 'success');
                 await loadTopics();
             } else {
@@ -1165,6 +1209,13 @@
 
     // ========== 跳转到话题论坛 ==========
     function goToTopicForum(topicId) {
+        if (window.Utils && Utils.sendAnalyticsEvent) {
+            Utils.sendAnalyticsEvent('topic_open_detail', {
+                category: 'interaction',
+                target_type: 'topic',
+                target_id: topicId
+            });
+        }
         window.location.hash = `topicforum?taskId=${currentTaskId}&topicId=${topicId}&clubId=${currentClubId}`;
     }
 

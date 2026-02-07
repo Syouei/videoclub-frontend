@@ -961,6 +961,8 @@
                 this.replyInProgress = null;
                 this.videoDuration = 0;
                 this.currentVideoTime = 0;
+                this.lastVideoTime = 0;
+                this.seekFrom = null;
                 this.autoScrollEnabled = true;
                 this.isMouseInComments = false;
                 this.sortBy = 'time';
@@ -1268,6 +1270,14 @@
                     this.videoInfo.videoUrl = videoUrl;
                     console.log('[loadVideo] 视频元素配置完成，video.src:', this.video.src);
 
+                    if (window.Utils && Utils.sendAnalyticsEvent) {
+                        Utils.sendAnalyticsEvent('view_video', {
+                            category: 'learning',
+                            target_type: 'video',
+                            target_id: params.videoId
+                        });
+                    }
+
                     console.log('[loadVideo] 步骤7: 加载评论相关数据');
                     this.loadCommentsFromAPI();
                     this.loadHotTimestamps();
@@ -1368,6 +1378,7 @@
                 });
 
                 this.video.addEventListener('timeupdate', () => {
+                    this.lastVideoTime = this.currentVideoTime;
                     this.currentVideoTime = this.video.currentTime;
                     this.updateCurrentTimestampDisplay();
                     this.highlightCommentsAtCurrentTime();
@@ -1389,6 +1400,63 @@
                 this.video.addEventListener('playing', () => {
                     console.log('[setupVideoEvents] playing 事件触发');
                     this.clearVideoLoadTimeout();
+                });
+
+                this.video.addEventListener('play', () => {
+                    if (window.Utils && Utils.sendAnalyticsEvent) {
+                        Utils.sendAnalyticsEvent('video_play_start', {
+                            category: 'learning',
+                            target_type: 'video',
+                            target_id: this.videoInfo.videoId,
+                            video_time: this.video.currentTime
+                        });
+                    }
+                });
+
+                this.video.addEventListener('pause', () => {
+                    if (this.video && !this.video.ended) {
+                        if (window.Utils && Utils.sendAnalyticsEvent) {
+                            Utils.sendAnalyticsEvent('video_play_pause', {
+                                category: 'learning',
+                                target_type: 'video',
+                                target_id: this.videoInfo.videoId,
+                                video_time: this.video.currentTime
+                            });
+                        }
+                    }
+                });
+
+                this.video.addEventListener('seeking', () => {
+                    this.seekFrom = this.currentVideoTime;
+                });
+
+                this.video.addEventListener('seeked', () => {
+                    const seekFrom = this.seekFrom ?? this.lastVideoTime ?? 0;
+                    const seekTo = this.video.currentTime;
+                    if (window.Utils && Utils.sendAnalyticsEvent) {
+                        Utils.sendAnalyticsEvent('video_play_seek', {
+                            category: 'learning',
+                            target_type: 'video',
+                            target_id: this.videoInfo.videoId,
+                            video_time: seekTo,
+                            target_object: {
+                                seek_from: seekFrom,
+                                seek_to: seekTo
+                            }
+                        });
+                    }
+                    this.seekFrom = null;
+                });
+
+                this.video.addEventListener('ended', () => {
+                    if (window.Utils && Utils.sendAnalyticsEvent) {
+                        Utils.sendAnalyticsEvent('video_play_finish', {
+                            category: 'learning',
+                            target_type: 'video',
+                            target_id: this.videoInfo.videoId,
+                            video_time: this.video.currentTime
+                        });
+                    }
                 });
 
                 this.eventsBound = true;
@@ -1447,6 +1515,18 @@
                     sortSelect.addEventListener('change', (e) => {
                         this.sortBy = e.target.value;
                         console.log('[Sort] 排序方式:', this.sortBy);
+                        if (window.Utils && Utils.sendAnalyticsEvent) {
+                            const sortMap = { time: 'timestamp', newest: 'newest', oldest: 'oldest' };
+                            const videoId = this.videoInfo ? this.videoInfo.videoId : undefined;
+                            Utils.sendAnalyticsEvent('comment_sort_change', {
+                                category: 'interaction',
+                                target_type: 'video',
+                                target_id: videoId,
+                                target_object: {
+                                    sort_by: sortMap[this.sortBy] || this.sortBy
+                                }
+                            });
+                        }
                         this.renderComments();
                     });
                 }
@@ -1798,6 +1878,20 @@
                         this.renderComments();
                         this.renderOverlayMarkers();
                         
+                        if (window.Utils && Utils.sendAnalyticsEvent) {
+                            Utils.sendAnalyticsEvent('comment_submit', {
+                                category: 'interaction',
+                                target_type: 'video',
+                                target_id: this.videoInfo.videoId,
+                                target_object: {
+                                    content: text,
+                                    content_length: text.length,
+                                    timestamp: timestamp,
+                                    parent_id: null
+                                }
+                            });
+                        }
+                        
                         input.value = '';
                         this.showError('评论发表成功');
                     } else {
@@ -1842,6 +1936,19 @@
                         const form = document.querySelector('.reply-form.active');
                         if (form) form.remove();
                         this.replyInProgress = null;
+                        if (window.Utils && Utils.sendAnalyticsEvent) {
+                            Utils.sendAnalyticsEvent('comment_reply_submit', {
+                                category: 'interaction',
+                                target_type: 'comment',
+                                target_id: parentId,
+                                target_object: {
+                                    content: text,
+                                    content_length: text.length,
+                                    parent_id: parentId,
+                                    video_id: this.videoInfo.videoId
+                                }
+                            });
+                        }
                         this.showError('回复发表成功');
                     } else {
                         this.showError(result.msg || '回复发送失败');
@@ -1893,6 +2000,16 @@
                 if (!window.API || !window.API.deleteComment) {
                     this.deleteLocalComment(commentId);
                     this.showError('评论已删除（本地模式）');
+                    if (window.Utils && Utils.sendAnalyticsEvent) {
+                        Utils.sendAnalyticsEvent('comment_delete', {
+                            category: 'interaction',
+                            target_type: 'comment',
+                            target_id: commentId,
+                            target_object: {
+                                video_id: this.videoInfo ? this.videoInfo.videoId : undefined
+                            }
+                        });
+                    }
                     return;
                 }
                 
@@ -1901,6 +2018,16 @@
                     if (result.code === 0) {
                         this.deleteLocalComment(commentId);
                         this.showError('评论已删除');
+                        if (window.Utils && Utils.sendAnalyticsEvent) {
+                            Utils.sendAnalyticsEvent('comment_delete', {
+                                category: 'interaction',
+                                target_type: 'comment',
+                                target_id: commentId,
+                                target_object: {
+                                    video_id: this.videoInfo ? this.videoInfo.videoId : undefined
+                                }
+                            });
+                        }
                     } else {
                         this.showError(result.msg || '删除失败');
                     }
