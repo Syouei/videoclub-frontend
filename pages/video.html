@@ -945,6 +945,8 @@
         let isClubCreator = false; // 新增：是否是俱乐部创建者
         let uploadedVideoId = null; // 新增：保存上传后的视频ID
         let uploadedPdfId = null;   // 新增：保存上传后的PDF ID
+        let currentVideoSubscription = null;  // 当前视频上传订阅对象
+        let currentPdfSubscription = null;     // 当前PDF上传订阅对象
 
         // 页面初始化
         function initVideoPage() {
@@ -1087,6 +1089,9 @@
         // 真实视频上传流程
         async function uploadVideo(file, duration) {
             const fileType = 'video';
+
+            // 重置之前的上传订阅
+            currentVideoSubscription = null;
 
             // 如果已经有上传成功的视频ID，不再重复上传
             if (uploadedVideoId) {
@@ -1292,15 +1297,17 @@
                 const config = {
                     useCdnDomain: true, // 使用 CDN 加速
                     region: regionConfig,
-                    retryCount: 3,      // 失败重试次数
-                    concurrentRequestLimit: 5, // 【优化】增加并发请求数（默认是3），提高带宽利用率
-                    chunkSize: 10 // 分片大小，单位MB。默认4MB。不建议设置过大，否则弱网下容易失败。
+                    retryCount: 2,      // 失败重试次数
+                    concurrentRequestLimit: 4, // 【优化】增加并发请求数（默认是3），提高带宽利用率
+                    chunkSize: 64 // 分片大小。不建议设置过大，否则弱网下容易失败。
                 };
 
                 // 2. 配置上传参数
                 const putExtra = {
                     fname: file.name,
-                    mimeType: file.type || null
+                    mimeType: file.type || null,
+                    checkCrc: 1,
+                    params: {}
                 };
 
                 let lastLoaded = 0;           // 上次记录的已上传字节数
@@ -1352,8 +1359,16 @@
                         console.log('七牛云上传完成:', res);
                         onProgress(100); // 确保最后显示100%
                         resolve(res);
-                    }
+                    },
+
                 });
+
+                // 保存到全局变量，用于取消上传
+                if (fileType === 'video') {
+                    currentVideoSubscription = subscription;
+                } else if (fileType === 'pdf') {
+                    currentPdfSubscription = subscription;
+                }
             });
         }
 
@@ -1365,6 +1380,9 @@
         //     保存信息  POST  /pdfs              body: { clubId, title, objectKey, etag, bucket, region, fileSize, mimeType }
         //   响应结构与视频模块一致，成功返回 { code:0, data:{ pdfId } }
         async function uploadPdf(file) {
+            // 重置之前的上传订阅
+            currentPdfSubscription = null;
+
             if (uploadedPdfId) {
                 console.log('PDF已上传，使用已有的pdfId:', uploadedPdfId);
                 Utils.showNotification('PDF已上传，无需重复上传', 'info');
@@ -2704,6 +2722,27 @@
             const fileLabel = fileType === 'video' ? '视频文件' : fileType === 'pdf' ? 'PDF文件' : '文件';
             if (!confirm(`确定要移除已上传的${fileLabel}吗？`)) {
                 return;
+            }
+
+            // 先取消正在进行的上传
+            if (fileType === 'video' && currentVideoSubscription) {
+                try {
+                    currentVideoSubscription.unsubscribe();
+                    console.log('已取消视频上传');
+                } catch (error) {
+                    console.error('取消视频上传失败:', error);
+                }
+                currentVideoSubscription = null;
+            }
+
+            if (fileType === 'pdf' && currentPdfSubscription) {
+                try {
+                    currentPdfSubscription.unsubscribe();
+                    console.log('已取消PDF上传');
+                } catch (error) {
+                    console.error('取消PDF上传失败:', error);
+                }
+                currentPdfSubscription = null;
             }
 
             // 如果有已上传的ID，先删除后端数据
