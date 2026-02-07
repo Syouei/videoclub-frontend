@@ -1,0 +1,18 @@
+
+User-agent: Baiduspider
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: bingbot
+Allow: /
+
+User-agent: Sogou Spider
+Allow: /
+
+User-agent: 360Spider
+Allow: /
+
+User-agent: *
+Disallow: /

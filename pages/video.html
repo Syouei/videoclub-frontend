@@ -1,71 +1,74 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>视频管理 - 教师视频俱乐部</title>
     <link rel="stylesheet" href="../css/styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qiniu-js/3.4.1/qiniu.min.js"></script>
+
     <style>
         /* 文件上传区域样式 */
-.file-upload-area {
-    border: 2px dashed #d9d9d9;
-    border-radius: 12px;
-    padding: 32px 24px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    background: #fafafa;
-    margin-bottom: 12px;
-}
+        .file-upload-area {
+            border: 2px dashed #d9d9d9;
+            border-radius: 12px;
+            padding: 32px 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #fafafa;
+            margin-bottom: 12px;
+        }
 
-.file-upload-area:hover {
-    border-color: #1890ff;
-    background: #f0f9ff;
-}
+        .file-upload-area:hover {
+            border-color: #1890ff;
+            background: #f0f9ff;
+        }
 
-.upload-placeholder {
-    color: #666;
-}
+        .upload-placeholder {
+            color: #666;
+        }
 
-.upload-placeholder h4 {
-    margin: 12px 0 8px;
-    font-size: 16px;
-    color: #333;
-}
+        .upload-placeholder h4 {
+            margin: 12px 0 8px;
+            font-size: 16px;
+            color: #333;
+        }
 
-.upload-progress {
-    text-align: left;
-}
+        .upload-progress {
+            text-align: left;
+        }
 
-.file-info {
-    font-size: 13px;
-    color: #666;
-    margin-top: 8px;
-    display: flex;
-    gap: 16px;
-    align-items: center;
-}
+        .file-info {
+            font-size: 13px;
+            color: #666;
+            margin-top: 8px;
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
 
-.btn-remove {
-    padding: 4px 12px;
-    background: #f5f5f5;
-    color: #666;
-    border: 1px solid #d9d9d9;
-    border-radius: 4px;
-    font-size: 12px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    transition: all 0.3s;
-}
+        .btn-remove {
+            padding: 4px 12px;
+            background: #f5f5f5;
+            color: #666;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.3s;
+        }
 
-.btn-remove:hover {
-    background: #ff4d4f;
-    color: white;
-    border-color: #ff4d4f;
-}
+        .btn-remove:hover {
+            background: #ff4d4f;
+            color: white;
+            border-color: #ff4d4f;
+        }
 
         /* 进度条样式 */
         .progress-container {
@@ -76,35 +79,35 @@
             margin: 12px 0;
             overflow: hidden;
         }
-        
+
         .progress-bar {
             height: 100%;
             background: linear-gradient(90deg, #1890ff, #722ed1);
             border-radius: 3px;
             transition: width 0.3s ease;
         }
-        
+
         .progress-text {
             font-size: 12px;
             color: #666;
             text-align: right;
             margin-top: 4px;
         }
-        
+
         /* 锁定状态 */
         .video-task-card.locked {
             background: #fafafa;
             border-color: #e0e0e0;
         }
-        
+
         .video-task-card.locked .video-task-title {
             color: #999;
         }
-        
+
         .video-task-card.locked::before {
             background: #ccc;
         }
-        
+
         .task-lock-overlay {
             position: absolute;
             top: 0;
@@ -118,16 +121,16 @@
             align-items: center;
             justify-content: center;
         }
-        
+
         .lock-icon {
             color: #999;
             font-size: 24px;
             background: rgba(255, 255, 255, 0.9);
             padding: 12px;
             border-radius: 50%;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
-        
+
         /* 解锁状态标签 */
         .unlock-status-tag {
             background: #f6ffed;
@@ -141,7 +144,7 @@
             margin-left: 8px;
             gap: 4px;
         }
-        
+
         .lock-status-tag {
             background: #fff2e8;
             color: #d46b08;
@@ -154,7 +157,7 @@
             margin-left: 8px;
             gap: 4px;
         }
-        
+
         /* 解锁按钮样式 */
         .btn-unlock {
             padding: 4px 12px;
@@ -169,13 +172,13 @@
             gap: 4px;
             transition: all 0.3s;
         }
-        
+
         .btn-unlock:hover {
             background: #52c41a;
             color: white;
             border-color: #52c41a;
         }
-        
+
         .btn-lock {
             padding: 4px 12px;
             background: #fff2e8;
@@ -189,66 +192,68 @@
             gap: 4px;
             transition: all 0.3s;
         }
-        
+
         .btn-lock:hover {
             background: #ff7a45;
             color: white;
             border-color: #ff7a45;
         }
+
         /* ================ 修复PDF预览问题 ================ */
-/* 确保预览容器占满整个模态框 */
-#preview-modal .modal {
-    max-width: 95vw !important;
-    max-height: 95vh !important;
-    width: 95vw;
-    height: 95vh;
-    display: flex;
-    flex-direction: column;
-    padding: 0 !important;
-    margin: 0 !important;
-}
+        /* 确保预览容器占满整个模态框 */
+        #preview-modal .modal {
+            max-width: 95vw !important;
+            max-height: 95vh !important;
+            width: 95vw;
+            height: 95vh;
+            display: flex;
+            flex-direction: column;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
 
-/* 确保模态框内容占满空间 */
-#preview-modal .modal-body {
-    flex: 1;
-    overflow: hidden;
-    padding: 0 !important;
-    width: 100%;
-    height: 100%;
-}
+        /* 确保模态框内容占满空间 */
+        #preview-modal .modal-body {
+            flex: 1;
+            overflow: hidden;
+            padding: 0 !important;
+            width: 100%;
+            height: 100%;
+        }
 
-/* 修复PDF预览容器 - 关键！ */
-#preview-content {
-    width: 100% !important;
-    height: 100% !important;
-    display: block;
-}
+        /* 修复PDF预览容器 - 关键！ */
+        #preview-content {
+            width: 100% !important;
+            height: 100% !important;
+            display: block;
+        }
 
-/* 确保embed标签占满整个预览区域 */
-#preview-content embed {
-    width: 100% !important;
-    height: 100% !important;
-    min-height: 600px; /* 确保最小高度 */
-    display: block;
-}
+        /* 确保embed标签占满整个预览区域 */
+        #preview-content embed {
+            width: 100% !important;
+            height: 100% !important;
+            min-height: 600px;
+            /* 确保最小高度 */
+            display: block;
+        }
 
-/* 视频预览同样处理 */
-#preview-content video {
-    max-width: 100%;
-    max-height: 100%;
-    width: auto;
-    height: auto;
-}
+        /* 视频预览同样处理 */
+        #preview-content video {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+        }
 
-/* 预览容器自身样式 */
-.video-preview-container {
-    width: 100%;
-    height: 100%;
-    background: #000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
+        /* 预览容器自身样式 */
+        .video-preview-container {
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
         /* 视频页面特定样式 */
         .video-page-container {
@@ -465,22 +470,22 @@
             .video-page-container {
                 padding: 20px;
             }
-            
+
             .video-list-container {
                 grid-template-columns: 1fr;
             }
-            
+
             .video-task-header {
                 flex-direction: column;
                 gap: 12px;
             }
-            
+
             .video-task-footer {
                 flex-direction: column;
                 gap: 16px;
                 align-items: stretch;
             }
-            
+
             .video-task-action {
                 align-self: flex-end;
             }
@@ -520,7 +525,7 @@
             background: rgba(255, 255, 255, 0.9);
             padding: 12px;
             border-radius: 50%;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         /* 进度条样式 */
@@ -532,89 +537,90 @@
             margin: 12px 0;
             overflow: hidden;
         }
-        
+
         .progress-bar {
             height: 100%;
             background: linear-gradient(90deg, #1890ff, #722ed1);
             border-radius: 3px;
             transition: width 0.3s ease;
         }
-        
+
         .progress-text {
             font-size: 12px;
             color: #666;
             text-align: right;
             margin-top: 4px;
         }
+
         /* 图标按钮样式 */
-.btn-icon {
-    padding: 6px;
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    transition: all 0.2s ease;
-    border: 1px solid transparent;
-    cursor: pointer;
-    background: #f5f5f5;
-    color: #666;
-}
+        .btn-icon {
+            padding: 6px;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+            cursor: pointer;
+            background: #f5f5f5;
+            color: #666;
+        }
 
-.btn-icon:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
+        .btn-icon:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
 
-.btn-icon-lock {
-    background: #f6ffed;
-    color: #389e0d;
-    border-color: #b7eb8f;
-}
+        .btn-icon-lock {
+            background: #f6ffed;
+            color: #389e0d;
+            border-color: #b7eb8f;
+        }
 
-.btn-icon-lock:hover {
-    background: #52c41a;
-    color: white;
-    border-color: #52c41a;
-}
+        .btn-icon-lock:hover {
+            background: #52c41a;
+            color: white;
+            border-color: #52c41a;
+        }
 
-.btn-icon-unlock {
-    background: #fff2e8;
-    color: #d46b08;
-    border-color: #ffd8bf;
-}
+        .btn-icon-unlock {
+            background: #fff2e8;
+            color: #d46b08;
+            border-color: #ffd8bf;
+        }
 
-.btn-icon-unlock:hover {
-    background: #ff7a45;
-    color: white;
-    border-color: #ff7a45;
-}
+        .btn-icon-unlock:hover {
+            background: #ff7a45;
+            color: white;
+            border-color: #ff7a45;
+        }
 
-.btn-icon.btn-warning {
-    background: #fffbe6;
-    color: #d48806;
-    border-color: #ffe58f;
-}
+        .btn-icon.btn-warning {
+            background: #fffbe6;
+            color: #d48806;
+            border-color: #ffe58f;
+        }
 
-.btn-icon.btn-warning:hover {
-    background: #ffc53d;
-    color: white;
-    border-color: #ffc53d;
-}
+        .btn-icon.btn-warning:hover {
+            background: #ffc53d;
+            color: white;
+            border-color: #ffc53d;
+        }
 
-.btn-icon.btn-danger {
-    background: #fff2f0;
-    color: #ff4d4f;
-    border-color: #ffccc7;
-}
+        .btn-icon.btn-danger {
+            background: #fff2f0;
+            color: #ff4d4f;
+            border-color: #ffccc7;
+        }
 
-.btn-icon.btn-danger:hover {
-    background: #ff7875;
-    color: white;
-    border-color: #ff7875;
-}
+        .btn-icon.btn-danger:hover {
+            background: #ff7875;
+            color: white;
+            border-color: #ff7875;
+        }
 
         /* 可选提示样式 */
         .optional-hint {
@@ -652,12 +658,19 @@
             background: #fafafa;
             margin-bottom: 12px;
         }
+
         .pdf-upload-area:hover {
             border-color: #722ed1;
             background: #f9f0ff;
         }
-        .pdf-upload-area .upload-placeholder { color: #666; }
-        .pdf-upload-area .upload-placeholder .pdf-icon { color: #722ed1; }
+
+        .pdf-upload-area .upload-placeholder {
+            color: #666;
+        }
+
+        .pdf-upload-area .upload-placeholder .pdf-icon {
+            color: #722ed1;
+        }
 
         /* ================ 编辑弹窗 - 已有文件展示卡片 ================ */
         .existing-file-card {
@@ -670,41 +683,79 @@
             padding: 12px 16px;
             margin-bottom: 8px;
         }
+
         .existing-file-card .efc-icon {
             font-size: 22px;
             color: #722ed1;
             flex-shrink: 0;
         }
-        .existing-file-card .efc-icon.video-icon { color: #1890ff; }
-        .existing-file-card .efc-meta { flex: 1; min-width: 0; }
+
+        .existing-file-card .efc-icon.video-icon {
+            color: #1890ff;
+        }
+
+        .existing-file-card .efc-meta {
+            flex: 1;
+            min-width: 0;
+        }
+
         .existing-file-card .efc-meta .efc-name {
-            font-size: 14px; font-weight: 600; color: #333;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
+
         .existing-file-card .efc-meta .efc-label {
-            font-size: 12px; color: #722ed1;
+            font-size: 12px;
+            color: #722ed1;
         }
-        .existing-file-card .efc-meta .efc-label.video-label { color: #1890ff; }
+
+        .existing-file-card .efc-meta .efc-label.video-label {
+            color: #1890ff;
+        }
+
         .existing-file-card .btn-remove-efc {
             padding: 4px 10px;
-            background: #fff0f0; color: #ff4d4f;
-            border: 1px solid #ffccc7; border-radius: 4px;
-            font-size: 12px; cursor: pointer; white-space: nowrap;
+            background: #fff0f0;
+            color: #ff4d4f;
+            border: 1px solid #ffccc7;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            white-space: nowrap;
             transition: all 0.2s;
         }
+
         .existing-file-card .btn-remove-efc:hover {
-            background: #ff4d4f; color: white; border-color: #ff4d4f;
+            background: #ff4d4f;
+            color: white;
+            border-color: #ff4d4f;
         }
-        .existing-file-card.video-card { background: #f0f7ff; border-color: #b3d9ff; }
+
+        .existing-file-card.video-card {
+            background: #f0f7ff;
+            border-color: #b3d9ff;
+        }
 
         /* 编辑弹窗分隔标题 */
         .edit-section-title {
-            font-size: 13px; color: #888; margin: 16px 0 8px;
-            display: flex; align-items: center; gap: 6px;
+            font-size: 13px;
+            color: #888;
+            margin: 16px 0 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
-        .edit-section-title i { font-size: 14px; }
+
+        .edit-section-title i {
+            font-size: 14px;
+        }
     </style>
 </head>
+
 <body>
     <div id="page-video" class="page active">
         <!-- 顶部导航栏 -->
@@ -759,7 +810,7 @@
         <div id="create-task-modal" class="modal-overlay" style="display: none;">
             <div class="modal">
                 <h3 style="margin-bottom: 24px;"><i class="fas fa-plus-circle"></i> 创建新的视频主题</h3>
-                
+
                 <div class="form-item">
                     <label class="required">主题名称</label>
                     <input type="text" id="new-task-name" placeholder="请输入主题名称（例如：勾股定理）">
@@ -772,107 +823,111 @@
                     <textarea id="new-task-description" placeholder="请简要描述这个主题..." rows="3"></textarea>
                 </div>
 
-<!-- 教学视频上传（可选） -->
-<div class="form-item">
-    <label class="required">点击上传教学视频</label>
-    <div class="file-upload-area" id="video-upload-area">
-        <input type="file" id="video-file" accept="video/*" style="display: none;">
-        <div class="upload-placeholder" onclick="document.getElementById('video-file').click()">
-            <i class="fas fa-video" style="font-size: 32px; color: #1890ff; margin-bottom: 12px;"></i>
-            <p style="color: #999; font-size: 14px;">支持MP4、MOV等格式，最大20GB</p>
-        </div>
-        <div class="upload-progress" id="video-progress" style="display: none;">
-            <div class="progress-container">
-                <div class="progress-bar" id="video-progress-bar" style="width: 0%"></div>
-            </div>
-            <div class="progress-text" id="video-progress-text">0%</div>
-            <div class="file-info" id="video-file-info">
-                <span id="video-duration-info" style="display: none;">
-                    <i class="fas fa-clock"></i> 时长: <span id="video-duration">0</span>秒
-                </span>
-            </div>
-        </div>
-    </div>
-    <div class="error-message" id="video-error" style="display: none;">
-        <i class="fas fa-exclamation-circle"></i> <span id="video-error-text">请上传视频文件</span>
-    </div>
-</div>
-
-<!-- 资源预览 -->
-<div class="form-item" id="upload-preview" style="display: none;">
-    <div class="preview-container">
-<!-- 视频预览项 -->
-<div class="preview-item" id="video-preview">
-    <div class="preview-icon">
-        <i class="fas fa-video"></i>
-    </div>
-    <div class="preview-info">
-        <div class="preview-title" id="video-preview-title"></div>
-        <div class="preview-size" id="video-preview-size"></div>
-        <div class="preview-duration" id="video-preview-duration"></div>
-        <div class="preview-actions">
-            <button class="btn-remove" onclick="removeFile('video')">
-                <i class="fas fa-times"></i> 移除
-            </button>
-        </div>
-    </div>
-</div>
-    </div>
-</div>
-<!-- ===== 教学设计案例PDF上传 ===== -->
-<div class="form-item">
-    <label class="required">上传教学设计案例（PDF）</label>
-    <div class="pdf-upload-area" id="pdf-upload-area">
-        <input type="file" id="pdf-file" accept=".pdf" style="display: none;">
-        <div class="upload-placeholder" onclick="document.getElementById('pdf-file').click()">
-            <i class="fas fa-file-pdf pdf-icon" style="font-size: 32px; margin-bottom: 12px;"></i>
-            <h4 style="margin: 8px 0 4px; font-size: 15px; color: #333;">点击上传 PDF 文件</h4>
-            <p style="color: #999; font-size: 13px;">仅支持 PDF 格式</p>
-        </div>
-        <div class="upload-progress" id="pdf-progress" style="display: none;">
-            <div class="progress-container">
-                <div class="progress-bar" id="pdf-progress-bar" style="width: 0%; background: linear-gradient(90deg, #722ed1, #a855f7);"></div>
-            </div>
-            <div class="progress-text" id="pdf-progress-text">0%</div>
-            <div class="file-info" id="pdf-file-info"></div>
-        </div>
-    </div>
-    <div class="error-message" id="pdf-error" style="display: none;">
-        <i class="fas fa-exclamation-circle"></i> <span id="pdf-error-text">请上传PDF文件</span>
-    </div>
-</div>
-<!-- PDF 预览项 -->
-<div class="form-item" id="pdf-upload-preview" style="display: none;">
-    <div class="preview-container">
-        <div class="preview-item" id="pdf-preview" style="display:none;">
-            <div class="preview-icon" style="color:#722ed1;">
-                <i class="fas fa-file-pdf"></i>
-            </div>
-            <div class="preview-info">
-                <div class="preview-title" id="pdf-preview-title"></div>
-                <div class="preview-size" id="pdf-preview-size"></div>
-                <div class="preview-actions">
-                    <button class="btn-remove" onclick="removeFile('pdf')">
-                        <i class="fas fa-times"></i> 移除
-                    </button>
+                <!-- 教学视频上传（可选） -->
+                <div class="form-item">
+                    <label class="required">点击上传教学视频</label>
+                    <div class="file-upload-area" id="video-upload-area">
+                        <input type="file" id="video-file" accept="video/*" style="display: none;">
+                        <div class="upload-placeholder" onclick="document.getElementById('video-file').click()">
+                            <i class="fas fa-video" style="font-size: 32px; color: #1890ff; margin-bottom: 12px;"></i>
+                            <p style="color: #999; font-size: 14px;">支持MP4、MOV等格式，最大20GB</p>
+                        </div>
+                        <div class="upload-progress" id="video-progress" style="display: none;">
+                            <div class="progress-container">
+                                <div class="progress-bar" id="video-progress-bar" style="width: 0%"></div>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; font-size: 12px; color: #666; margin-top: 4px;">
+                                <span id="video-upload-speed">0 KB/s</span> <span id="video-progress-text">0%</span>
+                            </div>
+                            <div class="file-info" id="video-file-info">
+                                <span id="video-duration-info" style="display: none;">
+                                    <i class="fas fa-clock"></i> 时长: <span id="video-duration">0</span>秒
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="error-message" id="video-error" style="display: none;">
+                        <i class="fas fa-exclamation-circle"></i> <span id="video-error-text">请上传视频文件</span>
+                    </div>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
-<div id="preview-modal" class="modal-overlay" style="display: none;">
-    <div class="modal" style="max-width: 95%; max-height: 95%;">
-        <div class="modal-header">
-            <h3 id="preview-title">文件预览</h3>
-            <button class="btn-close" onclick="closePreview()">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="modal-body" id="preview-content" style="flex:1;overflow:hidden;">
-            <!-- 预览内容将动态插入到这里 -->
-        </div>
-    </div>
-</div>
+
+                <!-- 资源预览 -->
+                <div class="form-item" id="upload-preview" style="display: none;">
+                    <div class="preview-container">
+                        <!-- 视频预览项 -->
+                        <div class="preview-item" id="video-preview">
+                            <div class="preview-icon">
+                                <i class="fas fa-video"></i>
+                            </div>
+                            <div class="preview-info">
+                                <div class="preview-title" id="video-preview-title"></div>
+                                <div class="preview-size" id="video-preview-size"></div>
+                                <div class="preview-duration" id="video-preview-duration"></div>
+                                <div class="preview-actions">
+                                    <button class="btn-remove" onclick="removeFile('video')">
+                                        <i class="fas fa-times"></i> 移除
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- ===== 教学设计案例PDF上传 ===== -->
+                <div class="form-item">
+                    <label class="required">上传教学设计案例（PDF）</label>
+                    <div class="pdf-upload-area" id="pdf-upload-area">
+                        <input type="file" id="pdf-file" accept=".pdf" style="display: none;">
+                        <div class="upload-placeholder" onclick="document.getElementById('pdf-file').click()">
+                            <i class="fas fa-file-pdf pdf-icon" style="font-size: 32px; margin-bottom: 12px;"></i>
+                            <h4 style="margin: 8px 0 4px; font-size: 15px; color: #333;">点击上传 PDF 文件</h4>
+                            <p style="color: #999; font-size: 13px;">仅支持 PDF 格式</p>
+                        </div>
+                        <div class="upload-progress" id="pdf-progress" style="display: none;">
+                            <div class="progress-container">
+                                <div class="progress-bar" id="pdf-progress-bar"
+                                    style="width: 0%; background: linear-gradient(90deg, #722ed1, #a855f7);"></div>
+                            </div>
+                            <div class="progress-text" id="pdf-progress-text">0%</div>
+                            <div class="file-info" id="pdf-file-info"></div>
+                        </div>
+                    </div>
+                    <div class="error-message" id="pdf-error" style="display: none;">
+                        <i class="fas fa-exclamation-circle"></i> <span id="pdf-error-text">请上传PDF文件</span>
+                    </div>
+                </div>
+                <!-- PDF 预览项 -->
+                <div class="form-item" id="pdf-upload-preview" style="display: none;">
+                    <div class="preview-container">
+                        <div class="preview-item" id="pdf-preview" style="display:none;">
+                            <div class="preview-icon" style="color:#722ed1;">
+                                <i class="fas fa-file-pdf"></i>
+                            </div>
+                            <div class="preview-info">
+                                <div class="preview-title" id="pdf-preview-title"></div>
+                                <div class="preview-size" id="pdf-preview-size"></div>
+                                <div class="preview-actions">
+                                    <button class="btn-remove" onclick="removeFile('pdf')">
+                                        <i class="fas fa-times"></i> 移除
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="preview-modal" class="modal-overlay" style="display: none;">
+                    <div class="modal" style="max-width: 95%; max-height: 95%;">
+                        <div class="modal-header">
+                            <h3 id="preview-title">文件预览</h3>
+                            <button class="btn-close" onclick="closePreview()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body" id="preview-content" style="flex:1;overflow:hidden;">
+                            <!-- 预览内容将动态插入到这里 -->
+                        </div>
+                    </div>
+                </div>
                 <div style="text-align:right; margin-top: 24px;">
                     <button class="btn btn-outline" onclick="closeCreateTaskModal()">取消</button>
                     <button class="btn btn-primary" onclick="createNewTask()">创建主题</button>
@@ -893,732 +948,842 @@
 
         // 页面初始化
         function initVideoPage() {
-    if (!videoPageInitialized) {
-        videoPageInitialized = true;
-        console.log('视频页面初始化');
-        updateUserDisplay();
-        loadCurrentClub();
-        initFileUpload();
-        window.isVideoPage = true;
-    }
-    // 每次进页面都重新拉数据
-    loadVideoTasks();
-    setTimeout(() => {
-        updatePermissionBasedUI();
-    }, 100);
-}
+            if (!videoPageInitialized) {
+                videoPageInitialized = true;
+                console.log('视频页面初始化');
+                updateUserDisplay();
+                loadCurrentClub();
+                initFileUpload();
+                window.isVideoPage = true;
+            }
+            // 每次进页面都重新拉数据
+            loadVideoTasks();
+            setTimeout(() => {
+                updatePermissionBasedUI();
+            }, 100);
+        }
 
         // ================ 文件上传处理 ================
 
-// 计算文件的ETag
-// 使用文件名+大小+修改时间的组合作为文件标识符，避免依赖Web Crypto API
-async function calculateETag(file) {
-  try {
-    // 检查 Web Crypto API 是否可用（仅在HTTPS或localhost下可用）
-    if (window.crypto && window.crypto.subtle) {
-      // 方法1：使用 SHA-256 哈希（更安全，但需要HTTPS）
-      const maxBytes = Math.min(file.size, 1024 * 1024);
-      const blob = file.slice(0, maxBytes);
-      const arrayBuffer = await blob.arrayBuffer();
-      const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-      const etag = `${hashHex}-${file.size}`;
-      console.log('使用 SHA-256 计算 ETag:', etag);
-      return etag;
-    } else {
-      // 方法2：降级方案 - 使用文件名+大小+修改时间（兼容HTTP）
-      console.warn('Web Crypto API 不可用，使用降级方案计算 ETag');
-      const fileInfo = [
-        file.name,
-        file.size,
-        file.lastModified || Date.now(),
-        file.type || ''
-      ].join('|');
-      
-      // 使用简单的字符串哈希
-      let hash = 0;
-      for (let i = 0; i < fileInfo.length; i++) {
-        const char = fileInfo.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash; // 转为32位整数
-      }
-      
-      // 转为16进制字符串
-      const hashHex = Math.abs(hash).toString(16).padStart(16, '0');
-      const etag = `${hashHex}-${file.size}`;
-      console.log('使用降级方案计算 ETag:', etag);
-      return etag;
-    }
-  } catch (error) {
-    // 统一错误捕获：所有异步/同步错误都会被捕获，避免Promise pending
-    console.error('计算ETag失败:', error);
-    throw new Error(`计算ETag失败：${error.message}`);
-  }
-}
+        // 计算文件的ETag
+        // 使用文件名+大小+修改时间的组合作为文件标识符，避免依赖Web Crypto API
+        async function calculateETag(file) {
+            try {
+                // 检查 Web Crypto API 是否可用（仅在HTTPS或localhost下可用）
+                if (window.crypto && window.crypto.subtle) {
+                    // 方法1：使用 SHA-256 哈希（更安全，但需要HTTPS）
+                    const maxBytes = Math.min(file.size, 1024 * 1024);
+                    const blob = file.slice(0, maxBytes);
+                    const arrayBuffer = await blob.arrayBuffer();
+                    const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+                    const hashArray = Array.from(new Uint8Array(hashBuffer));
+                    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                    const etag = `${hashHex}-${file.size}`;
+                    console.log('使用 SHA-256 计算 ETag:', etag);
+                    return etag;
+                } else {
+                    // 方法2：降级方案 - 使用文件名+大小+修改时间（兼容HTTP）
+                    console.warn('Web Crypto API 不可用，使用降级方案计算 ETag');
+                    const fileInfo = [
+                        file.name,
+                        file.size,
+                        file.lastModified || Date.now(),
+                        file.type || ''
+                    ].join('|');
 
+                    // 使用简单的字符串哈希
+                    let hash = 0;
+                    for (let i = 0; i < fileInfo.length; i++) {
+                        const char = fileInfo.charCodeAt(i);
+                        hash = ((hash << 5) - hash) + char;
+                        hash = hash & hash; // 转为32位整数
+                    }
 
-// 初始化文件上传
-function initFileUpload() {
-    const videoFileInput = document.getElementById('video-file');
-    
-    if (videoFileInput) {
-        videoFileInput.addEventListener('change', function(e) {
-            handleFileSelect(e, 'video');
-        });
-    }
-
-    const pdfFileInput = document.getElementById('pdf-file');
-    if (pdfFileInput) {
-        pdfFileInput.addEventListener('change', function(e) {
-            handleFileSelect(e, 'pdf');
-        });
-    }
-}
-
-// 处理文件选择
-async function handleFileSelect(event, fileType) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    // 清除错误提示
-    const uploadArea = document.getElementById(`${fileType}-upload-area`);
-    const errorDiv = document.getElementById(`${fileType}-error`);
-    if (uploadArea) {
-        uploadArea.style.borderColor = '';
-        uploadArea.style.background = '';
-    }
-    if (errorDiv) {
-        errorDiv.style.display = 'none';
-    }
-    
-    // 验证文件类型和大小
-    if (!validateFile(file, fileType)) {
-        return;
-    }
-    
-    // 显示文件信息和上传进度区域
-    showFileInfo(file, fileType);
-    
-    // 如果是视频，进行真实上传流程
-    if (fileType === 'video') {
-        try {
-            const duration = await getVideoDuration(file);
-            // 可选：更新UI显示时长（如果元素存在）
-            const durationEl = document.getElementById('video-duration');
-            const durationInfoEl = document.getElementById('video-duration-info');
-            if (durationEl) durationEl.textContent = duration;
-            if (durationInfoEl) durationInfoEl.style.display = 'inline';
-            
-            // 开始真实上传流程
-            await uploadVideo(file, duration);
-        } catch (error) {
-            console.error('视频处理失败:', error);
-            showFileError('video', '视频处理失败: ' + error.message);
+                    // 转为16进制字符串
+                    const hashHex = Math.abs(hash).toString(16).padStart(16, '0');
+                    const etag = `${hashHex}-${file.size}`;
+                    console.log('使用降级方案计算 ETag:', etag);
+                    return etag;
+                }
+            } catch (error) {
+                // 统一错误捕获：所有异步/同步错误都会被捕获，避免Promise pending
+                console.error('计算ETag失败:', error);
+                throw new Error(`计算ETag失败：${error.message}`);
+            }
         }
-    }
 
-    // 如果是PDF，进行上传流程
-    if (fileType === 'pdf') {
-        try {
-            await uploadPdf(file);
-        } catch (error) {
-            console.error('PDF处理失败:', error);
-            showFileError('pdf', 'PDF上传失败: ' + error.message);
+
+        // 初始化文件上传
+        function initFileUpload() {
+            const videoFileInput = document.getElementById('video-file');
+
+            if (videoFileInput) {
+                videoFileInput.addEventListener('change', function (e) {
+                    handleFileSelect(e, 'video');
+                });
+            }
+
+            const pdfFileInput = document.getElementById('pdf-file');
+            if (pdfFileInput) {
+                pdfFileInput.addEventListener('change', function (e) {
+                    handleFileSelect(e, 'pdf');
+                });
+            }
         }
-    }
-}
 
-// 真实视频上传流程
-async function uploadVideo(file, duration) {
-    const fileType = 'video';
-    
-    // 如果已经有上传成功的视频ID，不再重复上传
-    if (uploadedVideoId) {
-        console.log('视频已上传，使用已有的videoId:', uploadedVideoId);
-        Utils.showNotification('视频已上传，无需重复上传', 'info');
-        return;
-    }
-    
-    try {
-        // 步骤1: 计算ETag
-        Utils.showNotification('正在计算文件特征...', 'info');
-        const etag = await calculateETag(file);
-        console.log('文件ETag:', etag);
-        
-        // 步骤2: 秒传检测
-        Utils.showNotification('正在进行秒传检测...', 'info');
-        const clubId = currentClub ? parseInt(currentClub.id || currentClub.clubId) : null;
-        
-        // 使用直接 fetch 调用，绕过 API.request 的错误处理，以便正确处理 code=1
-        let fastUploadResult = null;
-        let isNetworkError = false;
-        try {
-            const config = window.AppConfig;
-            const token = Utils.getFromStorage(config.STORAGE_KEYS.USER_TOKEN);
-            
-            const response = await fetch(config.API_BASE_URL + '/videos/fast-upload', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
+        // 处理文件选择
+        async function handleFileSelect(event, fileType) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // 清除错误提示
+            const uploadArea = document.getElementById(`${fileType}-upload-area`);
+            const errorDiv = document.getElementById(`${fileType}-error`);
+            if (uploadArea) {
+                uploadArea.style.borderColor = '';
+                uploadArea.style.background = '';
+            }
+            if (errorDiv) {
+                errorDiv.style.display = 'none';
+            }
+
+            // 验证文件类型和大小
+            if (!validateFile(file, fileType)) {
+                return;
+            }
+
+            // 显示文件信息和上传进度区域
+            showFileInfo(file, fileType);
+
+            // 如果是视频，进行真实上传流程
+            if (fileType === 'video') {
+                try {
+                    const duration = await getVideoDuration(file);
+                    // 可选：更新UI显示时长（如果元素存在）
+                    const durationEl = document.getElementById('video-duration');
+                    const durationInfoEl = document.getElementById('video-duration-info');
+                    if (durationEl) durationEl.textContent = duration;
+                    if (durationInfoEl) durationInfoEl.style.display = 'inline';
+
+                    // 开始真实上传流程
+                    await uploadVideo(file, duration);
+                } catch (error) {
+                    console.error('视频处理失败:', error);
+                    showFileError('video', '视频处理失败: ' + error.message);
+                }
+            }
+
+            // 如果是PDF，进行上传流程
+            if (fileType === 'pdf') {
+                try {
+                    await uploadPdf(file);
+                } catch (error) {
+                    console.error('PDF处理失败:', error);
+                    showFileError('pdf', 'PDF上传失败: ' + error.message);
+                }
+            }
+        }
+
+        // 真实视频上传流程
+        async function uploadVideo(file, duration) {
+            const fileType = 'video';
+
+            // 如果已经有上传成功的视频ID，不再重复上传
+            if (uploadedVideoId) {
+                console.log('视频已上传，使用已有的videoId:', uploadedVideoId);
+                Utils.showNotification('视频已上传，无需重复上传', 'info');
+                return;
+            }
+
+            try {
+                // 步骤1: 计算ETag
+                Utils.showNotification('正在计算文件特征...', 'info');
+                const etag = await calculateETag(file);
+                console.log('文件ETag:', etag);
+
+                // 步骤2: 秒传检测
+                Utils.showNotification('正在进行秒传检测...', 'info');
+                const clubId = currentClub ? parseInt(currentClub.id || currentClub.clubId) : null;
+
+                // 使用直接 fetch 调用，绕过 API.request 的错误处理，以便正确处理 code=1
+                let fastUploadResult = null;
+                let isNetworkError = false;
+                try {
+                    const config = window.AppConfig;
+                    const token = Utils.getFromStorage(config.STORAGE_KEYS.USER_TOKEN);
+
+                    const response = await fetch(config.API_BASE_URL + '/videos/fast-upload', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            clubId: clubId,
+                            title: file.name,
+                            etag: etag,
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP错误: ${response.status}`);
+                    }
+
+                    fastUploadResult = await response.json();
+                    console.log('秒传检测结果:', fastUploadResult);
+                } catch (error) {
+                    // 只有网络错误才会到这里，业务错误 code=1 不会抛异常
+                    console.warn('秒传检测请求失败，继续正常上传:', error);
+                    isNetworkError = true;
+                    Utils.showNotification('秒传检测不可用，继续正常上传...', 'warning');
+                }
+
+                // 处理秒传检测结果
+                if (fastUploadResult && fastUploadResult.code === 0) {
+                    // 秒传成功，直接使用返回的videoId
+                    if (fastUploadResult.data && fastUploadResult.data.videoId) {
+                        uploadedVideoId = fastUploadResult.data.videoId;
+                        console.log('秒传成功，videoId:', uploadedVideoId);
+                        showUploadComplete(fileType);
+                        Utils.showNotification('秒传成功！视频已存在', 'success');
+                        return;
+                    }
+                }
+
+                // code=1 或其他非0 code 表示需要上传，这是正常流程，不显示错误
+                if (!isNetworkError) {
+                    console.log('秒传检测未通过（code=' + (fastUploadResult?.code || 'N/A') + '），继续正常上传流程');
+                }
+                Utils.showNotification('秒传检测未通过，准备上传...', 'info');
+
+                // 步骤3: 获取上传凭证
+                const tokenResult = await API.getUploadToken();
+                if (!tokenResult || tokenResult.code !== 0) {
+                    throw new Error(tokenResult?.msg || '获取上传凭证失败');
+                }
+
+                const uploadData = tokenResult.data;
+                console.log('上传凭证:', uploadData);
+
+                // 生成唯一的 objectKey
+                const objectKey = `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.mp4`;
+                console.log('生成的 objectKey:', objectKey);
+
+                // 步骤4: 使用七牛云表单上传
+                await uploadToQiniu(file, uploadData, objectKey, fileType, (progress, speed) => {
+                    
+                    const progressBar = document.getElementById(`${fileType}-progress-bar`);
+                    const progressText = document.getElementById(`${fileType}-progress-text`);
+                    const speedText = document.getElementById('video-upload-speed'); 
+
+                    if (progressBar) progressBar.style.width = `${progress}%`;
+                    if (progressText) progressText.textContent = `${Math.round(progress)}%`;
+
+                    
+                    if (speedText && speed) {
+                        speedText.textContent = speed;
+                    }
+                });
+
+                // 步骤5: 保存视频信息
+                Utils.showNotification('正在保存视频信息...', 'info');
+                const saveResult = await API.saveVideoInfo({
                     clubId: clubId,
                     title: file.name,
+                    objectKey: objectKey,
                     etag: etag,
-                })
-            });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP错误: ${response.status}`);
+                    duration: duration,
+                    bucket: uploadData.bucket,
+                    region: uploadData.region,
+                    fileSize: file.size,
+                    mimeType: file.type
+                });
+
+                if (saveResult && saveResult.code === 0) {
+                    uploadedVideoId = saveResult.data?.videoId;
+                    console.log('视频保存成功，videoId:', uploadedVideoId);
+                    showUploadComplete(fileType);
+                    Utils.showNotification('视频上传成功！', 'success');
+                } else {
+                    throw new Error(saveResult?.msg || '保存视频信息失败');
+                }
+
+            } catch (error) {
+                console.error('视频上传失败:', error);
+                showFileError(fileType, '上传失败: ' + error.message);
+                throw error;
             }
-            
-            fastUploadResult = await response.json();
-            console.log('秒传检测结果:', fastUploadResult);
-        } catch (error) {
-            // 只有网络错误才会到这里，业务错误 code=1 不会抛异常
-            console.warn('秒传检测请求失败，继续正常上传:', error);
-            isNetworkError = true;
-            Utils.showNotification('秒传检测不可用，继续正常上传...', 'warning');
         }
+        /*
+        // 上传到七牛云（表单上传方式）
+        async function uploadToQiniu(file, uploadData, objectKey, fileType, onProgress) {
+            return new Promise((resolve, reject) => {
+                const formData = new FormData();
+                formData.append('token', uploadData.uploadToken);
+                formData.append('key', objectKey);
+                formData.append('file', file);
         
-        // 处理秒传检测结果
-        if (fastUploadResult && fastUploadResult.code === 0) {
-            // 秒传成功，直接使用返回的videoId
-            if (fastUploadResult.data && fastUploadResult.data.videoId) {
-                uploadedVideoId = fastUploadResult.data.videoId;
-                console.log('秒传成功，videoId:', uploadedVideoId);
-                showUploadComplete(fileType);
-                Utils.showNotification('秒传成功！视频已存在', 'success');
+                // 七牛云上传域名（根据region选择）
+                const region = uploadData.region || 'z1';
+                const regionUploadUrls = {
+                    'z0': 'https://up.qiniup.com',
+                    'z1': 'https://up-z1.qiniup.com',
+                    'z2': 'https://up-z2.qiniup.com',
+                    'na0': 'https://up-na0.qiniup.com',
+                    'as0': 'https://up-as0.qiniup.com',
+                    'cn-east-2': 'https://up-cn-east-2.qiniup.com',
+                };
+                const uploadUrl = uploadData.uploadUrl || regionUploadUrls[region] || `https://up-z1.qiniup.com`;
+        
+                console.log('七牛云上传配置:', { region, uploadUrl });
+        
+                const xhr = new XMLHttpRequest();
+        
+                // 进度监听
+                xhr.upload.onprogress = (e) => {
+                    if (e.lengthComputable) {
+                        const progress = (e.loaded / e.total) * 100;
+                        onProgress(progress);
+                    }
+                };
+        
+                xhr.onload = () => {
+                    if (xhr.status === 200) {
+                        const response = JSON.parse(xhr.responseText);
+                        console.log('七牛云上传成功:', response);
+                        onProgress(100);
+                        resolve(response);
+                    } else {
+                        reject(new Error(`上传失败: ${xhr.status} ${xhr.statusText}`));
+                    }
+                };
+        
+                xhr.onerror = () => {
+                    reject(new Error('上传请求失败'));
+                };
+        
+                xhr.onabort = () => {
+                    reject(new Error('上传已取消'));
+                };
+        
+                xhr.open('POST', uploadUrl);
+                xhr.send(formData);
+            });
+        }*/
+
+        // 上传到七牛云（使用 SDK 分片上传方式 - 优化版）
+        async function uploadToQiniu(file, uploadData, objectKey, fileType, onProgress) {
+            return new Promise((resolve, reject) => {
+                // 1. 配置区域
+                let regionConfig = qiniu.region.z1;
+                const regionMap = {
+                    'z0': qiniu.region.z0,
+                    'z1': qiniu.region.z1,
+                    'z2': qiniu.region.z2,
+                    'na0': qiniu.region.na0,
+                    'as0': qiniu.region.as0,
+                    'cn-east-2': qiniu.region.cn_east_2
+                };
+
+                if (uploadData.region && regionMap[uploadData.region]) {
+                    regionConfig = regionMap[uploadData.region];
+                }
+
+                const config = {
+                    useCdnDomain: true, // 使用 CDN 加速
+                    region: regionConfig,
+                    retryCount: 3,      // 失败重试次数
+                    concurrentRequestLimit: 5, // 【优化】增加并发请求数（默认是3），提高带宽利用率
+                    chunkSize: 10 // 分片大小，单位MB。默认4MB。不建议设置过大，否则弱网下容易失败。
+                };
+
+                // 2. 配置上传参数
+                const putExtra = {
+                    fname: file.name,
+                    mimeType: file.type || null
+                };
+
+                let lastLoaded = 0;           // 上次记录的已上传字节数
+                let lastTime = Date.now();    // 上次记录的时间戳
+                let speedStr = '0 KB/s';
+
+                // 【优化】对于图片，SDK默认可能会压缩。对于视频/PDF，最好显式确保不进行任何处理
+                // 虽然SDK主要针对图片压缩，但显式配置更安全
+                if (fileType === 'video') {
+                    // 视频文件通常很大，不需要SDK做额外处理
+                }
+
+                // 3. 开始上传
+                const observable = qiniu.upload(file, objectKey, uploadData.uploadToken, putExtra, config);
+
+                // 4. 订阅上传状态
+                const subscription = observable.subscribe({
+                    next(res) {
+                        // res.total.loaded: 已上传字节
+                        // res.total.total: 总字节
+                        // res.total.percent: 百分比
+
+                        const now = Date.now();
+                        // 每 1000ms (1秒) 更新一次速度，避免数字跳动太快
+                        if (now - lastTime >= 1000) {
+                            const loadedDiff = res.total.loaded - lastLoaded; // 这一秒内上传了多少
+                            const timeDiff = (now - lastTime) / 1000;         // 过去了多少秒
+
+                            if (timeDiff > 0) {
+                                const bytesPerSecond = loadedDiff / timeDiff;
+                                speedStr = formatSpeed(bytesPerSecond);
+                            }
+
+                            // 更新基准点
+                            lastLoaded = res.total.loaded;
+                            lastTime = now;
+                        }
+
+                        if (onProgress) {
+                            // 将 percent 和 speedStr 一起传给回调
+                            onProgress(res.total.percent, speedStr);
+                        }
+                    },
+                    error(err) {
+                        console.error('Qiniu SDK Error:', err);
+                        reject(new Error(err.message || '上传过程中发生错误'));
+                    },
+                    complete(res) {
+                        console.log('七牛云上传完成:', res);
+                        onProgress(100); // 确保最后显示100%
+                        resolve(res);
+                    }
+                });
+            });
+        }
+
+        // ================ PDF 上传流程（仿照视频上传，路径用 /pdfs/） ================
+        // TODO: 后端接口确认后，将以下路径与参数与实际对齐。
+        //   目前约定：
+        //     秒传检测  POST  /pdfs/fast-upload   body: { clubId, title, etag }
+        //     获取凭证  GET   /pdfs/token
+        //     保存信息  POST  /pdfs              body: { clubId, title, objectKey, etag, bucket, region, fileSize, mimeType }
+        //   响应结构与视频模块一致，成功返回 { code:0, data:{ pdfId } }
+        async function uploadPdf(file) {
+            if (uploadedPdfId) {
+                console.log('PDF已上传，使用已有的pdfId:', uploadedPdfId);
+                Utils.showNotification('PDF已上传，无需重复上传', 'info');
                 return;
             }
-        }
-        
-        // code=1 或其他非0 code 表示需要上传，这是正常流程，不显示错误
-        if (!isNetworkError) {
-            console.log('秒传检测未通过（code=' + (fastUploadResult?.code || 'N/A') + '），继续正常上传流程');
-        }
-        Utils.showNotification('秒传检测未通过，准备上传...', 'info');
-        
-        // 步骤3: 获取上传凭证
-        const tokenResult = await API.getUploadToken();
-        if (!tokenResult || tokenResult.code !== 0) {
-            throw new Error(tokenResult?.msg || '获取上传凭证失败');
-        }
-        
-        const uploadData = tokenResult.data;
-        console.log('上传凭证:', uploadData);
-        
-        // 生成唯一的 objectKey
-        const objectKey = `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.mp4`;
-        console.log('生成的 objectKey:', objectKey);
-        
-        // 步骤4: 使用七牛云表单上传
-        await uploadToQiniu(file, uploadData, objectKey, fileType, (progress) => {
-            // 更新进度条
-            const progressBar = document.getElementById(`${fileType}-progress-bar`);
-            const progressText = document.getElementById(`${fileType}-progress-text`);
-            if (progressBar) progressBar.style.width = `${progress}%`;
-            if (progressText) progressText.textContent = `${Math.round(progress)}%`;
-        });
-        
-        // 步骤5: 保存视频信息
-        Utils.showNotification('正在保存视频信息...', 'info');
-        const saveResult = await API.saveVideoInfo({
-            clubId: clubId,
-            title: file.name,
-            objectKey: objectKey,
-            etag: etag,
-            duration: duration,
-            bucket: uploadData.bucket,
-            region: uploadData.region,
-            fileSize: file.size,
-            mimeType: file.type
-        });
-        
-        if (saveResult && saveResult.code === 0) {
-            uploadedVideoId = saveResult.data?.videoId;
-            console.log('视频保存成功，videoId:', uploadedVideoId);
-            showUploadComplete(fileType);
-            Utils.showNotification('视频上传成功！', 'success');
-        } else {
-            throw new Error(saveResult?.msg || '保存视频信息失败');
-        }
-        
-    } catch (error) {
-        console.error('视频上传失败:', error);
-        showFileError(fileType, '上传失败: ' + error.message);
-        throw error;
-    }
-}
 
-// 上传到七牛云（表单上传方式）
-async function uploadToQiniu(file, uploadData, objectKey, fileType, onProgress) {
-    return new Promise((resolve, reject) => {
-        const formData = new FormData();
-        formData.append('token', uploadData.uploadToken);
-        formData.append('key', objectKey);
-        formData.append('file', file);
+            try {
+                // 步骤1: 计算ETag
+                Utils.showNotification('正在计算文件特征...', 'info');
+                const etag = await calculateETag(file);
+                console.log('PDF文件ETag:', etag);
 
-        // 七牛云上传域名（根据region选择）
-        const region = uploadData.region || 'z1';
-        const regionUploadUrls = {
-            'z0': 'https://up.qiniup.com',
-            'z1': 'https://up-z1.qiniup.com',
-            'z2': 'https://up-z2.qiniup.com',
-            'na0': 'https://up-na0.qiniup.com',
-            'as0': 'https://up-as0.qiniup.com',
-            'cn-east-2': 'https://up-cn-east-2.qiniup.com',
-        };
-        const uploadUrl = uploadData.uploadUrl || regionUploadUrls[region] || `https://up-z1.qiniup.com`;
+                const clubId = currentClub ? parseInt(currentClub.id || currentClub.clubId) : null;
 
-        console.log('七牛云上传配置:', { region, uploadUrl });
+                // 步骤2: 秒传检测
+                Utils.showNotification('正在进行秒传检测...', 'info');
+                let fastUploadResult = null;
+                let isNetworkError = false;
+                try {
+                    const config = window.AppConfig;
+                    const token = Utils.getFromStorage(config.STORAGE_KEYS.USER_TOKEN);
+                    const response = await fetch(config.API_BASE_URL + '/resources/fast-upload', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            clubId: clubId,
+                            title: file.name,
+                            filename: file.name,
+                            etag: etag
+                        })
+                    });
+                    if (!response.ok) throw new Error(`HTTP错误: ${response.status}`);
+                    fastUploadResult = await response.json();
+                    console.log('PDF秒传检测结果:', fastUploadResult);
+                } catch (error) {
+                    console.warn('PDF秒传检测请求失败，继续正常上传:', error);
+                    isNetworkError = true;
+                    Utils.showNotification('秒传检测不可用，继续正常上传...', 'warning');
+                }
 
-        const xhr = new XMLHttpRequest();
+                // 处理秒传结果
+                if (fastUploadResult && fastUploadResult.code === 0) {
+                    if (fastUploadResult.data && fastUploadResult.data.resourceId) {
+                        uploadedPdfId = fastUploadResult.data.resourceId;
+                        console.log('PDF秒传成功，resourceId:', uploadedPdfId);
+                        showUploadComplete('pdf');
+                        Utils.showNotification('秒传成功！PDF已存在', 'success');
+                        return;
+                    }
+                }
+                if (!isNetworkError) {
+                    console.log('PDF秒传未通过（code=' + (fastUploadResult?.code || 'N/A') + '），继续上传');
+                }
+                Utils.showNotification('准备上传PDF...', 'info');
 
-        // 进度监听
-        xhr.upload.onprogress = (e) => {
-            if (e.lengthComputable) {
-                const progress = (e.loaded / e.total) * 100;
-                onProgress(progress);
+                // 步骤3: 获取上传凭证
+                const config = window.AppConfig;
+                const authToken = Utils.getFromStorage(config.STORAGE_KEYS.USER_TOKEN);
+                const tokenResponse = await fetch(config.API_BASE_URL + '/resources/token', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                if (!tokenResponse.ok) {
+                    throw new Error('获取上传凭证失败');
+                }
+                const tokenResult = await tokenResponse.json();
+                if (!tokenResult || tokenResult.code !== 0) {
+                    throw new Error(tokenResult?.msg || '获取上传凭证失败');
+                }
+                const uploadData = tokenResult.data;
+                console.log('上传凭证:', uploadData);
+
+                // 生成唯一 objectKey (使用resource前缀)
+                const objectKey = `resource/${etag}/${file.name}`;
+                console.log('生成的资源 objectKey:', objectKey);
+
+                // 步骤4: 上传到七牛云
+                await uploadToQiniu(file, uploadData, objectKey, 'pdf', (progress) => {
+                    const progressBar = document.getElementById('pdf-progress-bar');
+                    const progressText = document.getElementById('pdf-progress-text');
+                    if (progressBar) progressBar.style.width = `${progress}%`;
+                    if (progressText) progressText.textContent = `${Math.round(progress)}%`;
+                });
+
+                // 步骤5: 保存资源信息到后端
+                Utils.showNotification('正在保存资源信息...', 'info');
+                const saveResponse = await fetch(config.API_BASE_URL + '/resources', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        clubId: clubId,
+                        title: file.name,
+                        filename: file.name,
+                        objectKey: objectKey,
+                        etag: etag,
+                        bucket: uploadData.bucket,
+                        region: uploadData.region,
+                        fileSize: file.size,
+                        mimeType: file.type  // application/pdf
+                    })
+                });
+                const saveResult = await saveResponse.json();
+                console.log('保存资源信息响应:', saveResult);
+
+                if (saveResult && saveResult.code === 0) {
+                    uploadedPdfId = saveResult.data?.resourceId;
+                    console.log('资源保存成功，resourceId:', uploadedPdfId);
+                    showUploadComplete('pdf');
+                    Utils.showNotification('PDF上传成功！', 'success');
+                } else {
+                    throw new Error(saveResult?.msg || '保存资源信息失败');
+                }
+
+            } catch (error) {
+                console.error('PDF上传失败:', error);
+                showFileError('pdf', '上传失败: ' + error.message);
+                throw error;
             }
-        };
+        }
 
-        xhr.onload = () => {
-            if (xhr.status === 200) {
-                const response = JSON.parse(xhr.responseText);
-                console.log('七牛云上传成功:', response);
-                onProgress(100);
-                resolve(response);
-            } else {
-                reject(new Error(`上传失败: ${xhr.status} ${xhr.statusText}`));
+        // ================ 编辑弹窗内的动态上传（用于编辑任务时上传新视频/PDF） ================
+        // 编辑弹窗中的视频上传（与创建流程一致，结果写入 editUploadedVideoId）
+        let editUploadedVideoId = null;
+        let editUploadedPdfId = null;
+
+        async function handleEditFileSelect(event, fileType) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (!validateFile(file, fileType)) return;
+
+            // 显示对应的进度区域
+            const progressContainer = document.getElementById(`edit-${fileType}-progress-container`);
+            const placeholderEl = document.getElementById(`edit-${fileType}-placeholder`);
+            if (placeholderEl) placeholderEl.style.display = 'none';
+            if (progressContainer) progressContainer.style.display = 'block';
+
+            try {
+                if (fileType === 'video') {
+                    const duration = await getVideoDuration(file);
+                    await uploadEditFile(file, 'video', duration);
+                } else {
+                    await uploadEditFile(file, 'pdf');
+                }
+            } catch (error) {
+                console.error(`编辑弹窗 ${fileType} 上传失败:`, error);
+                Utils.showNotification(`${fileType === 'video' ? '视频' : 'PDF'} 上传失败: ` + error.message, 'error');
+                // 恢复占位符
+                if (placeholderEl) placeholderEl.style.display = 'block';
+                if (progressContainer) progressContainer.style.display = 'none';
             }
-        };
+        }
 
-        xhr.onerror = () => {
-            reject(new Error('上传请求失败'));
-        };
+        async function uploadEditFile(file, fileType, duration) {
+            const clubId = currentClub ? parseInt(currentClub.id || currentClub.clubId) : null;
+            const etag = await calculateETag(file);
 
-        xhr.onabort = () => {
-            reject(new Error('上传已取消'));
-        };
-
-        xhr.open('POST', uploadUrl);
-        xhr.send(formData);
-    });
-}
-
-// ================ PDF 上传流程（仿照视频上传，路径用 /pdfs/） ================
-// TODO: 后端接口确认后，将以下路径与参数与实际对齐。
-//   目前约定：
-//     秒传检测  POST  /pdfs/fast-upload   body: { clubId, title, etag }
-//     获取凭证  GET   /pdfs/token
-//     保存信息  POST  /pdfs              body: { clubId, title, objectKey, etag, bucket, region, fileSize, mimeType }
-//   响应结构与视频模块一致，成功返回 { code:0, data:{ pdfId } }
-async function uploadPdf(file) {
-    if (uploadedPdfId) {
-        console.log('PDF已上传，使用已有的pdfId:', uploadedPdfId);
-        Utils.showNotification('PDF已上传，无需重复上传', 'info');
-        return;
-    }
-
-    try {
-        // 步骤1: 计算ETag
-        Utils.showNotification('正在计算文件特征...', 'info');
-        const etag = await calculateETag(file);
-        console.log('PDF文件ETag:', etag);
-
-        const clubId = currentClub ? parseInt(currentClub.id || currentClub.clubId) : null;
-
-        // 步骤2: 秒传检测
-        Utils.showNotification('正在进行秒传检测...', 'info');
-        let fastUploadResult = null;
-        let isNetworkError = false;
-        try {
+            // 秒传检测
+            const apiPath = fileType === 'video' ? '/videos/fast-upload' : '/resources/fast-upload';
             const config = window.AppConfig;
             const token = Utils.getFromStorage(config.STORAGE_KEYS.USER_TOKEN);
-            const response = await fetch(config.API_BASE_URL + '/resources/fast-upload', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    clubId: clubId,
-                    title: file.name,
-                    filename: file.name,
-                    etag: etag
-                })
-            });
-            if (!response.ok) throw new Error(`HTTP错误: ${response.status}`);
-            fastUploadResult = await response.json();
-            console.log('PDF秒传检测结果:', fastUploadResult);
-        } catch (error) {
-            console.warn('PDF秒传检测请求失败，继续正常上传:', error);
-            isNetworkError = true;
-            Utils.showNotification('秒传检测不可用，继续正常上传...', 'warning');
-        }
+            let fastResult = null;
+            try {
+                const requestBody = fileType === 'video'
+                    ? { clubId, title: file.name, etag }
+                    : { clubId, title: file.name, filename: file.name, etag };
+                const resp = await fetch(config.API_BASE_URL + apiPath, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(requestBody)
+                });
+                if (resp.ok) fastResult = await resp.json();
+            } catch (e) { console.warn('编辑弹窗秒传检测失败:', e); }
 
-        // 处理秒传结果
-        if (fastUploadResult && fastUploadResult.code === 0) {
-            if (fastUploadResult.data && fastUploadResult.data.resourceId) {
-                uploadedPdfId = fastUploadResult.data.resourceId;
-                console.log('PDF秒传成功，resourceId:', uploadedPdfId);
-                showUploadComplete('pdf');
-                Utils.showNotification('秒传成功！PDF已存在', 'success');
+            const idKey = fileType === 'video' ? 'videoId' : 'resourceId';
+            if (fastResult && fastResult.code === 0 && fastResult.data?.[idKey]) {
+                if (fileType === 'video') editUploadedVideoId = fastResult.data.videoId;
+                else editUploadedPdfId = fastResult.data.resourceId;
+                showEditUploadComplete(fileType, file.name);
+                Utils.showNotification('秒传成功！', 'success');
                 return;
             }
-        }
-        if (!isNetworkError) {
-            console.log('PDF秒传未通过（code=' + (fastUploadResult?.code || 'N/A') + '），继续上传');
-        }
-        Utils.showNotification('准备上传PDF...', 'info');
 
-        // 步骤3: 获取上传凭证
-        const config = window.AppConfig;
-        const authToken = Utils.getFromStorage(config.STORAGE_KEYS.USER_TOKEN);
-        const tokenResponse = await fetch(config.API_BASE_URL + '/resources/token', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
+            // 获取凭证并上传
+            let uploadData;
+            if (fileType === 'video') {
+                const tokenResult = await API.getUploadToken();
+                if (!tokenResult || tokenResult.code !== 0) throw new Error(tokenResult?.msg || '获取上传凭证失败');
+                uploadData = tokenResult.data;
+            } else {
+                // PDF使用资源上传凭证
+                const tokenResp = await fetch(config.API_BASE_URL + '/resources/token', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+                });
+                if (!tokenResp.ok) throw new Error('获取上传凭证失败');
+                const tokenResult = await tokenResp.json();
+                if (!tokenResult || tokenResult.code !== 0) throw new Error(tokenResult?.msg || '获取上传凭证失败');
+                uploadData = tokenResult.data;
             }
-        });
-        if (!tokenResponse.ok) {
-            throw new Error('获取上传凭证失败');
-        }
-        const tokenResult = await tokenResponse.json();
-        if (!tokenResult || tokenResult.code !== 0) {
-            throw new Error(tokenResult?.msg || '获取上传凭证失败');
-        }
-        const uploadData = tokenResult.data;
-        console.log('上传凭证:', uploadData);
 
-        // 生成唯一 objectKey (使用resource前缀)
-        const objectKey = `resource/${etag}/${file.name}`;
-        console.log('生成的资源 objectKey:', objectKey);
+            const ext = fileType === 'video' ? '.mp4' : '.pdf';
+            const objectKey = fileType === 'video'
+                ? `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${ext}`
+                : `resource/${etag}/${file.name}`;
 
-        // 步骤4: 上传到七牛云
-        await uploadToQiniu(file, uploadData, objectKey, 'pdf', (progress) => {
-            const progressBar = document.getElementById('pdf-progress-bar');
-            const progressText = document.getElementById('pdf-progress-text');
-            if (progressBar) progressBar.style.width = `${progress}%`;
-            if (progressText) progressText.textContent = `${Math.round(progress)}%`;
-        });
+            await uploadToQiniu(file, uploadData, objectKey, fileType, (progress) => {
+                const bar = document.getElementById(`edit-${fileType}-progress-bar`);
+                const txt = document.getElementById(`edit-${fileType}-progress-text`);
+                if (bar) bar.style.width = `${progress}%`;
+                if (txt) txt.textContent = `${Math.round(progress)}%`;
+            });
 
-        // 步骤5: 保存资源信息到后端
-        Utils.showNotification('正在保存资源信息...', 'info');
-        const saveResponse = await fetch(config.API_BASE_URL + '/resources', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
-            },
-            body: JSON.stringify({
-                clubId: clubId,
+            // 保存信息
+            const savePath = fileType === 'video' ? '/videos' : '/resources';
+            const body = {
+                clubId,
                 title: file.name,
-                filename: file.name,
-                objectKey: objectKey,
-                etag: etag,
+                objectKey,
+                etag,
                 bucket: uploadData.bucket,
                 region: uploadData.region,
                 fileSize: file.size,
-                mimeType: file.type  // application/pdf
-            })
-        });
-        const saveResult = await saveResponse.json();
-        console.log('保存资源信息响应:', saveResult);
+                mimeType: file.type
+            };
+            if (fileType === 'video' && duration != null) {
+                body.duration = duration;
+            } else if (fileType === 'pdf') {
+                body.filename = file.name;  // 资源接口需要filename参数
+            }
 
-        if (saveResult && saveResult.code === 0) {
-            uploadedPdfId = saveResult.data?.resourceId;
-            console.log('资源保存成功，resourceId:', uploadedPdfId);
-            showUploadComplete('pdf');
-            Utils.showNotification('PDF上传成功！', 'success');
-        } else {
-            throw new Error(saveResult?.msg || '保存资源信息失败');
+            const saveResp = await fetch(config.API_BASE_URL + savePath, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(body)
+            });
+            const saveResult = await saveResp.json();
+
+            if (saveResult && saveResult.code === 0) {
+                if (fileType === 'video') editUploadedVideoId = saveResult.data?.videoId;
+                else editUploadedPdfId = saveResult.data?.resourceId;
+                showEditUploadComplete(fileType, file.name);
+                Utils.showNotification(`${fileType === 'video' ? '视频' : 'PDF'}上传成功！`, 'success');
+            } else {
+                throw new Error(saveResult?.msg || `保存${fileType === 'video' ? '视频' : 'PDF'}信息失败`);
+            }
         }
 
-    } catch (error) {
-        console.error('PDF上传失败:', error);
-        showFileError('pdf', '上传失败: ' + error.message);
-        throw error;
-    }
-}
-
-// ================ 编辑弹窗内的动态上传（用于编辑任务时上传新视频/PDF） ================
-// 编辑弹窗中的视频上传（与创建流程一致，结果写入 editUploadedVideoId）
-let editUploadedVideoId = null;
-let editUploadedPdfId = null;
-
-async function handleEditFileSelect(event, fileType) {
-    const file = event.target.files[0];
-    if (!file) return;
-    if (!validateFile(file, fileType)) return;
-
-    // 显示对应的进度区域
-    const progressContainer = document.getElementById(`edit-${fileType}-progress-container`);
-    const placeholderEl = document.getElementById(`edit-${fileType}-placeholder`);
-    if (placeholderEl) placeholderEl.style.display = 'none';
-    if (progressContainer) progressContainer.style.display = 'block';
-
-    try {
-        if (fileType === 'video') {
-            const duration = await getVideoDuration(file);
-            await uploadEditFile(file, 'video', duration);
-        } else {
-            await uploadEditFile(file, 'pdf');
-        }
-    } catch (error) {
-        console.error(`编辑弹窗 ${fileType} 上传失败:`, error);
-        Utils.showNotification(`${fileType === 'video' ? '视频' : 'PDF'} 上传失败: ` + error.message, 'error');
-        // 恢复占位符
-        if (placeholderEl) placeholderEl.style.display = 'block';
-        if (progressContainer) progressContainer.style.display = 'none';
-    }
-}
-
-async function uploadEditFile(file, fileType, duration) {
-    const clubId = currentClub ? parseInt(currentClub.id || currentClub.clubId) : null;
-    const etag = await calculateETag(file);
-
-    // 秒传检测
-    const apiPath = fileType === 'video' ? '/videos/fast-upload' : '/resources/fast-upload';
-    const config = window.AppConfig;
-    const token = Utils.getFromStorage(config.STORAGE_KEYS.USER_TOKEN);
-    let fastResult = null;
-    try {
-        const requestBody = fileType === 'video' 
-            ? { clubId, title: file.name, etag }
-            : { clubId, title: file.name, filename: file.name, etag };
-        const resp = await fetch(config.API_BASE_URL + apiPath, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify(requestBody)
-        });
-        if (resp.ok) fastResult = await resp.json();
-    } catch (e) { console.warn('编辑弹窗秒传检测失败:', e); }
-
-    const idKey = fileType === 'video' ? 'videoId' : 'resourceId';
-    if (fastResult && fastResult.code === 0 && fastResult.data?.[idKey]) {
-        if (fileType === 'video') editUploadedVideoId = fastResult.data.videoId;
-        else editUploadedPdfId = fastResult.data.resourceId;
-        showEditUploadComplete(fileType, file.name);
-        Utils.showNotification('秒传成功！', 'success');
-        return;
-    }
-
-    // 获取凭证并上传
-    let uploadData;
-    if (fileType === 'video') {
-        const tokenResult = await API.getUploadToken();
-        if (!tokenResult || tokenResult.code !== 0) throw new Error(tokenResult?.msg || '获取上传凭证失败');
-        uploadData = tokenResult.data;
-    } else {
-        // PDF使用资源上传凭证
-        const tokenResp = await fetch(config.API_BASE_URL + '/resources/token', {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
-        });
-        if (!tokenResp.ok) throw new Error('获取上传凭证失败');
-        const tokenResult = await tokenResp.json();
-        if (!tokenResult || tokenResult.code !== 0) throw new Error(tokenResult?.msg || '获取上传凭证失败');
-        uploadData = tokenResult.data;
-    }
-    
-    const ext = fileType === 'video' ? '.mp4' : '.pdf';
-    const objectKey = fileType === 'video' 
-        ? `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${ext}`
-        : `resource/${etag}/${file.name}`;
-
-    await uploadToQiniu(file, uploadData, objectKey, fileType, (progress) => {
-        const bar = document.getElementById(`edit-${fileType}-progress-bar`);
-        const txt = document.getElementById(`edit-${fileType}-progress-text`);
-        if (bar) bar.style.width = `${progress}%`;
-        if (txt) txt.textContent = `${Math.round(progress)}%`;
-    });
-
-    // 保存信息
-    const savePath = fileType === 'video' ? '/videos' : '/resources';
-    const body = {
-        clubId, 
-        title: file.name, 
-        objectKey, 
-        etag,
-        bucket: uploadData.bucket, 
-        region: uploadData.region,
-        fileSize: file.size, 
-        mimeType: file.type
-    };
-    if (fileType === 'video' && duration != null) {
-        body.duration = duration;
-    } else if (fileType === 'pdf') {
-        body.filename = file.name;  // 资源接口需要filename参数
-    }
-
-    const saveResp = await fetch(config.API_BASE_URL + savePath, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(body)
-    });
-    const saveResult = await saveResp.json();
-
-    if (saveResult && saveResult.code === 0) {
-        if (fileType === 'video') editUploadedVideoId = saveResult.data?.videoId;
-        else editUploadedPdfId = saveResult.data?.resourceId;
-        showEditUploadComplete(fileType, file.name);
-        Utils.showNotification(`${fileType === 'video' ? '视频' : 'PDF'}上传成功！`, 'success');
-    } else {
-        throw new Error(saveResult?.msg || `保存${fileType === 'video' ? '视频' : 'PDF'}信息失败`);
-    }
-}
-
-function showEditUploadComplete(fileType, fileName) {
-    const container = document.getElementById(`edit-${fileType}-progress-container`);
-    if (container) {
-        container.innerHTML = `
+        function showEditUploadComplete(fileType, fileName) {
+            const container = document.getElementById(`edit-${fileType}-progress-container`);
+            if (container) {
+                container.innerHTML = `
             <div style="text-align:center; color:#52c41a; padding:10px; background:#f6ffed; border-radius:8px; border:1px solid #b7eb8f;">
                 <i class="fas fa-check-circle" style="font-size:20px;"></i>
                 <div style="font-size:13px; margin-top:4px;">${fileType === 'video' ? '视频' : 'PDF'} "${fileName}" 上传成功</div>
             </div>
         `;
-    }
-}
-function validateFile(file, fileType) {
-    if (fileType === 'video') {
-        const maxSize = 20 * 1024 * 1024 * 1024; // 20GB
-        const allowedTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'];
-        if (file.size > maxSize) {
-            showFileError(fileType, '文件太大，视频最大支持 20GB');
-            return false;
+            }
         }
-        if (!allowedTypes.includes(file.type)) {
-            showFileError(fileType, '请上传视频格式文件');
-            return false;
-        }
-    }
+        function validateFile(file, fileType) {
+            if (fileType === 'video') {
+                const maxSize = 20 * 1024 * 1024 * 1024; // 20GB
+                const allowedTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'];
+                if (file.size > maxSize) {
+                    showFileError(fileType, '文件太大，视频最大支持 20GB');
+                    return false;
+                }
+                if (!allowedTypes.includes(file.type)) {
+                    showFileError(fileType, '请上传视频格式文件');
+                    return false;
+                }
+            }
 
-    if (fileType === 'pdf') {
-        const maxSize = 50 * 1024 * 1024; // 50MB
-        if (file.size > maxSize) {
-            showFileError(fileType, 'PDF文件太大，最大支持 50MB');
-            return false;
-        }
-        if (file.type !== 'application/pdf') {
-            showFileError(fileType, '请上传 PDF 格式文件');
-            return false;
-        }
-    }
+            if (fileType === 'pdf') {
+                const maxSize = 50 * 1024 * 1024; // 50MB
+                if (file.size > maxSize) {
+                    showFileError(fileType, 'PDF文件太大，最大支持 50MB');
+                    return false;
+                }
+                if (file.type !== 'application/pdf') {
+                    showFileError(fileType, '请上传 PDF 格式文件');
+                    return false;
+                }
+            }
 
-    hideFileError(fileType);
-    return true;
-}
+            hideFileError(fileType);
+            return true;
+        }
 
-// 显示文件信息
-function showFileInfo(file, fileType) {
-    const area = document.getElementById(`${fileType}-upload-area`);
-    const placeholder = area.querySelector('.upload-placeholder');
-    const progress = document.getElementById(`${fileType}-progress`);
-    const preview = document.getElementById(`${fileType}-preview`);
-    
-    // 隐藏占位符，显示进度
-    if (placeholder) placeholder.style.display = 'none';
-    if (progress) progress.style.display = 'block';
-    
-    // 更新文件信息
-    const fileInfo = document.getElementById(`${fileType}-file-info`);
-    if (fileInfo) {
-        fileInfo.innerHTML = `
+        // 显示文件信息
+        function showFileInfo(file, fileType) {
+            const area = document.getElementById(`${fileType}-upload-area`);
+            const placeholder = area.querySelector('.upload-placeholder');
+            const progress = document.getElementById(`${fileType}-progress`);
+            const preview = document.getElementById(`${fileType}-preview`);
+
+            // 隐藏占位符，显示进度
+            if (placeholder) placeholder.style.display = 'none';
+            if (progress) progress.style.display = 'block';
+
+            // 更新文件信息
+            const fileInfo = document.getElementById(`${fileType}-file-info`);
+            if (fileInfo) {
+                fileInfo.innerHTML = `
             <span><i class="fas fa-file"></i> ${file.name}</span>
             <span><i class="fas fa-hdd"></i> ${formatFileSize(file.size)}</span>
         `;
-    }
-    
-    // 更新预览
-    if (preview) {
-        preview.style.display = 'flex';
-        const title = document.getElementById(`${fileType}-preview-title`);
-        const size = document.getElementById(`${fileType}-preview-size`);
-        
-        if (title) title.textContent = file.name;
-        if (size) size.textContent = formatFileSize(file.size);
-    }
-    
-    // 显示预览容器
-    const previewContainer = document.getElementById('upload-preview');
-    if (previewContainer) {
-        previewContainer.style.display = 'block';
-    }
-}
+            }
 
-// 显示上传完成
-function showUploadComplete(fileType) {
-    const progress = document.getElementById(`${fileType}-progress`);
-    if (progress) {
-        progress.innerHTML = `
+            // 更新预览
+            if (preview) {
+                preview.style.display = 'flex';
+                const title = document.getElementById(`${fileType}-preview-title`);
+                const size = document.getElementById(`${fileType}-preview-size`);
+
+                if (title) title.textContent = file.name;
+                if (size) size.textContent = formatFileSize(file.size);
+            }
+
+            // 显示预览容器
+            const previewContainer = document.getElementById('upload-preview');
+            if (previewContainer) {
+                previewContainer.style.display = 'block';
+            }
+        }
+
+        // 显示上传完成
+        function showUploadComplete(fileType) {
+            const progress = document.getElementById(`${fileType}-progress`);
+            if (progress) {
+                progress.innerHTML = `
             <div style="text-align: center; color: #52c41a; padding: 12px;">
                 <i class="fas fa-check-circle" style="font-size: 24px; margin-bottom: 8px;"></i>
                 <h4 style="margin-bottom: 4px; font-size: 14px;">上传成功！</h4>
             </div>
         `;
-    }
-    
-    // 更新预览状态
-    const preview = document.getElementById(`${fileType}-preview`);
-    if (preview) {
-        preview.style.background = '#f6ffed';
-        preview.style.borderColor = '#b7eb8f';
-        preview.style.borderLeft = '3px solid #52c41a';
-    }
-}
+            }
 
-// 显示文件错误
-function showFileError(fileType, message) {
-    const errorElement = document.getElementById(`${fileType}-error`);
-    const errorText = document.getElementById(`${fileType}-error-text`);
-    
-    if (errorElement) errorElement.style.display = 'flex';
-    if (errorText) errorText.textContent = message;
-    
-    // 重置文件输入
-    const fileInput = document.getElementById(`${fileType}-file`);
-    if (fileInput) fileInput.value = '';
-}
+            // 更新预览状态
+            const preview = document.getElementById(`${fileType}-preview`);
+            if (preview) {
+                preview.style.background = '#f6ffed';
+                preview.style.borderColor = '#b7eb8f';
+                preview.style.borderLeft = '3px solid #52c41a';
+            }
+        }
 
-// 隐藏文件错误
-function hideFileError(fileType) {
-    const errorElement = document.getElementById(`${fileType}-error`);
-    if (errorElement) errorElement.style.display = 'none';
-}
+        // 显示文件错误
+        function showFileError(fileType, message) {
+            const errorElement = document.getElementById(`${fileType}-error`);
+            const errorText = document.getElementById(`${fileType}-error-text`);
 
-// 获取视频时长（基于《视频模块前端开发指南》中的方法）
-function getVideoDuration(file) {
-    return new Promise((resolve, reject) => {
-        const video = document.createElement('video');
-        video.preload = 'metadata';
-        
-        video.onloadedmetadata = function() {
-            URL.revokeObjectURL(video.src);
-            resolve(Math.round(video.duration)); // 四舍五入取整
-        };
-        
-        video.onerror = function() {
-            reject(new Error("无法解析视频文件"));
-        };
-        
-        video.src = URL.createObjectURL(file);
-    });
-}
+            if (errorElement) errorElement.style.display = 'flex';
+            if (errorText) errorText.textContent = message;
 
-// 格式化文件大小
-function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-        
+            // 重置文件输入
+            const fileInput = document.getElementById(`${fileType}-file`);
+            if (fileInput) fileInput.value = '';
+        }
+
+        // 隐藏文件错误
+        function hideFileError(fileType) {
+            const errorElement = document.getElementById(`${fileType}-error`);
+            if (errorElement) errorElement.style.display = 'none';
+        }
+
+        /**
+         * 格式化上传速度
+         * @param {number} bytesPerSecond - 每秒传输的字节数
+         * @returns {string} 格式化后的字符串 (e.g., "1.2 MB/s")
+         */
+        function formatSpeed(bytesPerSecond) {
+            if (!bytesPerSecond || bytesPerSecond < 0) return '0 KB/s';
+
+            if (bytesPerSecond >= 1024 * 1024) {
+                return (bytesPerSecond / (1024 * 1024)).toFixed(1) + ' MB/s';
+            } else if (bytesPerSecond >= 1024) {
+                return (bytesPerSecond / 1024).toFixed(0) + ' KB/s';
+            } else {
+                return bytesPerSecond.toFixed(0) + ' B/s';
+            }
+        }
+
+        // 获取视频时长（基于《视频模块前端开发指南》中的方法）
+        function getVideoDuration(file) {
+            return new Promise((resolve, reject) => {
+                const video = document.createElement('video');
+                video.preload = 'metadata';
+
+                video.onloadedmetadata = function () {
+                    URL.revokeObjectURL(video.src);
+                    resolve(Math.round(video.duration)); // 四舍五入取整
+                };
+
+                video.onerror = function () {
+                    reject(new Error("无法解析视频文件"));
+                };
+
+                video.src = URL.createObjectURL(file);
+            });
+        }
+
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
         // 检查权限并更新UI
         async function checkAndUpdatePermissions() {
             if (!currentClub || !currentClub.id) {
@@ -1627,13 +1792,13 @@ function formatFileSize(bytes) {
                 updatePermissionBasedUI(); // 添加：更新权限相关的UI
                 return false;
             }
-            
+
             try {
                 // 检查用户是否是俱乐部创建者（manager）
                 const hasPermission = await Clubs.isClubCreator(currentClub.id);
                 isClubCreator = hasPermission; // 保存到全局变量
                 console.log('权限检查结果 - 是否是创建者:', isClubCreator);
-                
+
                 // 获取"创建任务"按钮
                 const createTaskBtn = document.querySelector('button[onclick="openCreateTaskModal()"]');
                 if (createTaskBtn) {
@@ -1645,10 +1810,10 @@ function formatFileSize(bytes) {
                         createTaskBtn.disabled = false;
                     }
                 }
-                
+
                 // 添加：更新权限相关的UI
                 updatePermissionBasedUI();
-                
+
                 return hasPermission;
             } catch (error) {
                 console.error('检查权限失败:', error);
@@ -1661,11 +1826,11 @@ function formatFileSize(bytes) {
         // 根据权限更新UI显示
         function updatePermissionBasedUI() {
             console.log('更新权限相关UI，是否是创建者:', isClubCreator);
-            
+
             // 获取需要控制的元素
             const welcomeSubtitle = document.getElementById('welcome-subtitle');
             const usageTips = document.querySelector('.usage-tips');
-            
+
             // 更新欢迎副标题
             if (welcomeSubtitle && currentClub) {
                 if (isClubCreator) {
@@ -1678,7 +1843,7 @@ function formatFileSize(bytes) {
                     welcomeSubtitle.style.display = 'block';
                 }
             }
-            
+
             // 更新使用提示
             if (usageTips) {
                 if (isClubCreator) {
@@ -1712,45 +1877,45 @@ function formatFileSize(bytes) {
                 Utils.showNotification('无法获取俱乐部信息', 'error');
                 return;
             }
-            
+
             try {
                 const hasPermission = await checkAndUpdatePermissions();
                 if (!hasPermission) {
                     Utils.showNotification('只有俱乐部创建者可以创建主题', 'error');
                     return;
                 }
-                
+
                 const modal = document.getElementById('create-task-modal');
                 if (modal) {
                     modal.style.display = 'flex';
-                    
+
                     // 清空输入
                     const nameInput = document.getElementById('new-task-name');
                     const descInput = document.getElementById('new-task-description');
                     const errorElement = document.getElementById('task-name-error');
-                    
+
                     if (nameInput) nameInput.value = '';
                     if (descInput) descInput.value = '';
                     if (errorElement) errorElement.style.display = 'none';
-                    
+
                     // 重置视频上传状态 - 只在没有已上传视频时重置
                     if (!uploadedVideoId) {
                         uploadedVideoId = null;
                     }
                     const videoFileInput = document.getElementById('video-file');
                     if (videoFileInput) videoFileInput.value = '';
-                    
+
                     // 重置PDF上传状态
                     uploadedPdfId = null;
                     const pdfFileInput = document.getElementById('pdf-file');
                     if (pdfFileInput) pdfFileInput.value = '';
-                    
+
                     // 重置视频上传区域UI
                     const videoPlaceholder = document.querySelector('#video-upload-area .upload-placeholder');
                     const videoProgress = document.getElementById('video-progress');
                     const videoPreview = document.getElementById('video-preview');
                     const uploadPreview = document.getElementById('upload-preview');
-                    
+
                     if (videoPlaceholder) videoPlaceholder.style.display = 'block';
                     if (videoProgress) {
                         videoProgress.style.display = 'none';
@@ -1768,7 +1933,7 @@ function formatFileSize(bytes) {
                     }
                     if (videoPreview) videoPreview.style.display = 'none';
                     if (uploadPreview) uploadPreview.style.display = 'none';
-                    
+
                     // 重置PDF上传区域UI
                     const pdfPlaceholder = document.querySelector('#pdf-upload-area .upload-placeholder');
                     const pdfProgress = document.getElementById('pdf-progress');
@@ -1787,7 +1952,7 @@ function formatFileSize(bytes) {
                     }
                     if (pdfPreview) pdfPreview.style.display = 'none';
                     if (pdfUploadPreview) pdfUploadPreview.style.display = 'none';
-                    
+
                     // 聚焦到名称输入框
                     setTimeout(() => {
                         if (nameInput) nameInput.focus();
@@ -1807,7 +1972,7 @@ function formatFileSize(bytes) {
                 const user = window.Auth.getUser();
                 const avatarElements = document.querySelectorAll('#video-user-avatar');
                 const nameElements = document.querySelectorAll('#video-user-name');
-                
+
                 avatarElements.forEach(element => {
                     if (element) element.textContent = user.name.charAt(0);
                 });
@@ -1820,21 +1985,21 @@ function formatFileSize(bytes) {
         // 加载当前俱乐部信息
         function loadCurrentClub() {
             console.log('正在加载当前俱乐部信息...');
-            
+
             const hash = window.location.hash;
             console.log('当前hash:', hash);
-            
+
             let clubId = null;
             let clubName = '视频管理';
-            
+
             if (hash.includes('?')) {
                 const params = new URLSearchParams(hash.split('?')[1]);
                 clubId = params.get('clubId');
                 clubName = params.get('clubName') || '视频管理';
-                
+
                 console.log('从URL获取俱乐部ID:', clubId, '名称:', clubName);
             }
-            
+
             // 方法2：从 Clubs 模块获取
             if (!clubId && window.Clubs && window.Clubs.getCurrentClub) {
                 const clubFromModule = window.Clubs.getCurrentClub();
@@ -1844,7 +2009,7 @@ function formatFileSize(bytes) {
                     clubName = currentClub.name;
                 }
             }
-            
+
             // 方法3：从本地存储获取
             if (!clubId && window.Utils) {
                 const savedClub = Utils.getFromStorage('current_club');
@@ -1855,13 +2020,13 @@ function formatFileSize(bytes) {
                     console.log('从本地存储获取俱乐部:', currentClub);
                 }
             }
-            
+
             // 如果还没有俱乐部ID，尝试从 App 状态获取
             if (!clubId && window.App && window.App.state && window.App.state.currentClubId) {
                 clubId = window.App.state.currentClubId;
                 console.log('从App状态获取俱乐部ID:', clubId);
             }
-            
+
             // 创建或更新当前俱乐部对象
             if (clubId) {
                 if (!currentClub) {
@@ -1875,25 +2040,25 @@ function formatFileSize(bytes) {
                     currentClub.clubId = parseInt(clubId);
                     currentClub.name = decodeURIComponent(clubName);
                 }
-                
+
                 console.log('最终确定的当前俱乐部:', currentClub);
-                
+
                 // 保存到 Clubs 模块
                 if (window.Clubs && window.Clubs.setCurrentClub) {
                     window.Clubs.setCurrentClub(currentClub);
                 }
-                
+
                 // 保存到本地存储
                 if (window.Utils) {
                     Utils.saveToStorage('current_club', currentClub);
                 }
             }
-            
+
             // 更新页面显示
             const clubNameElement = document.getElementById('club-name-display');
             const welcomeTitle = document.getElementById('welcome-title');
             const welcomeSubtitle = document.getElementById('welcome-subtitle');
-            
+
             if (clubNameElement && currentClub) {
                 clubNameElement.textContent = currentClub.name;
             }
@@ -1903,7 +2068,7 @@ function formatFileSize(bytes) {
             if (welcomeSubtitle && currentClub) {
                 welcomeSubtitle.textContent = `为${currentClub.name}俱乐部创建和管理教学视频主题`;
             }
-            
+
             if (!currentClub || !currentClub.id) {
                 console.warn('警告：无法确定当前俱乐部ID');
                 Utils.showNotification('无法获取俱乐部信息，请返回重新选择俱乐部', 'warning');
@@ -1912,193 +2077,193 @@ function formatFileSize(bytes) {
 
         // 加载视频任务
         async function loadVideoTasks() {
-    console.log('========== 开始加载视频任务 ==========');
-    const container = document.getElementById('videoTaskList');
-    
-    if (!container) {
-        console.error('找不到任务列表容器');
-        return;
-    }
-    
-    try {
-        // 检查权限
-        await checkAndUpdatePermissions();
-        
-        // 尝试从API获取任务列表
-        const clubId = currentClub ? parseInt(currentClub.id || currentClub.clubId) : null;
-        if (!clubId) {
-            console.warn('无法获取俱乐部ID');
-            return;
-        }
-        
-        console.log('获取俱乐部ID的任务列表，clubId:', clubId);
-        
-        // 显示加载状态
-        container.innerHTML = `
+            console.log('========== 开始加载视频任务 ==========');
+            const container = document.getElementById('videoTaskList');
+
+            if (!container) {
+                console.error('找不到任务列表容器');
+                return;
+            }
+
+            try {
+                // 检查权限
+                await checkAndUpdatePermissions();
+
+                // 尝试从API获取任务列表
+                const clubId = currentClub ? parseInt(currentClub.id || currentClub.clubId) : null;
+                if (!clubId) {
+                    console.warn('无法获取俱乐部ID');
+                    return;
+                }
+
+                console.log('获取俱乐部ID的任务列表，clubId:', clubId);
+
+                // 显示加载状态
+                container.innerHTML = `
             <div class="empty-state">
                 <i class="fas fa-spinner fa-spin"></i>
                 <h3>加载中...</h3>
             </div>
         `;
-        
-        // 关键修改：如果当前用户是创建者，我们需要一个特殊的API或者自己处理过滤
-        // 先尝试获取所有任务
-        console.log('调用API.getTasks，参数:', { clubId });
-        const response = await API.getTasks(clubId);
-        
-        console.log('API.getTasks响应:', response);
-        
-        if (response && response.code === 0) {
-            // 确保data是数组
-            let tasksData = [];
-            
-            if (Array.isArray(response.data)) {
-                tasksData = response.data;
-                console.log('直接获取到数组，长度:', tasksData.length);
-            } else if (response.data && Array.isArray(response.data.list)) {
-                // 或者数据在list属性中
-                tasksData = response.data.list;
-                console.log('从list属性获取数组，长度:', tasksData.length);
-            } else if (response.data && response.data.taskId) {
-                // 单个任务对象
-                tasksData = [response.data];
-                console.log('单个任务对象');
-            } else {
-                console.warn('无法识别的响应格式:', response.data);
-                tasksData = [];
+
+                // 关键修改：如果当前用户是创建者，我们需要一个特殊的API或者自己处理过滤
+                // 先尝试获取所有任务
+                console.log('调用API.getTasks，参数:', { clubId });
+                const response = await API.getTasks(clubId);
+
+                console.log('API.getTasks响应:', response);
+
+                if (response && response.code === 0) {
+                    // 确保data是数组
+                    let tasksData = [];
+
+                    if (Array.isArray(response.data)) {
+                        tasksData = response.data;
+                        console.log('直接获取到数组，长度:', tasksData.length);
+                    } else if (response.data && Array.isArray(response.data.list)) {
+                        // 或者数据在list属性中
+                        tasksData = response.data.list;
+                        console.log('从list属性获取数组，长度:', tasksData.length);
+                    } else if (response.data && response.data.taskId) {
+                        // 单个任务对象
+                        tasksData = [response.data];
+                        console.log('单个任务对象');
+                    } else {
+                        console.warn('无法识别的响应格式:', response.data);
+                        tasksData = [];
+                    }
+
+                    // 处理每个任务，确保status字段存在（新增：用于手动解锁状态）
+                    videoTasks = tasksData.map(task => {
+                        const processedTask = {
+                            taskId: task.taskId || task.id,
+                            id: task.taskId || task.id,
+                            title: task.title || '未命名任务',
+                            description: task.description || '',
+                            type: task.type || 'all',
+                            clubId: task.clubId || clubId,
+                            videoId: task.videoId || null,
+                            pdfId: task.pdfId || null,  // 新增：教学设计PDF ID
+                            // 新增：手动解锁状态字段
+                            isUnlocked: task.isUnlocked === true,
+                            createdAt: task.createdAt || new Date().toISOString(),
+                        };
+                        console.log('处理后的任务:', processedTask, '解锁状态:', processedTask.isUnlocked);
+                        return processedTask;
+                    });
+
+                    console.log('最终videoTasks数组:', videoTasks);
+                    console.log('videoTasks长度:', videoTasks.length);
+
+                    await renderVideoTasks();
+                } else {
+                    console.warn('API返回错误码:', response?.code, '消息:', response?.msg);
+                    videoTasks = [];
+                    await renderVideoTasks();
+                }
+            } catch (error) {
+                console.error('加载任务失败:', error);
+                videoTasks = [];
+                await renderVideoTasks();
+            } finally {
+                // 确保UI根据权限更新
+                updatePermissionBasedUI();
             }
-            
-            // 处理每个任务，确保status字段存在（新增：用于手动解锁状态）
-            videoTasks = tasksData.map(task => {
-                const processedTask = {
-                    taskId: task.taskId || task.id,
-                    id: task.taskId || task.id,
-                    title: task.title || '未命名任务',
-                    description: task.description || '',
-                    type: task.type || 'all',
-                    clubId: task.clubId || clubId,
-                    videoId: task.videoId || null,
-                    pdfId: task.pdfId || null,  // 新增：教学设计PDF ID
-                    // 新增：手动解锁状态字段
-                    isUnlocked: task.isUnlocked === true,
-                    createdAt: task.createdAt || new Date().toISOString(),
-                };
-                console.log('处理后的任务:', processedTask, '解锁状态:', processedTask.isUnlocked);
-                return processedTask;
-            });
-            
-            console.log('最终videoTasks数组:', videoTasks);
-            console.log('videoTasks长度:', videoTasks.length);
-            
-            await renderVideoTasks();
-        } else {
-            console.warn('API返回错误码:', response?.code, '消息:', response?.msg);
-            videoTasks = [];
-            await renderVideoTasks();
+            console.log('========== 结束加载视频任务 ==========');
         }
-    } catch (error) {
-        console.error('加载任务失败:', error);
-        videoTasks = [];
-        await renderVideoTasks();
-    } finally {
-        // 确保UI根据权限更新
-        updatePermissionBasedUI();
-    }
-    console.log('========== 结束加载视频任务 ==========');
-}
 
         // 渲染视频任务列表
         async function renderVideoTasks() {
-    console.log('========== 开始渲染任务列表 ==========');
-    const container = document.getElementById('videoTaskList');
-    if (!container) {
-        console.error('找不到任务列表容器');
-        return;
-    }
-    
-    // 确保权限状态已更新
-    await checkAndUpdatePermissions();
-    
-    console.log('渲染时videoTasks:', videoTasks);
-    console.log('videoTasks长度:', videoTasks ? videoTasks.length : 0);
-    
-    if (!videoTasks || videoTasks.length === 0) {
-        console.log('没有任务数据，显示空状态');
-        // 根据权限显示不同的空状态
-        if (isClubCreator) {
-            container.innerHTML = `
+            console.log('========== 开始渲染任务列表 ==========');
+            const container = document.getElementById('videoTaskList');
+            if (!container) {
+                console.error('找不到任务列表容器');
+                return;
+            }
+
+            // 确保权限状态已更新
+            await checkAndUpdatePermissions();
+
+            console.log('渲染时videoTasks:', videoTasks);
+            console.log('videoTasks长度:', videoTasks ? videoTasks.length : 0);
+
+            if (!videoTasks || videoTasks.length === 0) {
+                console.log('没有任务数据，显示空状态');
+                // 根据权限显示不同的空状态
+                if (isClubCreator) {
+                    container.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-tasks"></i>
                     <h3>暂无活动</h3>
                     <p>点击右上角"创建主题"按钮开始</p>
                 </div>
             `;
-        } else {
-            container.innerHTML = `
+                } else {
+                    container.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-tasks"></i>
                     <h3>暂无活动</h3>
                     <p>等待俱乐部创建者发布活动</p>
                 </div>
             `;
-        }
-        return;
-    }
-    
-    console.log('开始渲染', videoTasks.length, '个任务');
-    
-    // 按创建时间排序任务
-    const sortedTasks = [...videoTasks].sort((a, b) => {
-        const timeA = new Date(a.createdAt || 0).getTime();
-        const timeB = new Date(b.createdAt || 0).getTime();
-        return timeA - timeB;
-    });
-    
-    console.log('排序后的任务:', sortedTasks);
-    
-    let tasksHTML = '';
-    
-    // 获取当前用户角色
-    console.log('当前用户是创建者吗？', isClubCreator);
-    
-    // 遍历所有任务
-    for (let i = 0; i < sortedTasks.length; i++) {
-        const task = sortedTasks[i];
-        console.log(`处理第${i+1}个任务:`, task);
-        
-        const taskId = task.taskId || task.id;
-        const createdTime = task.createdAt ? formatDate(task.createdAt) : '刚刚';
-        const taskTypeLabel = getTaskTypeLabel(task.type);
-        
-        // 关键修改：权限判断逻辑 - 简化为只检查手动解锁状态
-        let isAccessible = false;
-        let lockReason = '';
-        
-        if (isClubCreator) {
-            // 创建者总是可以访问所有任务
-            isAccessible = true;
-        } else {
-            // 普通成员：只检查是否手动解锁
-            isAccessible = task.isUnlocked === true;
-            if (!isAccessible) {
-                lockReason = '等待俱乐部创建者解锁此活动';
+                }
+                return;
             }
-        }
-        
-        // 获取任务完成进度（仅对可访问的任务）
-        let progressData = { percentage: 0, completed: 0, total: 0 };
-        if (isAccessible) {
-            progressData = await getTaskProgressData(taskId);
-        }
-        
-        // 根据是否可访问决定卡片样式
-        const cardClass = isAccessible ? 'video-task-card' : 'video-task-card locked';
-        const cardStyle = isAccessible ? '' : 'opacity: 0.7; cursor: not-allowed;';
-        
-        // 解锁状态显示
-        const unlockStatusDisplay = '';
-        
-      const managementButtonsHTML = isClubCreator ? `
+
+            console.log('开始渲染', videoTasks.length, '个任务');
+
+            // 按创建时间排序任务
+            const sortedTasks = [...videoTasks].sort((a, b) => {
+                const timeA = new Date(a.createdAt || 0).getTime();
+                const timeB = new Date(b.createdAt || 0).getTime();
+                return timeA - timeB;
+            });
+
+            console.log('排序后的任务:', sortedTasks);
+
+            let tasksHTML = '';
+
+            // 获取当前用户角色
+            console.log('当前用户是创建者吗？', isClubCreator);
+
+            // 遍历所有任务
+            for (let i = 0; i < sortedTasks.length; i++) {
+                const task = sortedTasks[i];
+                console.log(`处理第${i + 1}个任务:`, task);
+
+                const taskId = task.taskId || task.id;
+                const createdTime = task.createdAt ? formatDate(task.createdAt) : '刚刚';
+                const taskTypeLabel = getTaskTypeLabel(task.type);
+
+                // 关键修改：权限判断逻辑 - 简化为只检查手动解锁状态
+                let isAccessible = false;
+                let lockReason = '';
+
+                if (isClubCreator) {
+                    // 创建者总是可以访问所有任务
+                    isAccessible = true;
+                } else {
+                    // 普通成员：只检查是否手动解锁
+                    isAccessible = task.isUnlocked === true;
+                    if (!isAccessible) {
+                        lockReason = '等待俱乐部创建者解锁此活动';
+                    }
+                }
+
+                // 获取任务完成进度（仅对可访问的任务）
+                let progressData = { percentage: 0, completed: 0, total: 0 };
+                if (isAccessible) {
+                    progressData = await getTaskProgressData(taskId);
+                }
+
+                // 根据是否可访问决定卡片样式
+                const cardClass = isAccessible ? 'video-task-card' : 'video-task-card locked';
+                const cardStyle = isAccessible ? '' : 'opacity: 0.7; cursor: not-allowed;';
+
+                // 解锁状态显示
+                const unlockStatusDisplay = '';
+
+                const managementButtonsHTML = isClubCreator ? `
     <div class="task-management-buttons" data-task-id="${taskId}" style="margin-top: 16px; margin-bottom: 12px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
         <button class="btn-icon ${task.isUnlocked ? 'btn-icon-lock' : 'btn-icon-unlock'}" 
                 onclick="event.stopPropagation(); toggleTaskLock(${taskId}, ${!task.isUnlocked})" 
@@ -2113,30 +2278,30 @@ function formatFileSize(bytes) {
         </button>
     </div>
 ` : '';
-        
-        // 进度条（普通成员且任务可访问时显示）
-        const progressBarHTML = !isClubCreator && isAccessible ? `
+
+                // 进度条（普通成员且任务可访问时显示）
+                const progressBarHTML = !isClubCreator && isAccessible ? `
             <div class="progress-container">
                 <div class="progress-bar" style="width: ${progressData.percentage}%"></div>
             </div>
             <div class="progress-text">完成度: ${progressData.completed}/${progressData.total}</div>
         ` : '';
-        
-        // 锁定原因提示（仅普通成员看到）
-        const lockReasonHTML = !isClubCreator && !isAccessible && lockReason ? `
+
+                // 锁定原因提示（仅普通成员看到）
+                const lockReasonHTML = !isClubCreator && !isAccessible && lockReason ? `
             <div style="font-size: 12px; color: #ff4d4f; margin-top: 8px; padding: 8px; background: rgba(255,77,79,0.1); border-radius: 4px;">
                 <i class="fas fa-lock"></i> ${lockReason}
             </div>
         ` : '';
-        
-        // 创建者看到的提示信息
-        const creatorHintHTML = isClubCreator ? `
+
+                // 创建者看到的提示信息
+                const creatorHintHTML = isClubCreator ? `
             <div style="font-size: 12px; color: ${task.isUnlocked ? '#389e0d' : '#d46b08'}; margin-top: 8px; padding: 8px; background: rgba(${task.isUnlocked ? '82,196,26,0.1' : '255,122,69,0.1'}); border-radius: 4px;">
                 <i class="fas fa-info-circle"></i> 此活动目前${task.isUnlocked ? '已解锁，成员可以参与' : '已锁定，成员无法访问'}
             </div>
         ` : '';
-        
-        tasksHTML += `
+
+                tasksHTML += `
             <div class="${cardClass}" style="${cardStyle}" onclick="handleTaskCardClick(${taskId}, ${isAccessible})">
                 ${!isAccessible && !isClubCreator ? `
                     <div class="task-lock-overlay">
@@ -2195,17 +2360,17 @@ function formatFileSize(bytes) {
                 </div>
             </div>
         `;
-    }
-    
-    console.log('生成的HTML长度:', tasksHTML.length);
-    container.innerHTML = tasksHTML;
-    console.log('========== 渲染任务列表完成 ==========');
-}
+            }
+
+            console.log('生成的HTML长度:', tasksHTML.length);
+            container.innerHTML = tasksHTML;
+            console.log('========== 渲染任务列表完成 ==========');
+        }
 
         // 切换任务锁定状态
         async function toggleTaskLock(taskId, unlockStatus) {
             console.log('切换任务锁定状态，任务ID:', taskId, '解锁状态:', unlockStatus);
-            
+
             try {
                 // 检查权限
                 const hasPermission = await checkAndUpdatePermissions();
@@ -2213,31 +2378,31 @@ function formatFileSize(bytes) {
                     Utils.showNotification('只有俱乐部创建者可以解锁/锁定任务', 'error');
                     return;
                 }
-                
+
                 // 找到任务
                 const taskIndex = videoTasks.findIndex(t => t.taskId === taskId || t.id === taskId);
                 if (taskIndex === -1) {
                     Utils.showNotification('找不到该任务', 'error');
                     return;
                 }
-                
+
                 const task = videoTasks[taskIndex];
                 const action = unlockStatus ? '解锁' : '锁定';
-                
+
                 Utils.showNotification(`正在${action}任务...`, 'info');
-                
+
                 const result = await API.updateTask(taskId, {
-    isUnlocked: unlockStatus
-});
-                
+                    isUnlocked: unlockStatus
+                });
+
                 console.log('更新任务解锁状态API响应:', result);
-                
+
                 if (result && result.code === 0) {
                     Utils.showNotification(`任务"${task.title}"已${action}！`, 'success');
-                    
+
                     // 更新本地任务状态
                     videoTasks[taskIndex].isUnlocked = unlockStatus;
-                    
+
                     // 重新渲染任务列表
                     await renderVideoTasks();
                 } else {
@@ -2255,22 +2420,22 @@ function formatFileSize(bytes) {
                 isAccessible: false,
                 lockReason: ''
             };
-            
-            console.log(`检查任务解锁条件: 第${taskIndex+1}个任务 "${task.title}"`);
-            
+
+            console.log(`检查任务解锁条件: 第${taskIndex + 1}个任务 "${task.title}"`);
+
             if (isClubCreator) {
                 // 创建者总是可以访问
                 result.isAccessible = true;
                 return result;
             }
-            
+
             // 普通成员：只检查是否手动解锁
             result.isAccessible = task.isUnlocked === true;
-            
+
             if (!result.isAccessible) {
                 result.lockReason = '等待俱乐部创建者解锁此活动';
             }
-            
+
             console.log(`任务 "${task.title}" 访问状态: ${result.isAccessible}, 原因: ${result.lockReason}`);
             return result;
         }
@@ -2279,20 +2444,20 @@ function formatFileSize(bytes) {
         async function getTaskProgressData(taskId) {
             try {
                 const taskDetail = await Tasks.getTaskDetail(taskId);
-                
+
                 if (!taskDetail || !taskDetail.taskInfo || !Array.isArray(taskDetail.taskInfo.subTasks)) {
                     return { percentage: 0, completed: 0, total: 0 };
                 }
-                
+
                 const subTasks = taskDetail.taskInfo.subTasks;
                 let completedCount = 0;
-                
+
                 subTasks.forEach(subTask => {
                     if (subTask.status === 'completed') {
                         completedCount++;
                     }
                 });
-                
+
                 // 使用实际的子任务数量计算进度
                 const totalSubTasks = subTasks.length;
                 const percentage = totalSubTasks > 0 ? Math.round((completedCount / totalSubTasks) * 100) : 0;
@@ -2337,250 +2502,250 @@ function formatFileSize(bytes) {
 
         // 创建新任务
         async function createNewTask() {
-    // 再次验证权限（以防万一）
-    if (!currentClub || !currentClub.id) {
-        Utils.showNotification('无法获取俱乐部信息', 'error');
-        return;
-    }
-    
-    try {
-        const hasPermission = await Clubs.isClubCreator(currentClub.id);
-        if (!hasPermission) {
-            Utils.showNotification('只有俱乐部创建者可以创建任务', 'error');
-            return;
-        }
-        
-        const nameInput = document.getElementById('new-task-name');
-        const descInput = document.getElementById('new-task-description');
-        
-        if (!nameInput) return;
-        
-        const taskName = nameInput.value.trim();
-        const taskDescription = descInput ? descInput.value.trim() : '';
-        
-        // 验证输入 - 只验证主题名称
-        if (!taskName) {
-            Utils.showNotification('请输入任务名称', 'error');
-            return;
-        }
-
-        // 检查是否有视频正在上传中（如果有视频文件且未上传完成）
-        const videoFile = document.getElementById('video-file').files[0];
-        if (videoFile) {
-            const videoProgress = parseInt(document.getElementById('video-progress-text')?.textContent || '0');
-            if (videoProgress < 100 && videoProgress > 0) {
-                Utils.showNotification('请等待视频上传完成', 'warning');
+            // 再次验证权限（以防万一）
+            if (!currentClub || !currentClub.id) {
+                Utils.showNotification('无法获取俱乐部信息', 'error');
                 return;
             }
-        }
-        
-        // 验证视频必填 - 必须上传视频才能创建任务
-        if (!uploadedVideoId && !videoFile) {
-            Utils.showNotification('请上传教学视频（必填）', 'error');
-            const videoUploadArea = document.getElementById('video-upload-area');
-            const videoError = document.getElementById('video-error');
-            if (videoUploadArea) {
-                videoUploadArea.style.borderColor = '#ff4d4f';
-                videoUploadArea.style.background = 'rgba(255, 77, 79, 0.05)';
-            }
-            if (videoError) {
-                videoError.style.display = 'flex';
-                document.getElementById('video-error-text').textContent = '请上传视频文件（必填）';
-            }
-            return;
-        }
-        
-        // 检查是否有PDF正在上传中（如果有PDF文件且未上传完成）
-        const pdfFile = document.getElementById('pdf-file').files[0];
-        if (pdfFile) {
-            const pdfProgress = parseInt(document.getElementById('pdf-progress-text')?.textContent || '0');
-            if (pdfProgress < 100 && pdfProgress > 0) {
-                Utils.showNotification('请等待PDF上传完成', 'warning');
-                return;
-            }
-        }
-        
-        // 验证PDF必填 - 必须上传PDF才能创建任务
-        if (!uploadedPdfId && !pdfFile) {
-            Utils.showNotification('请上传教学设计案例PDF文件（必填）', 'error');
-            const pdfUploadArea = document.getElementById('pdf-upload-area');
-            const pdfError = document.getElementById('pdf-error');
-            if (pdfUploadArea) {
-                pdfUploadArea.style.borderColor = '#ff4d4f';
-                pdfUploadArea.style.background = 'rgba(255, 77, 79, 0.05)';
-            }
-            if (pdfError) {
-                pdfError.style.display = 'flex';
-                document.getElementById('pdf-error-text').textContent = '请上传PDF文件（必填）';
-            }
-            return;
-        }
-        
-        // 获取俱乐部ID
-        const clubId = parseInt(currentClub.id || currentClub.clubId);
-        
-        if (!clubId) {
-            Utils.showNotification('无法获取俱乐部信息', 'error');
-            return;
-        }
-        
-        // 构建请求参数
-        const requestParams = {
-            clubId: clubId,
-            title: taskName,
-            description: taskDescription,
-            type: 'all',
-            isUnlocked: false
-        };
-        
-        // 只有在有视频ID时才添加videoId参数
-        if (uploadedVideoId) {
-            requestParams.videoId = uploadedVideoId;
-        }
 
-        // 只有在有PDF ID时才添加pdfId参数
-        if (uploadedPdfId) {
-            requestParams.pdfId = uploadedPdfId;
-        }
-        
-        console.log('创建任务请求参数:', requestParams);
-        
-        Utils.showNotification('正在创建任务...', 'info');
-        
-        const result = await API.createTask(requestParams);
-        
-        console.log('创建任务API完整响应:', result);
-        
-        if (result && result.code === 0) {
-            const successMsg = `任务"${taskName}"创建成功！（默认锁定状态）`;
-            Utils.showNotification(successMsg, 'success');
-            closeCreateTaskModal(false); // 创建成功，不删除视频和PDF
-            
-            // 直接添加到本地列表并渲染
-            if (result.data && result.data.taskId) {
-                const newTask = {
-                    taskId: result.data.taskId,
-                    id: result.data.taskId,
+            try {
+                const hasPermission = await Clubs.isClubCreator(currentClub.id);
+                if (!hasPermission) {
+                    Utils.showNotification('只有俱乐部创建者可以创建任务', 'error');
+                    return;
+                }
+
+                const nameInput = document.getElementById('new-task-name');
+                const descInput = document.getElementById('new-task-description');
+
+                if (!nameInput) return;
+
+                const taskName = nameInput.value.trim();
+                const taskDescription = descInput ? descInput.value.trim() : '';
+
+                // 验证输入 - 只验证主题名称
+                if (!taskName) {
+                    Utils.showNotification('请输入任务名称', 'error');
+                    return;
+                }
+
+                // 检查是否有视频正在上传中（如果有视频文件且未上传完成）
+                const videoFile = document.getElementById('video-file').files[0];
+                if (videoFile) {
+                    const videoProgress = parseInt(document.getElementById('video-progress-text')?.textContent || '0');
+                    if (videoProgress < 100 && videoProgress > 0) {
+                        Utils.showNotification('请等待视频上传完成', 'warning');
+                        return;
+                    }
+                }
+
+                // 验证视频必填 - 必须上传视频才能创建任务
+                if (!uploadedVideoId && !videoFile) {
+                    Utils.showNotification('请上传教学视频（必填）', 'error');
+                    const videoUploadArea = document.getElementById('video-upload-area');
+                    const videoError = document.getElementById('video-error');
+                    if (videoUploadArea) {
+                        videoUploadArea.style.borderColor = '#ff4d4f';
+                        videoUploadArea.style.background = 'rgba(255, 77, 79, 0.05)';
+                    }
+                    if (videoError) {
+                        videoError.style.display = 'flex';
+                        document.getElementById('video-error-text').textContent = '请上传视频文件（必填）';
+                    }
+                    return;
+                }
+
+                // 检查是否有PDF正在上传中（如果有PDF文件且未上传完成）
+                const pdfFile = document.getElementById('pdf-file').files[0];
+                if (pdfFile) {
+                    const pdfProgress = parseInt(document.getElementById('pdf-progress-text')?.textContent || '0');
+                    if (pdfProgress < 100 && pdfProgress > 0) {
+                        Utils.showNotification('请等待PDF上传完成', 'warning');
+                        return;
+                    }
+                }
+
+                // 验证PDF必填 - 必须上传PDF才能创建任务
+                if (!uploadedPdfId && !pdfFile) {
+                    Utils.showNotification('请上传教学设计案例PDF文件（必填）', 'error');
+                    const pdfUploadArea = document.getElementById('pdf-upload-area');
+                    const pdfError = document.getElementById('pdf-error');
+                    if (pdfUploadArea) {
+                        pdfUploadArea.style.borderColor = '#ff4d4f';
+                        pdfUploadArea.style.background = 'rgba(255, 77, 79, 0.05)';
+                    }
+                    if (pdfError) {
+                        pdfError.style.display = 'flex';
+                        document.getElementById('pdf-error-text').textContent = '请上传PDF文件（必填）';
+                    }
+                    return;
+                }
+
+                // 获取俱乐部ID
+                const clubId = parseInt(currentClub.id || currentClub.clubId);
+
+                if (!clubId) {
+                    Utils.showNotification('无法获取俱乐部信息', 'error');
+                    return;
+                }
+
+                // 构建请求参数
+                const requestParams = {
+                    clubId: clubId,
                     title: taskName,
                     description: taskDescription,
                     type: 'all',
-                    clubId: clubId,
-                    videoId: uploadedVideoId || null,
-                    pdfId: uploadedPdfId || null,
-                    isUnlocked: false, // 默认锁定
-                    createdAt: new Date().toISOString(),
+                    isUnlocked: false
                 };
-                
-                console.log('新创建的任务对象:', newTask);
-                
-                // 添加到本地任务列表
-                videoTasks.push(newTask);
-                
-                console.log('当前任务列表（创建后）:', videoTasks);
-                
-                // 立即重新渲染
-                await renderVideoTasks();
-                
-                // 后台同步
-                setTimeout(async () => {
-                    try {
-                        const refreshResponse = await API.getTasks(clubId);
-                        if (refreshResponse && refreshResponse.code === 0) {
-                            // 更新本地列表
-                            let refreshedTasks = [];
-                            
-                            if (Array.isArray(refreshResponse.data)) {
-                                refreshedTasks = refreshResponse.data;
-                            } else if (refreshResponse.data && Array.isArray(refreshResponse.data.list)) {
-                                refreshedTasks = refreshResponse.data.list;
+
+                // 只有在有视频ID时才添加videoId参数
+                if (uploadedVideoId) {
+                    requestParams.videoId = uploadedVideoId;
+                }
+
+                // 只有在有PDF ID时才添加pdfId参数
+                if (uploadedPdfId) {
+                    requestParams.pdfId = uploadedPdfId;
+                }
+
+                console.log('创建任务请求参数:', requestParams);
+
+                Utils.showNotification('正在创建任务...', 'info');
+
+                const result = await API.createTask(requestParams);
+
+                console.log('创建任务API完整响应:', result);
+
+                if (result && result.code === 0) {
+                    const successMsg = `任务"${taskName}"创建成功！（默认锁定状态）`;
+                    Utils.showNotification(successMsg, 'success');
+                    closeCreateTaskModal(false); // 创建成功，不删除视频和PDF
+
+                    // 直接添加到本地列表并渲染
+                    if (result.data && result.data.taskId) {
+                        const newTask = {
+                            taskId: result.data.taskId,
+                            id: result.data.taskId,
+                            title: taskName,
+                            description: taskDescription,
+                            type: 'all',
+                            clubId: clubId,
+                            videoId: uploadedVideoId || null,
+                            pdfId: uploadedPdfId || null,
+                            isUnlocked: false, // 默认锁定
+                            createdAt: new Date().toISOString(),
+                        };
+
+                        console.log('新创建的任务对象:', newTask);
+
+                        // 添加到本地任务列表
+                        videoTasks.push(newTask);
+
+                        console.log('当前任务列表（创建后）:', videoTasks);
+
+                        // 立即重新渲染
+                        await renderVideoTasks();
+
+                        // 后台同步
+                        setTimeout(async () => {
+                            try {
+                                const refreshResponse = await API.getTasks(clubId);
+                                if (refreshResponse && refreshResponse.code === 0) {
+                                    // 更新本地列表
+                                    let refreshedTasks = [];
+
+                                    if (Array.isArray(refreshResponse.data)) {
+                                        refreshedTasks = refreshResponse.data;
+                                    } else if (refreshResponse.data && Array.isArray(refreshResponse.data.list)) {
+                                        refreshedTasks = refreshResponse.data.list;
+                                    }
+
+                                    videoTasks = refreshedTasks.map(task => ({
+                                        taskId: task.taskId || task.id,
+                                        id: task.taskId || task.id,
+                                        title: task.title || '未命名任务',
+                                        description: task.description || '',
+                                        type: task.type || 'all',
+                                        clubId: task.clubId || clubId,
+                                        videoId: task.videoId || null,
+                                        pdfId: task.pdfId || null,
+                                        isUnlocked: task.isUnlocked === true,
+                                        createdAt: task.createdAt || new Date().toISOString(),
+                                    }));
+                                    await renderVideoTasks();
+                                }
+                            } catch (error) {
+                                console.error('刷新任务列表失败:', error);
                             }
-                            
-                            videoTasks = refreshedTasks.map(task => ({
-                                taskId: task.taskId || task.id,
-                                id: task.taskId || task.id,
-                                title: task.title || '未命名任务',
-                                description: task.description || '',
-                                type: task.type || 'all',
-                                clubId: task.clubId || clubId,
-                                videoId: task.videoId || null,
-                                pdfId: task.pdfId || null,
-                                isUnlocked: task.isUnlocked === true,
-                                createdAt: task.createdAt || new Date().toISOString(),
-                            }));
-                            await renderVideoTasks();
-                        }
-                    } catch (error) {
-                        console.error('刷新任务列表失败:', error);
+                        }, 2000);
+
+                    } else {
+                        console.warn('API没有返回taskId，直接重新加载');
+                        // 如果没有taskId，直接重新加载
+                        setTimeout(async () => {
+                            await loadVideoTasks();
+                        }, 500);
                     }
-                }, 2000);
-                
-            } else {
-                console.warn('API没有返回taskId，直接重新加载');
-                // 如果没有taskId，直接重新加载
-                setTimeout(async () => {
-                    await loadVideoTasks();
-                }, 500);
+
+                } else {
+                    console.error('创建任务API返回错误:', result?.msg || '未知错误');
+                    Utils.showNotification(result?.msg || '创建任务失败', 'error');
+                }
+            } catch (error) {
+                console.error('创建任务失败:', error);
+                Utils.showNotification('创建任务失败: ' + error.message, 'error');
             }
-            
-        } else {
-            console.error('创建任务API返回错误:', result?.msg || '未知错误');
-            Utils.showNotification(result?.msg || '创建任务失败', 'error');
         }
-    } catch (error) {
-        console.error('创建任务失败:', error);
-        Utils.showNotification('创建任务失败: ' + error.message, 'error');
-    }
-}
 
-// 移除文件
-async function removeFile(fileType) {
-    console.log('removeFile函数被调用，文件类型:', fileType);
+        // 移除文件
+        async function removeFile(fileType) {
+            console.log('removeFile函数被调用，文件类型:', fileType);
 
-    const fileLabel = fileType === 'video' ? '视频文件' : fileType === 'pdf' ? 'PDF文件' : '文件';
-    if (!confirm(`确定要移除已上传的${fileLabel}吗？`)) {
-        return;
-    }
+            const fileLabel = fileType === 'video' ? '视频文件' : fileType === 'pdf' ? 'PDF文件' : '文件';
+            if (!confirm(`确定要移除已上传的${fileLabel}吗？`)) {
+                return;
+            }
 
-    // 如果有已上传的ID，先删除后端数据
-    if (fileType === 'video' && uploadedVideoId) {
-        try {
-            console.log('删除视频:', uploadedVideoId);
-            await API.deleteVideo(uploadedVideoId);
-            console.log('视频删除成功');
-        } catch (error) {
-            console.error('删除视频失败:', error);
-            // 继续执行，不阻止UI重置
-        }
-    }
+            // 如果有已上传的ID，先删除后端数据
+            if (fileType === 'video' && uploadedVideoId) {
+                try {
+                    console.log('删除视频:', uploadedVideoId);
+                    await API.deleteVideo(uploadedVideoId);
+                    console.log('视频删除成功');
+                } catch (error) {
+                    console.error('删除视频失败:', error);
+                    // 继续执行，不阻止UI重置
+                }
+            }
 
-    if (fileType === 'pdf' && uploadedPdfId) {
-        try {
-            console.log('删除PDF资源:', uploadedPdfId);
-            await API.deleteResource(uploadedPdfId);
-            console.log('PDF资源删除成功');
-        } catch (error) {
-            console.error('删除PDF资源失败:', error);
-            // 继续执行，不阻止UI重置
-        }
-    }
+            if (fileType === 'pdf' && uploadedPdfId) {
+                try {
+                    console.log('删除PDF资源:', uploadedPdfId);
+                    await API.deleteResource(uploadedPdfId);
+                    console.log('PDF资源删除成功');
+                } catch (error) {
+                    console.error('删除PDF资源失败:', error);
+                    // 继续执行，不阻止UI重置
+                }
+            }
 
-    // 重置文件输入
-    const fileInput = document.getElementById(`${fileType}-file`);
-    if (fileInput) {
-        fileInput.value = '';
-        console.log('文件输入已清空');
-    }
+            // 重置文件输入
+            const fileInput = document.getElementById(`${fileType}-file`);
+            if (fileInput) {
+                fileInput.value = '';
+                console.log('文件输入已清空');
+            }
 
-    // 重置UI显示
-    const placeholder = document.querySelector(`#${fileType}-upload-area .upload-placeholder`);
-    const progress = document.getElementById(`${fileType}-progress`);
-    const preview = document.getElementById(`${fileType}-preview`);
+            // 重置UI显示
+            const placeholder = document.querySelector(`#${fileType}-upload-area .upload-placeholder`);
+            const progress = document.getElementById(`${fileType}-progress`);
+            const preview = document.getElementById(`${fileType}-preview`);
 
-    if (placeholder) placeholder.style.display = 'block';
-    if (progress) {
-        progress.style.display = 'none';
-        if (fileType === 'video') {
-            progress.innerHTML = `
+            if (placeholder) placeholder.style.display = 'block';
+            if (progress) {
+                progress.style.display = 'none';
+                if (fileType === 'video') {
+                    progress.innerHTML = `
                 <div class="progress-container">
                     <div class="progress-bar" id="video-progress-bar" style="width: 0%"></div>
                 </div>
@@ -2591,93 +2756,93 @@ async function removeFile(fileType) {
                     </span>
                 </div>
             `;
-        } else {
-            progress.innerHTML = `
+                } else {
+                    progress.innerHTML = `
                 <div class="progress-container">
                     <div class="progress-bar" id="${fileType}-progress-bar" style="width: 0%"></div>
                 </div>
                 <div class="progress-text" id="${fileType}-progress-text">0%</div>
                 <div class="file-info" id="${fileType}-file-info"></div>
             `;
-        }
-    }
-    if (preview) preview.style.display = 'none';
-
-    // 重置对应的上传ID
-    if (fileType === 'video') {
-        uploadedVideoId = null;
-        const previewContainer = document.getElementById('upload-preview');
-        if (previewContainer) previewContainer.style.display = 'none';
-    }
-    if (fileType === 'pdf') {
-        uploadedPdfId = null;
-        const previewContainer = document.getElementById('pdf-upload-preview');
-        if (previewContainer) previewContainer.style.display = 'none';
-    }
-
-    alert(`${fileLabel}已移除`);
-}
-
-
-// 点击模态框外部关闭
-document.addEventListener('DOMContentLoaded', function() {
-    const previewModal = document.getElementById('preview-modal');
-    if (previewModal) {
-        previewModal.addEventListener('click', function(event) {
-            if (event.target === previewModal) {
-                closePreview();
+                }
             }
-        });
-    }
-    
-    // ESC键关闭预览
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') {
+            if (preview) preview.style.display = 'none';
+
+            // 重置对应的上传ID
+            if (fileType === 'video') {
+                uploadedVideoId = null;
+                const previewContainer = document.getElementById('upload-preview');
+                if (previewContainer) previewContainer.style.display = 'none';
+            }
+            if (fileType === 'pdf') {
+                uploadedPdfId = null;
+                const previewContainer = document.getElementById('pdf-upload-preview');
+                if (previewContainer) previewContainer.style.display = 'none';
+            }
+
+            alert(`${fileLabel}已移除`);
+        }
+
+
+        // 点击模态框外部关闭
+        document.addEventListener('DOMContentLoaded', function () {
             const previewModal = document.getElementById('preview-modal');
-            if (previewModal && previewModal.style.display === 'flex') {
-                closePreview();
+            if (previewModal) {
+                previewModal.addEventListener('click', function (event) {
+                    if (event.target === previewModal) {
+                        closePreview();
+                    }
+                });
             }
-        }
-    });
-});
 
-// 修改showFileInfo函数，添加预览按钮
-function showFileInfo(file, fileType) {
-    const area = document.getElementById(`${fileType}-upload-area`);
-    const placeholder = area ? area.querySelector('.upload-placeholder') : null;
-    const progress = document.getElementById(`${fileType}-progress`);
-    const preview = document.getElementById(`${fileType}-preview`);
-    
-    // 隐藏占位符，显示进度
-    if (placeholder) placeholder.style.display = 'none';
-    if (progress) progress.style.display = 'block';
-    
-    // 更新文件信息
-    const fileInfo = document.getElementById(`${fileType}-file-info`);
-    if (fileInfo) {
-        fileInfo.innerHTML = `
+            // ESC键关闭预览
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') {
+                    const previewModal = document.getElementById('preview-modal');
+                    if (previewModal && previewModal.style.display === 'flex') {
+                        closePreview();
+                    }
+                }
+            });
+        });
+
+        // 修改showFileInfo函数，添加预览按钮
+        function showFileInfo(file, fileType) {
+            const area = document.getElementById(`${fileType}-upload-area`);
+            const placeholder = area ? area.querySelector('.upload-placeholder') : null;
+            const progress = document.getElementById(`${fileType}-progress`);
+            const preview = document.getElementById(`${fileType}-preview`);
+
+            // 隐藏占位符，显示进度
+            if (placeholder) placeholder.style.display = 'none';
+            if (progress) progress.style.display = 'block';
+
+            // 更新文件信息
+            const fileInfo = document.getElementById(`${fileType}-file-info`);
+            if (fileInfo) {
+                fileInfo.innerHTML = `
             <span><i class="fas fa-file"></i> ${file.name}</span>
             <span><i class="fas fa-hdd"></i> ${formatFileSize(file.size)}</span>
         `;
-    }
-    
-    // 更新预览
-    if (preview) {
-        preview.style.display = 'flex';
-        const title = document.getElementById(`${fileType}-preview-title`);
-        const size = document.getElementById(`${fileType}-preview-size`);
-        
-        if (title) title.textContent = file.name;
-        if (size) size.textContent = formatFileSize(file.size);
-    }
-    
-    // 显示预览容器（video 用 upload-preview，pdf 用 pdf-upload-preview）
-    const previewContainerId = fileType === 'pdf' ? 'pdf-upload-preview' : 'upload-preview';
-    const previewContainer = document.getElementById(previewContainerId);
-    if (previewContainer) {
-        previewContainer.style.display = 'block';
-    }
-}
+            }
+
+            // 更新预览
+            if (preview) {
+                preview.style.display = 'flex';
+                const title = document.getElementById(`${fileType}-preview-title`);
+                const size = document.getElementById(`${fileType}-preview-size`);
+
+                if (title) title.textContent = file.name;
+                if (size) size.textContent = formatFileSize(file.size);
+            }
+
+            // 显示预览容器（video 用 upload-preview，pdf 用 pdf-upload-preview）
+            const previewContainerId = fileType === 'pdf' ? 'pdf-upload-preview' : 'upload-preview';
+            const previewContainer = document.getElementById(previewContainerId);
+            if (previewContainer) {
+                previewContainer.style.display = 'block';
+            }
+        }
         // 关闭创建任务模态框
         async function closeCreateTaskModal(shouldCleanup = true) {
             const modal = document.getElementById('create-task-modal');
@@ -2722,19 +2887,19 @@ function showFileInfo(file, fileType) {
         // 进入任务页面
         async function enterTaskPage(taskId) {
             console.log('进入任务页面，任务ID:', taskId);
-            
+
             try {
                 // 获取任务详情
                 const taskDetail = await Tasks.getTaskDetail(taskId);
-                
+
                 if (!taskDetail) {
                     Utils.showNotification('获取任务信息失败', 'error');
                     return;
                 }
-                
+
                 // 设置当前任务
                 await Tasks.setCurrentTask(taskId);
-                
+
                 // 跳转到任务页面
                 if (window.App && window.App.navigateTo) {
                     window.App.navigateTo('tasks');
@@ -2750,7 +2915,7 @@ function showFileInfo(file, fileType) {
         // 打开编辑任务模态框
         async function openEditTaskModal(taskId) {
             console.log('打开编辑任务模态框，任务ID:', taskId);
-            
+
             try {
                 // 检查权限
                 const hasPermission = await checkAndUpdatePermissions();
@@ -2758,17 +2923,17 @@ function showFileInfo(file, fileType) {
                     Utils.showNotification('只有俱乐部创建者可以修改任务', 'error');
                     return;
                 }
-                
+
                 // 获取任务详情
                 const task = videoTasks.find(t => t.taskId === taskId || t.id === taskId);
                 if (!task) {
                     Utils.showNotification('找不到该任务', 'error');
                     return;
                 }
-                
+
                 // 创建编辑模态框（简化版，只保留基本编辑功能）
                 createEditTaskModal(task);
-                
+
             } catch (error) {
                 console.error('打开编辑模态框失败:', error);
                 Utils.showNotification('加载任务失败', 'error');
@@ -2885,19 +3050,19 @@ function showFileInfo(file, fileType) {
                     </div>
                 </div>
             `;
-            
+
             document.body.insertAdjacentHTML('beforeend', modalHTML);
-            
+
             // 绑定点击外部关闭
             const modal = document.getElementById('edit-task-modal');
             if (modal) {
-                modal.addEventListener('click', function(event) {
+                modal.addEventListener('click', function (event) {
                     if (event.target === modal) {
                         closeEditTaskModal();
                     }
                 });
             }
-            
+
             // 聚焦到名称输入框
             setTimeout(() => {
                 const nameInput = document.getElementById('edit-task-name');
@@ -2942,7 +3107,7 @@ function showFileInfo(file, fileType) {
         // 保存任务修改
         async function saveTaskChanges(taskId) {
             console.log('保存任务修改，任务ID:', taskId);
-            
+
             try {
                 // 检查权限
                 const hasPermission = await checkAndUpdatePermissions();
@@ -2950,16 +3115,16 @@ function showFileInfo(file, fileType) {
                     Utils.showNotification('只有俱乐部创建者可以修改任务', 'error');
                     return;
                 }
-                
+
                 // 获取输入值
                 const nameInput = document.getElementById('edit-task-name');
                 const descInput = document.getElementById('edit-task-description');
-                
+
                 if (!nameInput) return;
-                
+
                 const taskName = nameInput.value.trim();
                 const taskDescription = descInput ? descInput.value.trim() : '';
-                
+
                 // 验证输入
                 if (!taskName) {
                     Utils.showNotification('请输入任务名称', 'error');
@@ -2983,7 +3148,7 @@ function showFileInfo(file, fileType) {
                         return;
                     }
                 }
-                
+
                 Utils.showNotification('正在保存修改...', 'info');
 
                 // 构建更新参数
@@ -3007,18 +3172,18 @@ function showFileInfo(file, fileType) {
                     updateParams.pdfId = null;
                 }
                 // else: 不传 pdfId，后端保持不变
-                
+
                 console.log('更新任务参数:', updateParams);
 
                 // 调用API更新任务
                 const result = await API.updateTask(taskId, updateParams);
-                
+
                 console.log('更新任务API响应:', result);
-                
+
                 if (result && result.code === 0) {
                     Utils.showNotification(`任务"${taskName}"修改成功！`, 'success');
                     closeEditTaskModal();
-                    
+
                     // 刷新任务列表
                     await loadVideoTasks();
                 } else {
@@ -3027,13 +3192,13 @@ function showFileInfo(file, fileType) {
             } catch (error) {
                 console.error('修改任务失败:', error);
                 Utils.showNotification('修改任务失败: ' + error.message, 'error');
-                }
             }
+        }
 
         // 确认删除任务
         async function confirmDeleteTask(taskId) {
             console.log('确认删除任务，任务ID:', taskId);
-            
+
             try {
                 // 检查权限
                 const hasPermission = await checkAndUpdatePermissions();
@@ -3041,17 +3206,17 @@ function showFileInfo(file, fileType) {
                     Utils.showNotification('只有俱乐部创建者可以删除任务', 'error');
                     return;
                 }
-                
+
                 // 获取任务详情
                 const task = videoTasks.find(t => t.taskId === taskId || t.id === taskId);
                 if (!task) {
                     Utils.showNotification('找不到该任务', 'error');
                     return;
                 }
-                
+
                 // 使用浏览器自带的 confirm
                 const confirmed = confirm(`确定要删除任务"${task.title}"吗？\n\n此操作将删除所有子任务和完成记录，不可撤销`);
-                
+
                 if (confirmed) {
                     await deleteTask(taskId);
                 }
@@ -3133,13 +3298,13 @@ function showFileInfo(file, fileType) {
         // 修复任务类型显示问题
         function getTaskTypeLabel(taskType) {
             if (!taskType) return '视频+研讨活动';
-            
+
             const typeMap = {
                 'all': '视频+研讨活动',
                 'watch': '看视频任务',
                 'research': '研视频任务',
             };
-            
+
             return typeMap[taskType] || '视频+研讨活动';
         }
 
@@ -3169,11 +3334,11 @@ function showFileInfo(file, fileType) {
         window.removeFile = removeFile;
         window.editRemoveExisting = editRemoveExisting;
         window.handleEditFileSelect = handleEditFileSelect;
-        
+
         // 点击模态框外部关闭
         const modal = document.getElementById('create-task-modal');
         if (modal) {
-            modal.addEventListener('click', function(event) {
+            modal.addEventListener('click', function (event) {
                 if (event.target === modal) {
                     closeCreateTaskModal();
                 }
@@ -3181,46 +3346,49 @@ function showFileInfo(file, fileType) {
         }
 
         // 点击模态框外部关闭
-document.addEventListener('DOMContentLoaded', function() {
-    const previewModal = document.getElementById('preview-modal');
-    if (previewModal) {
-        previewModal.addEventListener('click', function(event) {
-            if (event.target === previewModal) {
-                closePreview();
-            }
-        });
-    }
-    
-    // ESC键关闭预览
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') {
+        document.addEventListener('DOMContentLoaded', function () {
             const previewModal = document.getElementById('preview-modal');
-            if (previewModal && previewModal.style.display === 'flex') {
-                closePreview();
+            if (previewModal) {
+                previewModal.addEventListener('click', function (event) {
+                    if (event.target === previewModal) {
+                        closePreview();
+                    }
+                });
             }
-        }
-    });
-    
-    // 确保预览按钮可以点击
-    const previewButtons = document.querySelectorAll('.btn-preview');
-    previewButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.stopPropagation(); // 防止事件冒泡
+
+            // ESC键关闭预览
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') {
+                    const previewModal = document.getElementById('preview-modal');
+                    if (previewModal && previewModal.style.display === 'flex') {
+                        closePreview();
+                    }
+                }
+            });
+
+            // 确保预览按钮可以点击
+            const previewButtons = document.querySelectorAll('.btn-preview');
+            previewButtons.forEach(button => {
+                button.addEventListener('click', function (e) {
+                    e.stopPropagation(); // 防止事件冒泡
+                });
+            });
+
+            // 确保移除按钮可以点击
+            const removeButtons = document.querySelectorAll('.btn-remove');
+            removeButtons.forEach(button => {
+                button.addEventListener('click', function (e) {
+                    e.stopPropagation(); // 防止事件冒泡
+                });
+            });
         });
-    });
-    
-    // 确保移除按钮可以点击
-    const removeButtons = document.querySelectorAll('.btn-remove');
-    removeButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.stopPropagation(); // 防止事件冒泡
-        });
-    });
-});
-        
+
         // 立即尝试初始化（支持从home动态加载）
         initVideoPage();
+
+
     </script>
 
 </body>
+
 </html>
