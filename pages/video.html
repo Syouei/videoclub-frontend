@@ -890,6 +890,25 @@
         let isClubCreator = false; // 新增：是否是俱乐部创建者
         let uploadedVideoId = null; // 新增：保存上传后的视频ID
         let uploadedPdfId = null;   // 新增：保存上传后的PDF ID
+        let currentEditTaskId = null;
+        let currentEditVideoId = null;
+        let currentEditPdfId = null;
+
+        function buildTaskTargetObject(taskId) {
+            if (taskId === undefined || taskId === null) return undefined;
+            return { task_id: taskId };
+        }
+
+        function sendFileAnalytics(eventName, fileType, fileId, taskId) {
+            if (!window.Utils || !Utils.sendAnalyticsEvent) return;
+            if (fileId === undefined || fileId === null) return;
+            Utils.sendAnalyticsEvent(eventName, {
+                category: 'teaching',
+                target_type: fileType,
+                target_id: fileId,
+                target_object: buildTaskTargetObject(taskId)
+            });
+        }
 
         // 页面初始化
         function initVideoPage() {
@@ -1091,6 +1110,7 @@ async function uploadVideo(file, duration) {
                 console.log('秒传成功，videoId:', uploadedVideoId);
                 showUploadComplete(fileType);
                 Utils.showNotification('秒传成功！视频已存在', 'success');
+                sendFileAnalytics('file_upload_video', 'video', uploadedVideoId, null);
                 return;
             }
         }
@@ -1142,6 +1162,7 @@ async function uploadVideo(file, duration) {
             console.log('视频保存成功，videoId:', uploadedVideoId);
             showUploadComplete(fileType);
             Utils.showNotification('视频上传成功！', 'success');
+            sendFileAnalytics('file_upload_video', 'video', uploadedVideoId, null);
         } else {
             throw new Error(saveResult?.msg || '保存视频信息失败');
         }
@@ -1267,6 +1288,7 @@ async function uploadPdf(file) {
                 console.log('PDF秒传成功，resourceId:', uploadedPdfId);
                 showUploadComplete('pdf');
                 Utils.showNotification('秒传成功！PDF已存在', 'success');
+                sendFileAnalytics('file_upload_pdf', 'pdf', uploadedPdfId, null);
                 return;
             }
         }
@@ -1335,6 +1357,7 @@ async function uploadPdf(file) {
             console.log('资源保存成功，resourceId:', uploadedPdfId);
             showUploadComplete('pdf');
             Utils.showNotification('PDF上传成功！', 'success');
+            sendFileAnalytics('file_upload_pdf', 'pdf', uploadedPdfId, null);
         } else {
             throw new Error(saveResult?.msg || '保存资源信息失败');
         }
@@ -1405,6 +1428,8 @@ async function uploadEditFile(file, fileType, duration) {
         else editUploadedPdfId = fastResult.data.resourceId;
         showEditUploadComplete(fileType, file.name);
         Utils.showNotification('秒传成功！', 'success');
+        const uploadedId = fileType === 'video' ? editUploadedVideoId : editUploadedPdfId;
+        sendFileAnalytics(fileType === 'video' ? 'file_upload_video' : 'file_upload_pdf', fileType, uploadedId, currentEditTaskId);
         return;
     }
 
@@ -1468,6 +1493,8 @@ async function uploadEditFile(file, fileType, duration) {
         else editUploadedPdfId = saveResult.data?.resourceId;
         showEditUploadComplete(fileType, file.name);
         Utils.showNotification(`${fileType === 'video' ? '视频' : 'PDF'}上传成功！`, 'success');
+        const uploadedId = fileType === 'video' ? editUploadedVideoId : editUploadedPdfId;
+        sendFileAnalytics(fileType === 'video' ? 'file_upload_video' : 'file_upload_pdf', fileType, uploadedId, currentEditTaskId);
     } else {
         throw new Error(saveResult?.msg || `保存${fileType === 'video' ? '视频' : 'PDF'}信息失败`);
     }
@@ -1723,6 +1750,13 @@ function formatFileSize(bytes) {
                 const modal = document.getElementById('create-task-modal');
                 if (modal) {
                     modal.style.display = 'flex';
+
+                    if (window.Utils && Utils.sendAnalyticsEvent) {
+                        Utils.sendAnalyticsEvent('task_open_create_modal', {
+                            category: 'teaching',
+                            club_id: currentClub ? (currentClub.id || currentClub.clubId) : null
+                        });
+                    }
                     
                     // 清空输入
                     const nameInput = document.getElementById('new-task-name');
@@ -2234,6 +2268,13 @@ function formatFileSize(bytes) {
                 
                 if (result && result.code === 0) {
                     Utils.showNotification(`任务"${task.title}"已${action}！`, 'success');
+                    if (window.Utils && Utils.sendAnalyticsEvent) {
+                        Utils.sendAnalyticsEvent(unlockStatus ? 'task_unlock' : 'task_lock', {
+                            category: 'teaching',
+                            target_type: 'task',
+                            target_id: taskId
+                        });
+                    }
                     
                     // 更新本地任务状态
                     videoTasks[taskIndex].isUnlocked = unlockStatus;
@@ -2455,6 +2496,15 @@ function formatFileSize(bytes) {
             const successMsg = `任务"${taskName}"创建成功！（默认锁定状态）`;
             Utils.showNotification(successMsg, 'success');
             closeCreateTaskModal(false); // 创建成功，不删除视频和PDF
+
+            if (window.Utils && Utils.sendAnalyticsEvent) {
+                Utils.sendAnalyticsEvent('task_create', {
+                    category: 'teaching',
+                    target_type: 'task',
+                    target_id: result.data?.taskId,
+                    club_id: clubId
+                });
+            }
             
             // 直接添加到本地列表并渲染
             if (result.data && result.data.taskId) {
@@ -2543,10 +2593,16 @@ async function removeFile(fileType) {
 
     // 如果有已上传的ID，先删除后端数据
     if (fileType === 'video' && uploadedVideoId) {
+        const removedId = uploadedVideoId;
         try {
-            console.log('删除视频:', uploadedVideoId);
-            await API.deleteVideo(uploadedVideoId);
-            console.log('视频删除成功');
+            console.log('删除视频:', removedId);
+            const result = await API.deleteVideo(removedId);
+            if (result && result.code === 0) {
+                console.log('视频删除成功');
+                sendFileAnalytics('file_remove_video', 'video', removedId, null);
+            } else {
+                console.warn('视频删除失败:', result?.msg || '未知错误');
+            }
         } catch (error) {
             console.error('删除视频失败:', error);
             // 继续执行，不阻止UI重置
@@ -2554,10 +2610,16 @@ async function removeFile(fileType) {
     }
 
     if (fileType === 'pdf' && uploadedPdfId) {
+        const removedId = uploadedPdfId;
         try {
-            console.log('删除PDF资源:', uploadedPdfId);
-            await API.deleteResource(uploadedPdfId);
-            console.log('PDF资源删除成功');
+            console.log('删除PDF资源:', removedId);
+            const result = await API.deleteResource(removedId);
+            if (result && result.code === 0) {
+                console.log('PDF资源删除成功');
+                sendFileAnalytics('file_remove_pdf', 'pdf', removedId, null);
+            } else {
+                console.warn('PDF资源删除失败:', result?.msg || '未知错误');
+            }
         } catch (error) {
             console.error('删除PDF资源失败:', error);
             // 继续执行，不阻止UI重置
@@ -2688,20 +2750,32 @@ function showFileInfo(file, fileType) {
             // 如果需要清理（取消时），则删除已上传的视频和资源
             if (shouldCleanup) {
                 if (uploadedVideoId) {
+                    const removedId = uploadedVideoId;
                     try {
-                        console.log('删除未发布的视频:', uploadedVideoId);
-                        await API.deleteVideo(uploadedVideoId);
-                        console.log('视频删除成功');
+                        console.log('删除未发布的视频:', removedId);
+                        const result = await API.deleteVideo(removedId);
+                        if (result && result.code === 0) {
+                            console.log('视频删除成功');
+                            sendFileAnalytics('file_remove_video', 'video', removedId, null);
+                        } else {
+                            console.warn('视频删除失败:', result?.msg || '未知错误');
+                        }
                     } catch (error) {
                         console.error('删除视频失败:', error);
                     }
                 }
 
                 if (uploadedPdfId) {
+                    const removedId = uploadedPdfId;
                     try {
-                        console.log('删除未发布的资源:', uploadedPdfId);
-                        await API.deleteResource(uploadedPdfId);
-                        console.log('资源删除成功');
+                        console.log('删除未发布的资源:', removedId);
+                        const result = await API.deleteResource(removedId);
+                        if (result && result.code === 0) {
+                            console.log('资源删除成功');
+                            sendFileAnalytics('file_remove_pdf', 'pdf', removedId, null);
+                        } else {
+                            console.warn('资源删除失败:', result?.msg || '未知错误');
+                        }
                     } catch (error) {
                         console.error('删除资源失败:', error);
                     }
@@ -2765,6 +2839,14 @@ function showFileInfo(file, fileType) {
                     Utils.showNotification('找不到该任务', 'error');
                     return;
                 }
+
+                if (window.Utils && Utils.sendAnalyticsEvent) {
+                    Utils.sendAnalyticsEvent('task_open_edit_modal', {
+                        category: 'teaching',
+                        target_type: 'task',
+                        target_id: taskId
+                    });
+                }
                 
                 // 创建编辑模态框（简化版，只保留基本编辑功能）
                 createEditTaskModal(task);
@@ -2786,6 +2868,9 @@ function showFileInfo(file, fileType) {
             // 重置编辑上传状态
             editUploadedVideoId = null;
             editUploadedPdfId = null;
+            currentEditTaskId = task.taskId || task.id;
+            currentEditVideoId = task.videoId || null;
+            currentEditPdfId = task.pdfId || null;
 
             // 标记：是否用户点击了"移除"已有文件（用于保存时置空）
             // 用闭包变量跟踪
@@ -2937,6 +3022,11 @@ function showFileInfo(file, fileType) {
             if (modal) {
                 modal.remove();
             }
+            currentEditTaskId = null;
+            currentEditVideoId = null;
+            currentEditPdfId = null;
+            window._editRemoveVideo = false;
+            window._editRemovePdf = false;
         }
 
         // 保存任务修改
@@ -3017,6 +3107,19 @@ function showFileInfo(file, fileType) {
                 
                 if (result && result.code === 0) {
                     Utils.showNotification(`任务"${taskName}"修改成功！`, 'success');
+                    if (window.Utils && Utils.sendAnalyticsEvent) {
+                        Utils.sendAnalyticsEvent('task_save_edit', {
+                            category: 'teaching',
+                            target_type: 'task',
+                            target_id: taskId
+                        });
+                    }
+                    if (window._editRemoveVideo && currentEditVideoId) {
+                        sendFileAnalytics('file_remove_video', 'video', currentEditVideoId, taskId);
+                    }
+                    if (window._editRemovePdf && currentEditPdfId) {
+                        sendFileAnalytics('file_remove_pdf', 'pdf', currentEditPdfId, taskId);
+                    }
                     closeEditTaskModal();
                     
                     // 刷新任务列表
@@ -3118,6 +3221,14 @@ function showFileInfo(file, fileType) {
 
                 if (result && result.code === 0) {
                     Utils.showNotification('任务删除成功！', 'success');
+
+                    if (window.Utils && Utils.sendAnalyticsEvent) {
+                        Utils.sendAnalyticsEvent('task_delete', {
+                            category: 'teaching',
+                            target_type: 'task',
+                            target_id: taskId
+                        });
+                    }
 
                     // 刷新任务列表
                     await loadVideoTasks();

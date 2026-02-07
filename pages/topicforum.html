@@ -756,6 +756,15 @@
                 return;
             }
 
+            if (window.Utils && Utils.sendAnalyticsEvent) {
+                Utils.sendAnalyticsEvent('topic_open_detail', {
+                    category: 'interaction',
+                    target_type: 'topic',
+                    target_id: currentTopicId,
+                    club_id: currentClubId
+                });
+            }
+
             // 检查依赖
             if (!window.Topics) {
                 console.error('[TopicForum] Topics 模块未加载');
@@ -1059,6 +1068,20 @@ if (comment.parentId) {
 
                 if (result.success) {
                     showToast('发布成功！感谢你的深度思考 ✨');
+
+                    if (window.Utils && Utils.sendAnalyticsEvent) {
+                        Utils.sendAnalyticsEvent('comment_submit', {
+                            category: 'interaction',
+                            target_type: 'topic',
+                            target_id: currentTopicId,
+                            target_object: {
+                                content: content,
+                                content_length: content.length,
+                                scaffold_type: currentScaffold || null,
+                                parent_id: null
+                            }
+                        });
+                    }
                     
                     // 清空表单
                     commentTextarea.value = '';
@@ -1112,6 +1135,13 @@ if (comment.parentId) {
                     }
                     
                     showToast(result.message || (isLiked ? '点赞成功' : '取消点赞'));
+                    if (window.Utils && Utils.sendAnalyticsEvent) {
+                        Utils.sendAnalyticsEvent('comment_like', {
+                            category: 'interaction',
+                            target_type: 'comment',
+                            target_id: commentId
+                        });
+                    }
                 } else {
                     showToast(result.message || '操作失败');
                 }
@@ -1238,6 +1268,18 @@ async function submitReply(parentCommentId, button) {
         
         if (result.success) {
             showToast('回复成功！');
+            if (window.Utils && Utils.sendAnalyticsEvent) {
+                Utils.sendAnalyticsEvent('comment_reply_submit', {
+                    category: 'interaction',
+                    target_type: 'comment',
+                    target_id: parentCommentId,
+                    target_object: {
+                        content: content,
+                        content_length: content.length,
+                        parent_id: parentCommentId
+                    }
+                });
+            }
             replyForm.remove();
             
             // 重新加载评论列表

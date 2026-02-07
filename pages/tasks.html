@@ -41,6 +41,8 @@
     let taskPageInitialized = false;
     let currentClubId = null;
     let currentClubName = '';
+    let currentPreviewPdfId = null;
+    let currentPreviewTaskId = null;
 
     // ========== 1. 页面加载后获取任务详情 ==========
     async function initTaskPage() {
@@ -161,6 +163,15 @@
                 return;
             }
 
+            if (window.Utils && Utils.sendAnalyticsEvent) {
+                Utils.sendAnalyticsEvent('task_enter', {
+                    category: 'learning',
+                    target_type: 'task',
+                    target_id: taskId,
+                    club_id: clubId
+                });
+            }
+
             await loadTaskDetail(taskId);
         } catch (error) {
             console.error('加载任务列表或详情失败:', error);
@@ -199,6 +210,15 @@
                 ...taskInfo,
                 subTasks: Array.isArray(taskInfo.subTasks) ? taskInfo.subTasks : []
             };
+
+            if (window.Utils && Utils.sendAnalyticsEvent) {
+                Utils.sendAnalyticsEvent('view_task', {
+                    category: 'learning',
+                    target_type: 'task',
+                    target_id: taskInfo.taskId || taskId,
+                    club_id: currentClubId
+                });
+            }
             
             // 显示任务详情
             displayTaskDetail(mergedTask);
@@ -379,6 +399,17 @@ function displaySubTasks(taskInfo) {
                 return;
             }
 
+            if (window.Utils && Utils.sendAnalyticsEvent) {
+                Utils.sendAnalyticsEvent('video_open_player', {
+                    category: 'learning',
+                    target_type: 'video',
+                    target_id: videoId,
+                    target_object: {
+                        task_id: parseInt(taskId)
+                    }
+                });
+            }
+
             // 3. 跳转到视频播放页（只传递必要参数）
             const params = new URLSearchParams({
                 videoId: videoId.toString(),
@@ -531,6 +562,18 @@ async function completeSubTask(taskId, subtaskId, isResearchTask = false) {
         
         if (result.success) {
             showMessage('任务提交成功！', 'success');
+
+            if (window.Utils && Utils.sendAnalyticsEvent) {
+                Utils.sendAnalyticsEvent('subtask_complete', {
+                    category: 'learning',
+                    target_type: 'subtask',
+                    target_id: subtaskId,
+                    target_object: {
+                        subtask_type: taskType
+                    },
+                    club_id: currentClubId
+                });
+            }
             
             // 重新加载任务详情
             setTimeout(async () => {
@@ -633,6 +676,9 @@ async function previewTeachingDesign(taskId) {
             showMessage('该任务暂无教学设计文档', 'info');
             return;
         }
+
+        currentPreviewPdfId = resourceId;
+        currentPreviewTaskId = taskId;
         
         // 3. 获取资源详情
         const config = window.AppConfig;
@@ -665,6 +711,17 @@ async function previewTeachingDesign(taskId) {
         if (!pdfUrl) {
             showMessage('未找到PDF下载地址', 'error');
             return;
+        }
+
+        if (window.Utils && Utils.sendAnalyticsEvent) {
+            Utils.sendAnalyticsEvent('pdf_preview_open', {
+                category: 'learning',
+                target_type: 'pdf',
+                target_id: resourceId,
+                target_object: {
+                    task_id: taskId
+                }
+            });
         }
         
         // 将http升级为https用于预览（下载功能保持原样）
@@ -791,6 +848,19 @@ function closeDesignPreview() {
     
     // 恢复背景滚动
     document.body.style.overflow = 'auto';
+
+    if (window.Utils && Utils.sendAnalyticsEvent && currentPreviewPdfId) {
+        Utils.sendAnalyticsEvent('pdf_preview_close', {
+            category: 'learning',
+            target_type: 'pdf',
+            target_id: currentPreviewPdfId,
+            target_object: {
+                task_id: currentPreviewTaskId
+            }
+        });
+    }
+    currentPreviewPdfId = null;
+    currentPreviewTaskId = null;
 }
 
 // ========== 13.3 完成阅读教学设计子任务 ==========
@@ -815,6 +885,18 @@ async function completeReadDesignTask(taskId, subtaskId) {
         
         if (result.success) {
             showMessage('教学设计阅读任务提交成功！', 'success');
+
+            if (window.Utils && Utils.sendAnalyticsEvent) {
+                Utils.sendAnalyticsEvent('subtask_complete', {
+                    category: 'learning',
+                    target_type: 'subtask',
+                    target_id: subtaskId,
+                    target_object: {
+                        subtask_type: 'read_design'
+                    },
+                    club_id: currentClubId
+                });
+            }
             
             // 重新加载任务详情
             setTimeout(async () => {

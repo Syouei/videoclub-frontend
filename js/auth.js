@@ -26,12 +26,14 @@ window.Auth = {
                 console.log('[Auth] 从本地存储加载用户:', this.currentUser.username);
                 
                 // 记录用户登录事件（埋点）
-                if (Utils.isPrivacyAgreed()) {
-                    Utils.sendPrivacyEvent('user_login', {
-                        loginType: 'auto',
-                        userId: userData.userId
-                    });
-                }
+                Utils.sendAnalyticsEvent('user_login', {
+                    category: 'session',
+                    user_id: userData.userId,
+                    page: 'auto_login',
+                    target_object: {
+                        login_type: 'auto'
+                    }
+                });
                 
                 return true;
             }
@@ -80,13 +82,15 @@ window.Auth = {
         this.updateUserDisplay();
         
         // 记录用户登录成功事件
-        if (Utils.isPrivacyAgreed()) {
-            Utils.sendPrivacyEvent('user_login', {
-                loginType: 'manual',
-                userId: userInfo.userId,
+        Utils.sendAnalyticsEvent('user_login', {
+            category: 'session',
+            user_id: userInfo.userId,
+            page: 'login',
+            target_object: {
+                login_type: 'manual',
                 username: userInfo.username
-            });
-        }
+            }
+        });
         
         return true;
     } catch (error) {
@@ -102,10 +106,14 @@ window.Auth = {
     clearUserStorage: function() {
         try {
             // 记录用户登出事件（埋点）
-            if (Utils.isPrivacyAgreed() && this.currentUser) {
-                Utils.sendPrivacyEvent('user_logout', {
-                    userId: this.currentUser.userId,
-                    username: this.currentUser.username
+            if (this.currentUser) {
+                Utils.sendAnalyticsEvent('user_logout', {
+                    category: 'session',
+                    user_id: this.currentUser.userId,
+                    page: 'profile',
+                    target_object: {
+                        username: this.currentUser.username
+                    }
                 });
             }
             
