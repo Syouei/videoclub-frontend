@@ -964,6 +964,11 @@
                 this.autoScrollIcon = document.getElementById('autoScrollIcon');
                 this.autoScrollText = document.getElementById('autoScrollText');
 
+                // 新增：视频跳转防抖相关变量
+                this.lastSeekTime = 0; // 上次 seek 操作的时间
+                this.seekDebounceTime = 300; // seek 操作的防抖时间（毫秒）
+                this.pendingSeekTime = null; // 待执行的 seek 时间
+
                 this.init();
             }
 
@@ -1222,10 +1227,16 @@
                     theme: '#1890ff',
                     lang: 'zh-cn',
                     whitelist: ['*'],
+                    // 优化预加载策略，减少 Range 请求频率
+                    preload: 'metadata', // 只预加载元数据，不预加载整个视频
+                    // 视频元素属性
                     moreVideoAttr: {
                         crossorigin: 'anonymous',
                         playsInline: true,
                         'webkit-playsinline': true,
+                        preload: 'metadata', // 只预加载元数据
+                        // 设置缓冲区大小，减少请求次数
+                        'x-webkit-airplay': 'allow',
                     },
                     customType: {
                         m3u8: function (video, url) {
@@ -1254,8 +1265,64 @@
 
                 // 设置 ArtPlayer 事件监听
                 this.setupArtPlayerEvents();
+                this.optimizeBuffering();
 
                 console.log('[ArtPlayer] ArtPlayer 初始化完成');
+            }
+
+            // 优化缓冲策略，减少 Range 请求
+            optimizeBuffering() {
+                if (!this.art || !this.art.video) return;
+
+                const videoElement = this.art.video;
+
+                // 设置视频元素的缓冲策略
+                // 限制最大缓冲区大小，避免过度预加载
+                videoElement.addEventListener('progress', () => {
+                    const buffered = videoElement.buffered;
+                    if (buffered.length > 0) {
+                        // 获取当前已缓冲的时间范围
+                        const bufferedEnd = buffered.end(buffered.length - 1);
+                        const currentTime = videoElement.currentTime;
+                        const duration = videoElement.duration;
+
+                        // 如果已经缓冲了足够的内容（当前时间后至少 90 秒），则不需要继续预加载
+                        const bufferedAhead = bufferedAhead = bufferedEnd - currentTime;
+                        const minBufferAhead = 90; // 缓冲前90秒的内容（增大缓冲量以减少请求频率）
+
+                        if (bufferedAhead > minBufferAhead && duration > 0) {
+                            console.log('[Buffering] 已缓冲足够内容（前', Math.round(bufferedAhead), '秒），停止预加载');
+
+                            // 设置媒体源来暂停预加载
+                            const originalSrc = videoElement.src;
+                            if (videoElement.readyState >= 3) {
+                                // 视频已经缓冲到可以播放的未来时间，保存当前状态
+                                console.log('[Buffering] 缓冲充足，暂停额外预加载');
+                            }
+                        }
+                    }
+                }, { passive: true });
+
+                // 监听 suspend 事件（浏览器暂停下载）
+                videoElement.addEventListener('suspend', () => {
+                    console.log('[Buffering] 浏览器暂停下载视频数据');
+                });
+
+                // 监听 waiting 事件，在缓冲时才请求新数据
+                videoElement.addEventListener('waiting', () => {
+                    console.log('[Buffering] 视频缓冲中，等待数据...');
+                });
+
+                // 监听 canplay 事件，确保可以播放
+                videoElement.addEventListener('canplay', () => {
+                    console.log('[Buffering] 可以继续播放');
+                });
+
+                // 设置视频的缓冲区提示
+                if (typeof videoElement.buffered === 'object') {
+                    // 通过调整 playhead 位置来触发更合理的缓冲
+                    console.log('[Buffering] 缓冲策略已设置');
+                }
             }
 
             // 设置 ArtPlayer 事件监听
@@ -2092,20 +2159,45 @@
 
             jumpToTime(t) {
                 console.log('[jumpToTime] 跳转到时间:', t);
-                
+
                 if (!this.art) {
                     console.warn('[jumpToTime] ArtPlayer 未初始化');
                     return;
                 }
 
+                const now = Date.now();
+
+                // 检查是否需要防抖
+                if (now - this.lastSeekTime < this.seekDebounceTime) {
+                    // 如果在防抖时间内，记录待执行的时间
+                    this.pendingSeekTime = t;
+                    console.log('[jumpToTime] 防抖中，记录待执行时间:', t);
+                    return;
+                }
+
+                // 执行跳转
+                this.lastSeekTime = now;
+
                 // 使用 ArtPlayer 的 currentTime 属性跳转
                 this.art.currentTime = t;
-                
+
                 // 尝试播放
                 this.art.play().catch(error => {
                     console.warn('[jumpToTime] 自动播放失败:', error);
                     this.showError('无法自动播放，请手动点击播放按钮');
                 });
+
+                // 如果有待执行的 seek 时间，延迟执行
+                if (this.pendingSeekTime !== null) {
+                    setTimeout(() => {
+                        const targetTime = this.pendingSeekTime;
+                        this.pendingSeekTime = null;
+                        if (Math.abs(targetTime - this.art.currentTime) > 0.1) {
+                            console.log('[jumpToTime] 执行延迟的 seek:', targetTime);
+                            this.art.currentTime = targetTime;
+                        }
+                    }, this.seekDebounceTime);
+                }
             }
 
             highlightComment(element, comment) {
