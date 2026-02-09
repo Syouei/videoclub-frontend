@@ -965,7 +965,7 @@
                 this.isMouseInComments = false;
                 this.sortBy = 'time';
                 this.videoInfo = { videoUrl: null, taskId: null, title: null, videoId: null };
-                this.pagination = { page: 1, pageSize: 20, hasMore: true, isLoading: false };
+                this.pagination = { page: 1, pageSize: 9999, hasMore: true, isLoading: false };
                 this.hotTimestamps = [];
                 this.isLoadingVideo = false;
                 this.eventsBound = false;
@@ -1465,29 +1465,65 @@
                     console.warn('API.getVideoComments 不可用');
                     return;
                 }
-                if (this.pagination.isLoading || !this.pagination.hasMore) return;
+                if (this.pagination.isLoading) return;
+                
                 try {
                     this.pagination.isLoading = true;
                     this.showLoading('commentsLoading', true);
-                    const result = await window.API.getVideoComments(this.videoInfo.videoId, {
-                        page: this.pagination.page,
-                        pageSize: this.pagination.pageSize
-                    });
-                    if (result.code === 0 && result.data && result.data.list) {
-                        const newComments = result.data.list.map(item => this.convertBackendComment(item));
-                        if (this.pagination.page === 1) {
-                            this.comments = newComments;
+                    
+                    // 重置评论列表和分页信息
+                    this.comments = [];
+                    this.pagination.page = 1;
+                    this.pagination.hasMore = true;
+                    
+                    let allComments = [];
+                    let currentPage = 1;
+                    let hasMorePages = true;
+                    
+                    console.log('[loadCommentsFromAPI] 开始加载所有评论...');
+                    
+                    // 循环加载所有页的评论
+                    while (hasMorePages) {
+                        console.log(`[loadCommentsFromAPI] 正在加载第 ${currentPage} 页...`);
+                        
+                        const result = await window.API.getVideoComments(this.videoInfo.videoId, {
+                            page: currentPage,
+                            pageSize: this.pagination.pageSize
+                        });
+                        
+                        if (result.code === 0 && result.data && result.data.list) {
+                            const newComments = result.data.list.map(item => this.convertBackendComment(item));
+                            allComments = [...allComments, ...newComments];
+                            
+                            console.log(`[loadCommentsFromAPI] 第 ${currentPage} 页加载了 ${newComments.length} 条评论`);
+                            
+                            // 判断是否还有更多页
+                            // 如果返回的评论数小于pageSize，说明已经是最后一页
+                            if (newComments.length < this.pagination.pageSize) {
+                                hasMorePages = false;
+                                console.log(`[loadCommentsFromAPI] 已加载完所有评论，共 ${allComments.length} 条`);
+                            } else {
+                                currentPage++;
+                            }
                         } else {
-                            this.comments = [...this.comments, ...newComments];
+                            console.error('[loadCommentsFromAPI] 加载失败:', result.msg);
+                            this.showError(result.msg || '加载评论失败');
+                            hasMorePages = false;
                         }
-                        this.pagination.hasMore = newComments.length === this.pagination.pageSize;
-                        this.pagination.page++;
-                        this.updateTimePointCounts();
-                        this.renderComments();
-                        this.renderOverlayMarkers();
-                    } else {
-                        this.showError(result.msg || '加载评论失败');
                     }
+                    
+                    // 设置所有评论
+                    this.comments = allComments;
+                    this.pagination.page = currentPage + 1;
+                    this.pagination.hasMore = false;
+                    
+                    console.log(`[loadCommentsFromAPI] 评论加载完成，总计: ${this.comments.length} 条`);
+                    
+                    // 更新界面
+                    this.updateTimePointCounts();
+                    this.renderComments();
+                    this.renderOverlayMarkers();
+                    
                 } catch (error) {
                     console.error('加载评论失败:', error);
                     this.showError('加载评论失败，请稍后重试');
@@ -2072,6 +2108,58 @@
                     el.classList.add('active');
                     setTimeout(() => el.classList.remove('active'), 3000);
                 }
+            }
+
+            // 加载更多评论
+            async loadMoreComments() {
+                if (this.pagination.isLoading || !this.pagination.hasMore) {
+                    console.log('[LoadMore] 已经没有更多评论了');
+                    return;
+                }
+
+                // 显示加载状态
+                const btn = document.getElementById('btnLoadMore');
+                const text = btn.querySelector('.load-more-text');
+                const spinner = btn.querySelector('.load-more-spinner');
+                
+                if (text) text.textContent = '加载中...';
+                if (spinner) spinner.style.display = 'inline-block';
+                if (btn) btn.disabled = true;
+
+                // 调用API加载下一页
+                await this.loadCommentsFromAPI();
+
+                // 恢复按钮状态
+                if (text) text.textContent = '加载更多评论';
+                if (spinner) spinner.style.display = 'none';
+                if (btn) btn.disabled = false;
+            }
+
+            // 更新"加载更多"按钮的显示状态
+            updateLoadMoreButton() {
+                const container = document.getElementById('loadMoreContainer');
+                const loadedCountEl = document.getElementById('loadedCount');
+                const totalCountEl = document.getElementById('totalCount');
+
+                if (!container) return;
+
+                // 更新已加载/总数信息
+                if (loadedCountEl) loadedCountEl.textContent = this.comments.length;
+                if (totalCountEl) totalCountEl.textContent = this.pagination.total;
+
+                // 判断是否显示"加载更多"按钮
+                if (this.pagination.hasMore && this.comments.length < this.pagination.total) {
+                    container.style.display = 'block';
+                } else {
+                    container.style.display = 'none';
+                }
+
+                console.log('[LoadMore] 更新按钮状态:', {
+                    loaded: this.comments.length,
+                    total: this.pagination.total,
+                    hasMore: this.pagination.hasMore,
+                    show: this.pagination.hasMore && this.comments.length < this.pagination.total
+                });
             }
 
             async loadHotTimestamps() {
