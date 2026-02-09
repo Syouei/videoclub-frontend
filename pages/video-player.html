@@ -2274,15 +2274,13 @@
                 }
             }
 
-            // 移除事件监听
+            // 移除所有清理相关的监听器
             window.removeEventListener('beforeunload', cleanupOnPageUnload);
+            window.removeEventListener('hashchange', handleHashChange);
         }
 
-        // 监听页面卸载事件
-        window.addEventListener('beforeunload', cleanupOnPageUnload);
-
-        // 监听 hash 变化（页面切换）
-        window.addEventListener('hashchange', (e) => {
+        // 处理 hash 变化
+        function handleHashChange(e) {
             console.log('[Event] hashchange 触发，检查是否离开视频播放页');
 
             const newHash = e.newURL || '';
@@ -2295,11 +2293,15 @@
             if (isLeavingVideoPlayer) {
                 console.log('[Event] 离开视频播放页，清理资源');
                 cleanupOnPageUnload();
-            } else if (newHash.includes('video-player')) {
-                console.log('[Event] 进入视频播放页，初始化播放器');
-                initVideoPlayer();
             }
-        });
+            // 注意：不在这里处理进入视频播放页的情况，因为 app.js 已经通过 loadPage 处理
+        }
+
+        // 监听页面卸载事件
+        window.addEventListener('beforeunload', cleanupOnPageUnload);
+
+        // 监听 hash 变化（页面切换） - 只监听离开的情况
+        window.addEventListener('hashchange', handleHashChange);
 
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initVideoPlayer);

@@ -183,31 +183,34 @@ window.App = {
         // 清理之前页面添加的样式
         this.clearPageStyles();
 
+        // 清理旧页面的资源（特别是视频播放器）
+        this.cleanupOldPage(pageName);
+
         // 显示加载状态
         this.state.isLoading = true;
         Utils.showLoading(container);
-        
+
         try {
             const pagePath = AppConfig.PAGE_PATHS[pageName.toUpperCase()];
             if (!pagePath) {
                 throw new Error(`页面 ${pageName} 的路径未定义`);
             }
-            
+
             // 加载页面HTML
             const response = await fetch(pagePath);
             if (!response.ok) {
                 throw new Error(`加载页面失败: ${response.status}`);
             }
-            
+
             const html = await response.text();
-            
+
             // 解析HTML
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
-            
+
             // 提取body内容
             const pageContent = doc.body.innerHTML;
-            
+
             // 更新页面容器
             container.innerHTML = pageContent;
 
@@ -216,17 +219,17 @@ window.App = {
 
             // 执行页面特定的脚本
             this.executePageScripts(doc);
-            
+
             // 如果是首页，加载俱乐部数据
             if (pageName === 'home') {
                 await this.renderHome();
             }
-            
+
             // 更新用户显示
             if (Auth.isLoggedIn()) {
                 Auth.updateUserDisplay();
             }
-            
+
         } catch (error) {
             console.error('加载页面失败:', error);
             container.innerHTML = `
@@ -241,6 +244,41 @@ window.App = {
             `;
         } finally {
             this.state.isLoading = false;
+        }
+    },
+
+    // 清理旧页面的资源
+    cleanupOldPage: function(newPageName) {
+        console.log('[App] 清理旧页面资源，新页面:', newPageName);
+
+        // 清理视频播放器实例
+        if (window.videoCommentSystem) {
+            try {
+                console.log('[App] 发现 videoCommentSystem 实例，正在销毁...');
+                if (typeof window.videoCommentSystem.destroy === 'function') {
+                    window.videoCommentSystem.destroy();
+                }
+                window.videoCommentSystem = null;
+                console.log('[App] videoCommentSystem 实例已销毁');
+            } catch (error) {
+                console.error('[App] 销毁 videoCommentSystem 时出错:', error);
+            }
+        }
+
+        // 清理其他可能的页面实例
+        if (window.currentInstance) {
+            try {
+                window.currentInstance.destroy();
+                window.currentInstance = null;
+            } catch (error) {
+                console.error('[App] 清理当前实例时出错:', error);
+            }
+        }
+
+        // 清理全局定时器
+        if (window.pageTimers) {
+            window.pageTimers.forEach(timer => clearTimeout(timer));
+            window.pageTimers = [];
         }
     },
     
