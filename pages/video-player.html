@@ -1679,7 +1679,7 @@
                 if (timestamp === undefined || timestamp === null) return 0;
                 const timeGroup = Math.floor(timestamp / 30) * 30;
                 const count = this.timePointCounts[timeGroup] || 0;
-                if (count <= 1) return 0;
+                if (count <= 1) return 1;  // 只要有评论就显示为 level-1
                 if (count <= 3) return 1;
                 if (count <= 5) return 2;
                 if (count <= 10) return 3;
@@ -1696,12 +1696,23 @@
 
                 // 等待 ArtPlayer DOM 渲染完成
                 const checkAndRender = () => {
-                    const progressBar = this.art?.template?.control?.progress;
+                    // 尝试多种方式获取进度条
+                    let progressBar = this.art?.template?.control?.progress;
+                    
+                    // 如果内置路径找不到，使用 DOM 查询
                     if (!progressBar) {
-                        // 如果还没有渲染完成，延迟重试
-                        setTimeout(checkAndRender, 100);
+                        progressBar = document.querySelector('.art-control-progress') || 
+                                      document.querySelector('.art-progress') ||
+                                      document.querySelector('[class*="progress"]');
+                    }
+                    
+                    if (!progressBar) {
+                        console.warn('[Markers] 未找到进度条，延迟重试...');
+                        setTimeout(checkAndRender, 200);
                         return;
                     }
+                    
+                    console.log('[Markers] 找到进度条:', progressBar);
 
                     // 移除旧的标记
                     const oldMarkers = progressBar.querySelectorAll('.art-control-progress-indicator');
