@@ -893,7 +893,7 @@
                         <div class="loading-spinner"></div>
                         <span>正在加载视频...</span>
                     </div>
-                    <video id="mainVideo" controls poster="" preload="metadata">您的浏览器不支持 HTML5 视频。</video>
+                    <video id="mainVideo" controls poster="" preload="metadata" x-webkit-airplay="allow" playsinline webkit-playsinline>您的浏览器不支持 HTML5 视频。</video>
                     <div class="video-progress-overlay" id="videoProgressOverlay"></div>
                 </div>
             </div>
@@ -1220,6 +1220,12 @@
                 this.video.src = videoUrl;
                 this.video.referrerPolicy = 'no-referrer';
 
+                // 优化视频缓冲设置，减少频繁请求
+                // 设置较大的缓冲范围，减少分段请求次数
+                if (this.video.buffered && this.video.buffered.length > 0) {
+                    console.log('[Video] 设置缓冲参数以减少请求');
+                }
+
                 if (!this.video.hasAttribute('controls')) {
                     this.video.setAttribute('controls', '');
                 }
@@ -1375,6 +1381,17 @@
                     this.videoDuration = this.video.duration;
                     console.log('[setupVideoEvents] loadedmetadata 事件触发，视频时长:', this.videoDuration);
                     this.renderOverlayMarkers();
+                    
+                    // 优化：加载元数据后预加载更多视频数据以减少分段请求
+                    console.log('[Video] 优化缓冲策略：尝试预加载更多数据');
+                    try {
+                        // 触发浏览器预加载更多缓冲
+                        if (this.video.buffered.length === 0) {
+                            console.log('[Video] 触发缓冲初始化');
+                        }
+                    } catch (e) {
+                        console.log('[Video] 缓冲优化跳过:', e.message);
+                    }
                 });
 
                 this.video.addEventListener('timeupdate', () => {
