@@ -909,7 +909,7 @@
                     <div class="form-hint">简洁明了地描述话题，限100字</div>
                 </div>
                 <div class="form-group">
-                    <label for="topicDescription">话题说明</label>
+                    <label for="topicDescription">话题说明（选填）</label>
                     <textarea 
                         id="topicDescription" 
                         placeholder="详细说明这个话题的讨论方向、要求或背景信息（选填）"
@@ -919,14 +919,14 @@
                 <div class="form-group">
                     <label for="topicScaffold">
                         回答支架（选填）
-                        <span style="color: #8c8c8c; font-weight: 400; font-size: 14px; margin-left: 8px;">为讨论者提供回答框架</span>
+                        <span style="color: #8c8c8c; font-weight: 400; font-size: 14px; margin-left: 8px;">为讨论者提供回答支架</span>
                     </label>
                     <textarea 
-                        id="topicScaffold" 
-                        placeholder="例如：&#10;1. 聚焦观察，识别关键事件：请描述你在教学视频中注意到的1-2个关键教学片段（例如教师的某个提问、某次互动、某个过渡环节等）。为什么这些片段引起了你的注意？&#10;&#10;2. 对比分析，比较意图与行为：教师在教学设计/说课中阐述的设计意图，与你在教学视频中观察到的实际实施情况是否一致？有哪些差距或意外？产生这种差距的原因可能是什么？&#10;&#10;3. 从反思到行动：通过这次观课，你对"好的教学"的理解有什么新的认识或变化？你打算在自己未来的教学实践中尝试什么具体的行动？"
-                        maxlength="2000"
-                        rows="8"></textarea>
-                    <div class="form-hint">可选填。如果填写，参与者将使用您提供的框架进行回答，无需重复输入问题。限2000字</div>
+    id="topicScaffold" 
+    placeholder="例如：&#10;1. 聚焦观察...&#10;&#10;2. 对比分析...&#10;&#10;3. 从反思到行动..."
+    maxlength="2000"
+    rows="8"></textarea>
+                    <div class="form-hint">可选填。如果填写，参与者可以使用您提供的支架进行回答，无需重复输入。限2000字</div>
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeTopicModal()">

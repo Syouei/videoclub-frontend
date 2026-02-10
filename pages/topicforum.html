@@ -616,9 +616,8 @@
 
         function getScaffoldPreviewHtml(scaffoldText) {
             const safeScaffold = escapeHtml(normalizeScaffoldText(scaffoldText));
-            return `<strong>💡 话题创建者提供了回答框架（可选）</strong>
-                    <div style="margin-top: 8px; padding: 12px; background: #f8fafc; border-radius: 8px; white-space: pre-wrap; font-size: 0.9rem; color: #4a5568; max-height: 200px; overflow-y: auto;">${safeScaffold}</div>
-                    <div style="margin-top: 8px; font-size: 0.85rem; color: #64748b;">ℹ️ 点击上方"📋 使用回答框架"按钮可以加载框架模板，也可以直接输入你的想法</div>`;
+            return `
+                    <div style="margin-top: 8px; font-size: 0.85rem; color: #64748b;">ℹ️ 点击上方"📋 使用支架"按钮可以加载框架模板，也可以直接输入你的想法</div>`;
         }
 
         // ========== 加载话题详情 ==========
@@ -817,7 +816,7 @@ if (comment.parentId) {
             // 创建支架按钮
             const scaffoldBtn = document.createElement('button');
             scaffoldBtn.className = 'scaffold-btn';
-            scaffoldBtn.innerHTML = '📋 使用回答框架';
+            scaffoldBtn.innerHTML = '📋 使用支架';
             scaffoldBtn.dataset.scaffold = 'custom';
             
             // 点击按钮时的行为
@@ -843,8 +842,8 @@ if (comment.parentId) {
                 
                 // 设置当前支架状态
                 currentScaffold = {
-                    name: '📋 回答框架',
-                    hint: '<strong>回答框架：</strong>话题创建者为你提供了以下回答框架，请在框架中填写你的思考。',
+                    name: '📋 回答支架',
+                    hint: '<strong>回答支架：</strong>话题创建者为你提供了以下回答支架，可以根据支架填写你的思考。',
                     template: topicScaffold
                 };
                 
@@ -875,7 +874,7 @@ if (comment.parentId) {
             
             // 显示提示文字
             if (scaffoldPrompt) {
-                scaffoldPrompt.textContent = '💬 话题创建者为你提供了回答框架（可选使用）：';
+                scaffoldPrompt.textContent = '话题创建者为你提供了支架（可选使用）：';
                 scaffoldPrompt.style.display = 'block';
             }
             
