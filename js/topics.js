@@ -239,10 +239,10 @@ window.Topics = {
             
             // ⭐ 修复：处理scaffold字段
             if (topicData.scaffold !== undefined) {
-                // 如果有值就传，空字符串传null（表示删除）
-                requestData.scaffold = topicData.scaffold && topicData.scaffold.trim() !== '' 
-                    ? topicData.scaffold 
-                    : null;
+                // API文档要求string类型，允许传空字符串表示清空
+                requestData.scaffold = topicData.scaffold === null
+                    ? ''
+                    : String(topicData.scaffold);
             }
             
             console.log('[Topics] 🚀 发送给后端的更新数据:', requestData);
