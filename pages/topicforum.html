@@ -454,9 +454,6 @@
                     <div class="avatar" id="userAvatar">U</div>
                     <span id="userName">用户</span>
                 </div>
-                <button class="btn-text" onclick="logout()" title="退出登录">
-                    <i class="fas fa-sign-out-alt"></i>
-                </button>
             </div>
         </header>
 
@@ -477,6 +474,7 @@
                         <span>发表你的观点</span>
                     </div>
                 </div>
+
 
                 <!-- 🆕 支架提示文字(默认隐藏) -->
                 <div id="scaffoldPrompt" style="display: none; margin-bottom: 12px; color: #666; font-size: 0.95rem;"></div>
@@ -552,21 +550,13 @@
 
         // ========== 页面初始化 ==========
         async function initTopicForumPage() {
-            console.log('[TopicForum] 初始化讨论页面');
             
             // 1. 获取URL参数
             currentTopicId = getTopicIdFromURL();
             currentTaskId = getTaskIdFromURL();
             currentClubId = getClubIdFromURL();
             
-            console.log('[TopicForum] URL参数:', { 
-                currentTopicId, 
-                currentTaskId, 
-                currentClubId 
-            });
-            
             if (!currentTopicId) {
-                console.error('[TopicForum] 缺少话题ID');
                 showToast('话题ID不存在');
                 return;
             }
@@ -587,7 +577,6 @@
                     }
                 }
             } catch (error) {
-                console.error('[TopicForum] 加载用户信息失败:', error);
             }
             
             // 3. 加载话题详情
@@ -596,7 +585,6 @@
             // 4. 加载评论列表
             await loadComments();
             
-            console.log('[TopicForum] ✅ 页面初始化完成');
         }
 
         function getTaskIdFromURL() {
@@ -617,14 +605,23 @@
             return params.get('clubId') ? parseInt(params.get('clubId')) : null;
         }
 
+        function normalizeScaffoldText(text) {
+            if (typeof text !== 'string') return '';
+            return text.replace(/^\s+/, '');
+        }
+
+        function getScaffoldPreviewHtml(scaffoldText) {
+            const safeScaffold = escapeHtml(normalizeScaffoldText(scaffoldText));
+            return `
+                    <div style="margin-top: 8px; font-size: 0.85rem; color: #64748b;">ℹ️ 点击上方"📋 使用支架"按钮可以加载框架模板，也可以直接输入你的想法</div>`;
+        }
+
         // ========== 加载话题详情 ==========
         async function loadTopicDetail() {
             try {
-                console.log('[TopicForum] 加载话题详情:', currentTopicId);
                 
                 const topicDetail = await Topics.getTopicDetail(currentTopicId);
                 
-                console.log('[TopicForum] 话题详情:', topicDetail);
                 
                 if (topicDetail) {
                     // 获取元素
@@ -632,7 +629,6 @@
                     const descEl = document.getElementById('topicDescription');
                     
                     if (!titleEl || !descEl) {
-                        console.error('[TopicForum] 元素不存在！');
                         return;
                     }
                     
@@ -671,22 +667,20 @@
                         pageDiv.style.visibility = 'visible';
                     }
                     
-                    // 🆕 保存话题支架
-                    topicScaffold = topicDetail.scaffold && topicDetail.scaffold.trim() ? topicDetail.scaffold : null;
+                    // 🆕 保存话题支架（清理前导空白，避免预览和输入框出现无意义缩进）
+                    const normalizedScaffold = normalizeScaffoldText(topicDetail.scaffold);
+                    topicScaffold = normalizedScaffold.trim() ? normalizedScaffold : null;
                     
                     // 🆕 如果话题创建者提供了支架,显示支架按钮
                     if (topicScaffold) {
-                        console.log('[TopicForum] 话题创建者提供了回答支架');
                         setupScaffoldButton(topicScaffold);
                     }
                     
-                    console.log('[TopicForum] ✅ 话题详情已显示');
                     
                 } else {
                     throw new Error('话题详情为空');
                 }
             } catch (error) {
-                console.error('[TopicForum] 加载话题详情失败:', error);
                 showToast('加载话题失败: ' + error.message);
                 document.getElementById('topicTitle').textContent = '加载失败';
                 document.getElementById('topicDescription').textContent = '无法加载话题详情';
@@ -696,16 +690,13 @@
         // ========== 加载评论列表 ==========
         async function loadComments() {
             try {
-                console.log('[TopicForum] 加载评论列表:', currentTopicId);
                 
                 commentsList = await Topics.getTopicComments(currentTopicId);
                 
-                console.log('[TopicForum] 评论列表:', commentsList);
                 
                 displayComments(commentsList);
                 
             } catch (error) {
-                console.error('[TopicForum] 加载评论列表失败:', error);
                 commentsListEl.innerHTML = `
                     <div class="empty-comments">
                         <i class="fas fa-exclamation-circle"></i>
@@ -808,7 +799,6 @@ if (comment.parentId) {
 
         // ========== 🆕 设置支架按钮（可选使用） ==========
         function setupScaffoldButton(scaffoldText) {
-            console.log('[TopicForum] 设置可选支架按钮');
             
             const scaffoldSelector = document.querySelector('.scaffold-selector');
             const scaffoldHint = document.querySelector('.scaffold-hint');
@@ -822,7 +812,7 @@ if (comment.parentId) {
             // 创建支架按钮
             const scaffoldBtn = document.createElement('button');
             scaffoldBtn.className = 'scaffold-btn';
-            scaffoldBtn.innerHTML = '📋 使用回答框架';
+            scaffoldBtn.innerHTML = '📋 使用支架';
             scaffoldBtn.dataset.scaffold = 'custom';
             
             // 点击按钮时的行为
@@ -848,8 +838,8 @@ if (comment.parentId) {
                 
                 // 设置当前支架状态
                 currentScaffold = {
-                    name: '📋 回答框架',
-                    hint: '<strong>回答框架：</strong>话题创建者为你提供了以下回答框架，请在框架中填写你的思考。',
+                    name: '📋 回答支架',
+                    hint: '<strong>回答支架：</strong>话题创建者为你提供了以下回答支架，可以根据支架填写你的思考。',
                     template: topicScaffold
                 };
                 
@@ -874,25 +864,16 @@ if (comment.parentId) {
             
             // 显示支架预览提示
             if (scaffoldHint) {
-                scaffoldHint.innerHTML = `
-                    <strong>💡 话题创建者提供了回答框架（可选）</strong>
-                    <div style="margin-top: 8px; padding: 12px; background: #f8fafc; border-radius: 8px; white-space: pre-wrap; font-size: 0.9rem; color: #4a5568; max-height: 200px; overflow-y: auto;">
-                        ${escapeHtml(scaffoldText)}
-                    </div>
-                    <div style="margin-top: 8px; font-size: 0.85rem; color: #64748b;">
-                        ℹ️ 点击上方"📋 使用回答框架"按钮可以加载框架模板，也可以直接输入你的想法
-                    </div>
-                `;
+                scaffoldHint.innerHTML = getScaffoldPreviewHtml(scaffoldText);
                 scaffoldHint.style.display = 'block';
             }
             
             // 显示提示文字
             if (scaffoldPrompt) {
-                scaffoldPrompt.textContent = '💬 话题创建者为你提供了回答框架（可选使用）：';
+                scaffoldPrompt.textContent = '话题创建者为你提供了支架（可选使用）：';
                 scaffoldPrompt.style.display = 'block';
             }
             
-            console.log('[TopicForum] ✅ 已设置可选支架按钮');
         }
 
         // ========== 更新字数统计 ==========
@@ -913,15 +894,7 @@ if (comment.parentId) {
             const scaffoldHint = document.querySelector('.scaffold-hint');
             if (topicScaffold && scaffoldHint) {
                 // 如果有话题支架,显示支架预览
-                scaffoldHint.innerHTML = `
-                    <strong>💡 话题创建者提供了回答框架（可选）</strong>
-                    <div style="margin-top: 8px; padding: 12px; background: #f8fafc; border-radius: 8px; white-space: pre-wrap; font-size: 0.9rem; color: #4a5568; max-height: 200px; overflow-y: auto;">
-                        ${escapeHtml(topicScaffold)}
-                    </div>
-                    <div style="margin-top: 8px; font-size: 0.85rem; color: #64748b;">
-                        ℹ️ 点击上方"📋 使用回答框架"按钮可以加载框架模板，也可以直接输入你的想法
-                    </div>
-                `;
+                scaffoldHint.innerHTML = getScaffoldPreviewHtml(topicScaffold);
                 scaffoldHint.style.display = 'block';
             } else if (scaffoldHint) {
                 // 没有话题支架,隐藏提示
@@ -955,11 +928,9 @@ if (comment.parentId) {
                     // 注意：API文档中评论接口没有scaffoldType字段，所以不发送
                 };
 
-                console.log('[TopicForum] 发布评论:', commentData);
 
                 const result = await Topics.createTopicComment(commentData);
 
-                console.log('[TopicForum] 发布结果:', result);
 
                 if (result.success) {
                     showToast('发布成功！');
@@ -971,15 +942,7 @@ if (comment.parentId) {
                     // 恢复提示
                     const scaffoldHint = document.querySelector('.scaffold-hint');
                     if (topicScaffold && scaffoldHint) {
-                        scaffoldHint.innerHTML = `
-                            <strong>💡 话题创建者提供了回答框架（可选）</strong>
-                            <div style="margin-top: 8px; padding: 12px; background: #f8fafc; border-radius: 8px; white-space: pre-wrap; font-size: 0.9rem; color: #4a5568; max-height: 200px; overflow-y: auto;">
-                                ${escapeHtml(topicScaffold)}
-                            </div>
-                            <div style="margin-top: 8px; font-size: 0.85rem; color: #64748b;">
-                                ℹ️ 点击上方"📋 使用回答框架"按钮可以加载框架模板，也可以直接输入你的想法
-                            </div>
-                        `;
+                        scaffoldHint.innerHTML = getScaffoldPreviewHtml(topicScaffold);
                         scaffoldHint.style.display = 'block';
                     } else if (scaffoldHint) {
                         scaffoldHint.style.display = 'none';
@@ -994,7 +957,6 @@ if (comment.parentId) {
                     showToast(result.message || '发布失败');
                 }
             } catch (error) {
-                console.error('[TopicForum] 发布评论失败:', error);
                 showToast('发布失败: ' + error.message);
             } finally {
                 // 恢复按钮状态
@@ -1006,11 +968,9 @@ if (comment.parentId) {
         // ========== 点赞评论 ==========
         async function likeComment(commentId, buttonElement) {
             try {
-                console.log('[TopicForum] 点赞评论:', commentId);
                 
                 const result = await Topics.likeComment(commentId);
                 
-                console.log('[TopicForum] 点赞结果:', result);
                 
                 if (result.success) {
                     const isLiked = result.liked;
@@ -1033,11 +993,17 @@ if (comment.parentId) {
                     }
                     
                     showToast(result.message || (isLiked ? '点赞成功' : '取消点赞'));
+                    if (window.Utils && Utils.sendAnalyticsEvent) {
+                        Utils.sendAnalyticsEvent('reflection_like', {
+                            category: 'interaction',
+                            target_type: 'reflection',
+                            target_id: commentId
+                        });
+                    }
                 } else {
                     showToast(result.message || '操作失败');
                 }
             } catch (error) {
-                console.error('[TopicForum] 点赞失败:', error);
                 showToast('操作失败: ' + error.message);
             }
         }
@@ -1151,14 +1117,24 @@ async function submitReply(parentCommentId, button) {
             parentId: parentCommentId  // 关键：设置父评论ID
         };
         
-        console.log('[TopicForum] 发布回复:', replyData);
         
         const result = await Topics.createTopicComment(replyData);
         
-        console.log('[TopicForum] 发布回复结果:', result);
         
         if (result.success) {
             showToast('回复成功！');
+            if (window.Utils && Utils.sendAnalyticsEvent) {
+                Utils.sendAnalyticsEvent('reflection_reply_submit', {
+                    category: 'interaction',
+                    target_type: 'reflection',
+                    target_id: parentCommentId,
+                    target_object: {
+                        content: content,
+                        content_length: content.length,
+                        parent_id: parentCommentId
+                    }
+                });
+            }
             replyForm.remove();
             
             // 重新加载评论列表
@@ -1167,7 +1143,6 @@ async function submitReply(parentCommentId, button) {
             showToast(result.message || '回复失败');
         }
     } catch (error) {
-        console.error('[TopicForum] 发布回复失败:', error);
         showToast('回复失败: ' + error.message);
     } finally {
         // 恢复按钮状态
@@ -1246,7 +1221,6 @@ async function submitReply(parentCommentId, button) {
             const descEl = document.getElementById('topicDescription');
             
             if (titleEl && descEl) {
-                console.log('[TopicForum] 元素已就绪，开始初始化');
                 
                 // 强制显示所有容器
                 const containers = ['.page', '.forum-container', '.discussion-topic'];
@@ -1262,10 +1236,8 @@ async function submitReply(parentCommentId, button) {
                 initTopicForumPage();
             } else {
                 if (retryCount < 20) {
-                    console.log(`[TopicForum] 元素未就绪，100ms后重试... (${retryCount + 1}/20)`);
                     setTimeout(() => tryInitialize(retryCount + 1), 100);
                 } else {
-                    console.error('[TopicForum] 初始化失败：元素始终未加载');
                 }
             }
         }

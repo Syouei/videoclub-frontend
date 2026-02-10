@@ -2279,6 +2279,56 @@
             initVideoPlayer();
         }
     </script>
+
+   <script>
+  window.difyChatbotConfig = {
+    token: '2CtDBOcPEAxWLQAP',
+    baseUrl: 'http://localhost', // 后端 Dify 地址
+    inputs: {
+      video_title: document.title,
+      current_time: '0s'
+    }
+  };
+</script>
+<script src="http://localhost/embed.min.js" id="2CtDBOcPEAxWLQAP" defer></script>
+<style>
+  /* 强制覆盖 Dify 默认颜色，匹配你页面的蓝色 */
+  #dify-chatbot-bubble-button { 
+    background-color: #1890ff !important; 
+  }
+  
+  /* 占位按钮：如果 Dify 没加载成功，显示这个 */
+  #ai-placeholder-btn {
+    position: fixed; bottom: 30px; right: 30px;
+    width: 60px; height: 60px;
+    background: #1890ff; border-radius: 50%;
+    color: white; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+</style>
+
+<div id="ai-placeholder-btn" title="AI 预览占位">
+    <i class="fas fa-robot"></i>
+</div>
+<script>
+  // 每 2 秒检查一次 Dify 按钮是否出现，出现了就隐藏占位按钮
+  const checkDify = setInterval(() => {
+    const realBtn = document.getElementById('dify-chatbot-bubble-button');
+    if (realBtn) {
+      document.getElementById('ai-placeholder-btn').style.display = 'none';
+      clearInterval(checkDify);
+    }
+  }, 1000);
+
+  setInterval(() => {
+    if (window.videoCommentSystem && window.difyChatbotConfig.inputs) {
+      const time = window.videoCommentSystem.currentVideoTime || 0;
+      const m = Math.floor(time / 60);
+      const s = Math.floor(time % 60);
+      window.difyChatbotConfig.inputs.current_time = `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+  }, 2000);
+</script>
 </body>
 
 </html>
