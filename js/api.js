@@ -807,6 +807,11 @@ window.API = {
         return await this.request(endpoint, 'GET');
     },
 
+    async getVideoPlayInfo(videoId) {
+        const endpoint = `/videos/${videoId}/play`;
+        return await this.request(endpoint, 'GET');
+    },
+
     /**
      * 秒传检测
      * @param {object} data - 检测数据 {clubId, title, etag, duration}

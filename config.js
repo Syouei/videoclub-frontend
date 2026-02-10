@@ -1,7 +1,7 @@
 window.AppConfig = {
     // API基础URL - 修改为你后端的地址
     // 注意：API文档指定基础路径为 /api/v1
-API_BASE_URL: 'https://teachervideo.cn/api/v1',
+API_BASE_URL: 'http://127.0.0.1:3000/api/v1',
     
     // API端点配置（完全按照API文档）
     API_ENDPOINTS: {
