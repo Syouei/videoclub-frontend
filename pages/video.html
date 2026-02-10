@@ -768,7 +768,7 @@
             </div>
             <div class="header-right">
                 <button class="btn btn-primary" onclick="openCreateTaskModal()" style="margin-right:15px;">
-                    <i class="fas fa-plus"></i> 创建主题
+                    <i class="fas fa-plus"></i> 创建视频
                 </button>
                 <div class="user-info">
                     <div class="avatar" id="video-user-avatar">王</div>
@@ -791,7 +791,7 @@
                 <div class="empty-state">
                     <i class="fas fa-tasks"></i>
                     <h3>暂无任务</h3>
-                    <p>点击右上角"创建主题"按钮开始</p>
+                    <p>点击右上角"创建视频"按钮开始</p>
                 </div>
             </div>
 
@@ -799,9 +799,9 @@
             <div class="usage-tips">
                 <h4><i class="fas fa-lightbulb"></i> 使用提示</h4>
                 <ul>
-                    <li>点击"创建主题"按钮创建新的教学视频主题</li>
-                    <li>创建主题时，需填写主题名称</li>
-                    <li>点击主题卡片可以进入主题详情页</li>
+                    <li>点击"创建视频"按钮创建新的教学视频</li>
+                    <li>创建视频时，需填写视频名称</li>
+                    <li>点击视频卡片可以进入视频详情页</li>
                 </ul>
             </div>
         </div>
@@ -930,7 +930,7 @@
                 </div>
                 <div style="text-align:right; margin-top: 24px;">
                     <button class="btn btn-outline" onclick="closeCreateTaskModal()">取消</button>
-                    <button class="btn btn-primary" onclick="createNewTask()">创建主题</button>
+                    <button class="btn btn-primary" onclick="createNewVideo()">创建视频</button>
                 </div>
             </div>
         </div>
@@ -1880,7 +1880,7 @@
             if (welcomeSubtitle && currentClub) {
                 if (isClubCreator) {
                     // 创建者看到的标题
-                    welcomeSubtitle.textContent = `为${currentClub.name}俱乐部创建和管理教学视频主题`;
+                    welcomeSubtitle.textContent = `为${currentClub.name}俱乐部创建和管理教学视频`;
                     welcomeSubtitle.style.display = 'block';
                 } else {
                     // 普通成员看到的标题
@@ -1896,9 +1896,9 @@
                     usageTips.innerHTML = `
                         <h4><i class="fas fa-lightbulb"></i> 使用提示</h4>
                         <ul>
-                            <li>点击"创建主题"按钮创建新的视频主题，需要上传教学视频和教学设计PDF文档</li>
-                            <li>编辑主题时，可以直接上传新的教学视频或教学设计PDF文档，会自动覆盖原有的视频或文档</li>
-                            <li>创建主题后，可手动锁定/解锁供成员参与</li>
+                            <li>点击"创建视频"按钮创建新的教学视频，需要上传教学视频和教学设计PDF文档</li>
+                            <li>编辑视频时，可以直接上传新的教学视频或教学设计PDF文档，会自动覆盖原有的视频或文档</li>
+                            <li>创建视频后，可手动锁定/解锁供成员参与</li>
                         </ul>
                     `;
                     usageTips.style.display = 'block';
@@ -1926,7 +1926,7 @@
             try {
                 const hasPermission = await checkAndUpdatePermissions();
                 if (!hasPermission) {
-                    Utils.showNotification('只有俱乐部创建者可以创建主题', 'error');
+                    Utils.showNotification('只有俱乐部创建者可以创建视频', 'error');
                     return;
                 }
 
@@ -2011,7 +2011,7 @@
                     }, 100);
                 }
             } catch (error) {
-                console.error('打开创建主题模态框失败:', error);
+                console.error('打开创建视频模态框失败:', error);
                 Utils.showNotification('检查权限失败', 'error');
             }
         }
@@ -2112,7 +2112,7 @@
             const welcomeSubtitle = document.getElementById('welcome-subtitle');
 
             if (clubNameElement && currentClub) {
-                clubNameElement.textContent = currentClub.name;
+                clubNameElement.textContent = `${currentClub.name}俱乐部`;
             }
             if (welcomeTitle && currentClub) {
                 welcomeTitle.textContent = `${currentClub.name} - 视频主题`;
@@ -2247,7 +2247,7 @@
                 <div class="empty-state">
                     <i class="fas fa-tasks"></i>
                     <h3>暂无活动</h3>
-                    <p>点击右上角"创建主题"按钮开始</p>
+                    <p>点击右上角"创建视频"按钮开始</p>
                 </div>
             `;
                 } else {

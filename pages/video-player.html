@@ -2262,6 +2262,58 @@
                 }
             }
 
+            // 加载更多评论
+            async loadMoreComments() {
+                if (this.pagination.isLoading || !this.pagination.hasMore) {
+                    console.log('[LoadMore] 已经没有更多评论了');
+                    return;
+                }
+
+                // 显示加载状态
+                const btn = document.getElementById('btnLoadMore');
+                const text = btn.querySelector('.load-more-text');
+                const spinner = btn.querySelector('.load-more-spinner');
+                
+                if (text) text.textContent = '加载中...';
+                if (spinner) spinner.style.display = 'inline-block';
+                if (btn) btn.disabled = true;
+
+                // 调用API加载下一页
+                await this.loadCommentsFromAPI();
+
+                // 恢复按钮状态
+                if (text) text.textContent = '加载更多评论';
+                if (spinner) spinner.style.display = 'none';
+                if (btn) btn.disabled = false;
+            }
+
+            // 更新"加载更多"按钮的显示状态
+            updateLoadMoreButton() {
+                const container = document.getElementById('loadMoreContainer');
+                const loadedCountEl = document.getElementById('loadedCount');
+                const totalCountEl = document.getElementById('totalCount');
+
+                if (!container) return;
+
+                // 更新已加载/总数信息
+                if (loadedCountEl) loadedCountEl.textContent = this.comments.length;
+                if (totalCountEl) totalCountEl.textContent = this.pagination.total;
+
+                // 判断是否显示"加载更多"按钮
+                if (this.pagination.hasMore && this.comments.length < this.pagination.total) {
+                    container.style.display = 'block';
+                } else {
+                    container.style.display = 'none';
+                }
+
+                console.log('[LoadMore] 更新按钮状态:', {
+                    loaded: this.comments.length,
+                    total: this.pagination.total,
+                    hasMore: this.pagination.hasMore,
+                    show: this.pagination.hasMore && this.comments.length < this.pagination.total
+                });
+            }
+
             async loadHotTimestamps() {
                 if (!window.API || !window.API.getHotTimestamps) return;
                 try {

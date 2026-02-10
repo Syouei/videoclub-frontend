@@ -73,6 +73,36 @@
             max-width: 800px;
         }
 
+        /* 话题提示样式 */
+        .topic-notice {
+            display: inline;
+            margin-left: 12px;
+            padding: 4px 12px;
+            background: #f7f7f7;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #8c8c8c;
+            line-height: 1.5;
+        }
+
+        .topic-notice strong {
+            color: #d4380d;
+            font-weight: 600;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 16px;
+            color: #4a5568;
+            padding: 12px 20px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            flex-wrap: wrap; /* 允许换行 */
+        }
+
         /* 操作栏 - 扩大 */
         .topic-toolbar {
             display: flex;
@@ -102,6 +132,7 @@
             background: #f8fafc;
             border-radius: 12px;
             border: 1px solid #e2e8f0;
+            flex-wrap: wrap; /* 允许换行 */
         }
 
         .stat-item i {
@@ -166,6 +197,43 @@
             flex-direction: column;
         }
 
+        /* 置顶话题卡片 */
+        .topic-card.pinned {
+            background: linear-gradient(135deg, #fefefe 0%, #fafafa 100%);
+            border: 2px solid #ffd591;
+            box-shadow: 0 4px 20px rgba(255, 213, 145, 0.15);
+        }
+
+        .topic-card.pinned::before {
+            background: linear-gradient(180deg, #ffd591, #ffc069);
+        }
+
+        /* 必答标签 */
+        .topic-badge.required {
+            background: linear-gradient(135deg, #ff7875, #ffa39e);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(255, 120, 117, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 0 6px rgba(255, 120, 117, 0);
+            }
+        }
+
+        /* 置顶图标 */
+        .pin-icon {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            color: #ffc069;
+            font-size: 18px;
+            transform: rotate(45deg);
+            opacity: 0.6;
+        }
+
         .topic-card::before {
             content: '';
             position: absolute;
@@ -181,7 +249,7 @@
         .topic-card:hover {
             transform: translateY(-6px);
             box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
-            border-color: #1890ff;
+            border-color: #ffc069;
         }
 
         .topic-card:hover::before {
@@ -787,6 +855,9 @@
         <div class="stat-item">
             <i class="fas fa-comments"></i>
             <span>共 <span class="stat-number" id="topicCount">0</span> 个话题</span>
+            <span class="topic-notice">
+                <strong>提示：</strong>俱乐部创建者发布的话题为必答，其他成员发布的主题可自由讨论
+            </span>
         </div>
     </div>
 </div>
@@ -845,6 +916,18 @@
                         maxlength="500"></textarea>
                     <div class="form-hint">为参与者提供更多讨论背景，限500字</div>
                 </div>
+                <div class="form-group">
+                    <label for="topicScaffold">
+                        回答支架（选填）
+                        <span style="color: #8c8c8c; font-weight: 400; font-size: 14px; margin-left: 8px;">为讨论者提供回答框架</span>
+                    </label>
+                    <textarea 
+                        id="topicScaffold" 
+                        placeholder="例如：&#10;1. 聚焦观察，识别关键事件：请描述你在教学视频中注意到的1-2个关键教学片段（例如教师的某个提问、某次互动、某个过渡环节等）。为什么这些片段引起了你的注意？&#10;&#10;2. 对比分析，比较意图与行为：教师在教学设计/说课中阐述的设计意图，与你在教学视频中观察到的实际实施情况是否一致？有哪些差距或意外？产生这种差距的原因可能是什么？&#10;&#10;3. 从反思到行动：通过这次观课，你对"好的教学"的理解有什么新的认识或变化？你打算在自己未来的教学实践中尝试什么具体的行动？"
+                        maxlength="2000"
+                        rows="8"></textarea>
+                    <div class="form-hint">可选填。如果填写，参与者将使用您提供的框架进行回答，无需重复输入问题。限2000字</div>
+                </div>
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeTopicModal()">
                         取消
@@ -863,6 +946,7 @@
     let currentClubId = null;
     let currentUserId = null;
     let isClubAdmin = false;
+    let clubCreatorId = null; // 新增：保存俱乐部创建者ID
     let topicList = [];
 
     // ========== 页面初始化 ==========
@@ -939,6 +1023,8 @@
             if (!currentClubId) {
                 console.warn('缺少俱乐部ID，无法检查权限');
                 isClubAdmin = false;
+                // 所有人都可以创建话题
+                document.getElementById('btnCreateTopic').style.display = 'flex';
                 return;
             }
 
@@ -946,6 +1032,8 @@
             if (!window.Clubs || !Clubs.isClubCreator) {
                 console.warn('Clubs模块未加载');
                 isClubAdmin = false;
+                // 所有人都可以创建话题
+                document.getElementById('btnCreateTopic').style.display = 'flex';
                 return;
             }
 
@@ -953,49 +1041,76 @@
             isClubAdmin = await Clubs.isClubCreator(currentClubId);
             console.log('权限检查结果 - 是否是创建者:', isClubAdmin);
             
-            // 如果是创建者，显示创建话题按钮
-            if (isClubAdmin) {
-                console.log('显示创建话题按钮');
-                document.getElementById('btnCreateTopic').style.display = 'flex';
-                document.getElementById('emptyStateText').textContent = '还没有话题，点击右上角按钮创建第一个话题吧！';
-            } else {
-                console.log('非创建者，不显示创建按钮');
-                document.getElementById('btnCreateTopic').style.display = 'none';
-                document.getElementById('emptyStateText').textContent = '还没有话题，请联系俱乐部管理员创建话题';
+            // 获取俱乐部详情以获取创建者ID
+            try {
+                const clubDetail = await Clubs.getClubDetail(currentClubId);
+                if (clubDetail && clubDetail.creator) {
+                    clubCreatorId = clubDetail.creator.userId || clubDetail.creatorId;
+                    console.log('俱乐部创建者ID:', clubCreatorId);
+                }
+            } catch (error) {
+                console.error('获取俱乐部创建者ID失败:', error);
             }
+            
+            // 所有人都可以创建话题
+            document.getElementById('btnCreateTopic').style.display = 'flex';
+            document.getElementById('emptyStateText').textContent = '还没有话题，点击右上角按钮创建第一个话题吧！';
         } catch (error) {
             console.error('检查管理员权限失败:', error);
             isClubAdmin = false;
+            // 即使出错，也允许所有人创建话题
+            document.getElementById('btnCreateTopic').style.display = 'flex';
         }
     }
 
     // ========== 加载话题列表 ==========
-    async function loadTopics() {
-        try {
-            const loadingState = document.getElementById('loadingState');
-            const topicListEl = document.getElementById('topicList');
-            const emptyState = document.getElementById('emptyState');
-            
-            loadingState.style.display = 'flex';
-            topicListEl.style.display = 'none';
-            emptyState.style.display = 'none';
+    // ========== 加载话题列表 ==========
+async function loadTopics() {
+    try {
+        console.log('[DEBUG] 📋 开始加载话题列表');
+        console.log('[DEBUG] 📋 当前任务ID:', currentTaskId);
+        
+        const loadingState = document.getElementById('loadingState');
+        const topicListEl = document.getElementById('topicList');
+        const emptyState = document.getElementById('emptyState');
+        
+        loadingState.style.display = 'flex';
+        topicListEl.style.display = 'none';
+        emptyState.style.display = 'none';
 
-            if (!window.Topics || !Topics.getTopics) {
-                throw new Error('话题模块未加载');
-            }
-
-            topicList = await Topics.getTopics(currentTaskId);
-            
-            loadingState.style.display = 'none';
-            displayTopics(topicList);
-            
-        } catch (error) {
-            console.error('加载话题列表失败:', error);
-            document.getElementById('loadingState').style.display = 'none';
-            showMessage('加载话题失败: ' + error.message, 'error');
+        if (!window.Topics || !Topics.getTopics) {
+            throw new Error('话题模块未加载');
         }
-    }
 
+        console.log('[DEBUG] 📤 调用 Topics.getTopics()');
+        
+        // ⭐⭐⭐ 关键修复：确保更新全局变量
+        const newTopics = await Topics.getTopics(currentTaskId);
+        
+        console.log('[DEBUG] 📥 API返回话题数量:', newTopics.length);
+        console.log('[DEBUG] 📥 新话题列表:', newTopics.map(t => ({
+            id: t.topicId,
+            title: t.title,
+            deleted: t.deleted
+        })));
+        
+        // ⭐⭐⭐ 更新全局变量
+        topicList = newTopics;
+        
+        console.log('[DEBUG] 📋 全局 topicList 已更新，数量:', topicList.length);
+        
+        loadingState.style.display = 'none';
+        displayTopics(topicList);  // 传入正确的数据
+        
+        console.log('[DEBUG] ✅ 话题列表加载完成');
+        
+    } catch (error) {
+        console.error('[DEBUG] ❌ 加载话题列表失败:', error);
+        console.error('[DEBUG] ❌ 错误堆栈:', error.stack);
+        document.getElementById('loadingState').style.display = 'none';
+        showMessage('加载话题失败: ' + error.message, 'error');
+    }
+}
     // ========== 显示话题列表 ==========
     function displayTopics(topics) {
         const topicListEl = document.getElementById('topicList');
@@ -1016,20 +1131,36 @@
         emptyState.style.display = 'none';
         topicListEl.style.display = 'grid';
         
+        // 对话题进行排序：俱乐部创建者的话题置顶
+        const sortedTopics = [...topics].sort((a, b) => {
+            const aIsCreator = clubCreatorId && a.creatorId === clubCreatorId;
+            const bIsCreator = clubCreatorId && b.creatorId === clubCreatorId;
+            
+            // 俱乐部创建者的话题排在前面
+            if (aIsCreator && !bIsCreator) return -1;
+            if (!aIsCreator && bIsCreator) return 1;
+            
+            // 其他话题按创建时间排序（新的在前）
+            return new Date(b.createdAt) - new Date(a.createdAt);
+        });
         
-        topicListEl.innerHTML = topics.map((topic, index) => {
+        topicListEl.innerHTML = sortedTopics.map((topic, index) => {
             const isHot = (topic.commentCount || 0) > 10;
             const isMyTopic = topic.creatorId === currentUserId;
             const canManage = isClubAdmin || isMyTopic;
+            const isCreatorTopic = clubCreatorId && topic.creatorId === clubCreatorId; // 是否是俱乐部创建者发布的话题
+            const isFirstNonCreatorTopic = !isCreatorTopic && sortedTopics.slice(0, index).every(t => clubCreatorId && t.creatorId === clubCreatorId);
             
             return `
-                <div class="topic-card">
+                <div class="topic-card ${isCreatorTopic ? 'pinned' : ''}">
+                    ${isCreatorTopic ? '<i class="fas fa-thumbtack pin-icon"></i>' : ''}
                     <div class="topic-card-header">
                         <div class="topic-main-info" onclick="goToTopicForum(${topic.topicId})">
                             <div class="topic-title-row">
                                 <h3 class="topic-title">${escapeHtml(topic.title)}</h3>
+                                ${isCreatorTopic ? '<span class="topic-badge required">📌 必答</span>' : ''}
                                 ${isHot ? '<span class="topic-badge hot">🔥 热门</span>' : ''}
-                                ${index === 0 ? '<span class="topic-badge new">✨ 最新</span>' : ''}
+                                ${isFirstNonCreatorTopic ? '<span class="topic-badge new">✨ 最新</span>' : ''}
                             </div>
                             <p class="topic-description ${topic.description ? '' : 'empty'}">
                                 ${topic.description ? escapeHtml(topic.description) : '暂无说明，点击进入查看详情'}
@@ -1091,6 +1222,7 @@
         const topicId = document.getElementById('editTopicId').value;
         const title = document.getElementById('topicTitle').value.trim();
         const description = document.getElementById('topicDescription').value.trim();
+        const scaffold = document.getElementById('topicScaffold').value.trim();
 
         if (!title) {
             showMessage('请输入话题标题', 'warning');
@@ -1101,10 +1233,11 @@
             showMessage('正在保存...', 'info');
 
             const topicData = {
-                taskId: currentTaskId,
-                title: title,
-                description: description
-            };
+    taskId: currentTaskId,
+    title: title,
+    content: description,      // ✅ 修改为 content（后端API要求的字段名）
+    scaffold: scaffold
+};
 
             let result;
             if (topicId) {
@@ -1167,7 +1300,8 @@
             document.getElementById('modalTitle').textContent = '编辑话题';
             document.getElementById('editTopicId').value = topicId;
             document.getElementById('topicTitle').value = topic.title;
-            document.getElementById('topicDescription').value = topic.description || '';
+            document.getElementById('topicDescription').value = topic.content || topic.description || '';
+            document.getElementById('topicScaffold').value = topic.scaffold || '';
             document.getElementById('topicModal').classList.add('active');
             document.body.style.overflow = 'hidden';
         } catch (error) {
@@ -1178,34 +1312,57 @@
 
     // ========== 删除话题 ==========
     async function deleteTopic(topicId) {
-        if (!confirm('确定要删除这个话题吗？删除后将无法恢复，所有相关讨论也会被删除。')) {
-            return;
-        }
-
-        try {
-            showMessage('正在删除...', 'info');
-
-            const result = await Topics.deleteTopic(topicId);
-            
-            if (result.success) {
-                if (window.Utils && Utils.sendAnalyticsEvent) {
-                    Utils.sendAnalyticsEvent('topic_delete', {
-                        category: 'interaction',
-                        target_type: 'topic',
-                        target_id: topicId,
-                        club_id: currentClubId
-                    });
-                }
-                showMessage('话题删除成功', 'success');
-                await loadTopics();
-            } else {
-                showMessage(result.message || '删除失败', 'error');
-            }
-        } catch (error) {
-            console.error('删除话题失败:', error);
-            showMessage('删除失败: ' + error.message, 'error');
-        }
+    console.log('[DEBUG] 🗑️ 开始删除话题，ID:', topicId);
+    console.log('[DEBUG] 📋 当前全局 topicList 数量:', topicList.length);
+    
+    if (!confirm('确定要删除这个话题吗？删除后将无法恢复，所有相关讨论也会被删除。')) {
+        console.log('[DEBUG] ❌ 用户取消删除');
+        return;
     }
+
+    try {
+        console.log('[DEBUG] 📤 发送删除请求，话题ID:', topicId);
+        showMessage('正在删除...', 'info');
+
+        const result = await Topics.deleteTopic(topicId);
+        
+        console.log('[DEBUG] 📥 删除请求返回结果:', result);
+        
+        if (result.success) {
+            showMessage('话题删除成功', 'success');
+            
+            console.log('[DEBUG] ✅ 删除成功，开始重新加载话题列表');
+            console.log('[DEBUG] 📋 删除前全局 topicList:', topicList.map(t => t.topicId));
+            
+            // ⭐ 清空当前列表，立即反馈
+            const oldTopicList = [...topicList]; // 保存旧数据用于对比
+            topicList = [];
+            displayTopics([]); // 立即清空显示
+            
+            // 重新加载
+            await loadTopics();
+            
+            console.log('[DEBUG] 📋 重新加载后全局 topicList:', topicList.map(t => t.topicId));
+            
+            // 对比检查
+            const stillExists = topicList.find(t => t.topicId === topicId);
+            if (stillExists) {
+                console.error('[DEBUG] ❌ 话题仍然存在于全局变量中');
+                console.error('[DEBUG] ❌ 完整对比:');
+                console.error('[DEBUG] ❌ 旧列表:', oldTopicList.map(t => t.topicId));
+                console.error('[DEBUG] ❌ 新列表:', topicList.map(t => t.topicId));
+            } else {
+                console.log('[DEBUG] ✅ 确认话题已从全局变量中移除');
+            }
+        } else {
+            console.log('[DEBUG] ❌ 删除失败:', result.message);
+            showMessage(result.message || '删除失败', 'error');
+        }
+    } catch (error) {
+        console.error('[DEBUG] ❌ 删除话题异常:', error);
+        showMessage('删除失败: ' + error.message, 'error');
+    }
+}
 
     // ========== 跳转到话题论坛 ==========
     function goToTopicForum(topicId) {
