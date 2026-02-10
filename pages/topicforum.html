@@ -133,6 +133,8 @@
         .topic-desc {
             color: #666;
             line-height: 1.6;
+            white-space: pre-wrap;  /* 保留换行符和空格 */
+            word-wrap: break-word;  /* 长单词自动换行 */
         }
 
         .compose-section {
@@ -260,7 +262,7 @@
 
         .btn-secondary {
             background: #f0f0f0;
-            color: #555;
+            color: #666;
         }
 
         .btn-secondary:hover {
@@ -268,15 +270,19 @@
         }
 
         .btn-primary {
-            background: #1890ff;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            box-shadow: 0 4px 15px rgba(24, 144, 255, 0.3);
         }
 
         .btn-primary:hover {
-            background: #40a9ff;
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(24, 144, 255, 0.4);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
         }
 
         .comments-section {
@@ -288,56 +294,61 @@
 
         .comments-header {
             display: flex;
-            align-items: center;
             justify-content: space-between;
+            align-items: center;
             margin-bottom: 20px;
             padding-bottom: 16px;
             border-bottom: 2px solid #f0f0f0;
         }
 
         .comments-title {
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             color: #333;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .comments-count {
-            background: #f0f0f0;
+            background: #f0f8ff;
+            color: #1890ff;
             padding: 4px 12px;
-            border-radius: 15px;
+            border-radius: 12px;
             font-size: 0.9rem;
-            color: #666;
+            font-weight: 500;
+        }
+
+        .empty-comments {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-comments i {
+            font-size: 4rem;
+            color: #ddd;
+            margin-bottom: 16px;
         }
 
         .comment-card {
             padding: 20px;
-            border-radius: 12px;
-            background: #f8f9fa;
             margin-bottom: 16px;
-            transition: transform 0.3s ease;
+            background: #fafafa;
+            border-radius: 12px;
+            transition: all 0.3s ease;
         }
 
         .comment-card:hover {
-            transform: translateX(5px);
+            background: #f0f8ff;
+            transform: translateY(-2px);
         }
 
         .comment-header {
             display: flex;
-            align-items: center;
-            gap: 12px;
+            align-items: flex-start;
             margin-bottom: 12px;
-        }
-
-        .avatar {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            font-size: 1.1rem;
+            gap: 12px;
         }
 
         .comment-meta {
@@ -356,251 +367,138 @@
         }
 
         .scaffold-tag {
-            background: #e3f2fd;
-            color: #1976d2;
-            padding: 4px 12px;
-            border-radius: 15px;
-            font-size: 0.85rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
         }
 
         .comment-content {
-            color: #444;
+            margin-bottom: 12px;
             line-height: 1.8;
-            margin-bottom: 16px;
-            white-space: pre-wrap;
+            color: #555;
         }
 
         .scaffold-text {
-            background: #fff3cd;
-            padding: 2px 6px;
-            border-radius: 4px;
-            color: #856404;
+            color: #1890ff;
             font-weight: 500;
         }
 
         .comment-actions {
             display: flex;
-            gap: 16px;
+            gap: 12px;
         }
 
         .action-btn {
-            background: none;
-            border: none;
+            background: transparent;
+            border: 1px solid #e0e0e0;
+            padding: 6px 14px;
+            border-radius: 16px;
+            font-size: 0.85rem;
             color: #666;
             cursor: pointer;
-            font-size: 0.9rem;
-            transition: color 0.3s ease;
-            padding: 4px 8px;
+            transition: all 0.3s ease;
         }
 
         .action-btn:hover {
+            border-color: #1890ff;
             color: #1890ff;
+            background: #f0f8ff;
         }
 
         .action-btn.liked {
-            color: #1890ff;
-            font-weight: 600;
+            background: #1890ff;
+            color: white;
+            border-color: transparent;
         }
 
-        .empty-comments {
-            text-align: center;
-            padding: 60px 20px;
-            color: #999;
+        .reply-form {
+            margin-top: 16px;
         }
 
-        .empty-comments i {
-            font-size: 4rem;
-            color: #ddd;
-            margin-bottom: 16px;
-        }
-
-        .empty-comments p {
-            font-size: 1rem;
-        }
-
-        /* Toast 提示 */
         .toast {
             position: fixed;
-            top: 20px;
+            bottom: 80px;
             left: 50%;
-            transform: translateX(-50%) translateY(-100px);
-            background: rgba(0,0,0,0.8);
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
             color: white;
-            padding: 14px 24px;
-            border-radius: 8px;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 0.9rem;
             opacity: 0;
-            transition: all 0.3s ease;
-            z-index: 10000;
+            transition: opacity 0.3s ease;
+            z-index: 1000;
+            white-space: nowrap;
         }
 
         .toast.show {
             opacity: 1;
-            transform: translateX(-50%) translateY(0);
         }
-
-        /* 加载状态 */
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #999;
-        }
-
-        .loading i {
-            font-size: 2rem;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        /* 返回按钮 */
-        .back-btn {
-            background: #f0f0f0;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 20px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #555;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-            margin-bottom: 20px;
-        }
-
-        .back-btn:hover {
-            background: #e0e0e0;
-            transform: translateX(-5px);
-        }
-
-        .reply-section {
-            margin-left: 56px;
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px solid #e8e8e8;
-        }
-
-        .reply-card {
-            background: white;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 8px;
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        /* 回复表单样式 */
-.reply-form {
-    margin-top: 12px;
-    margin-bottom: 12px;
-    animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* 嵌套评论的视觉层次 */
-.comment-card {
-    transition: all 0.3s ease;
-}
-
-/* 第一条回复的缩进效果 */
-.comment-card[style*="margin-left: 40px"] {
-    border-left: 2px solid #e8e8e8;
-    padding-left: 12px;
-    margin-top: 8px;
-}
-
-/* 移除其他深度的边框效果 */
-.comment-card[style*="margin-left: 0px"] {
-    border-left: none;
-    padding-left: 0;
-}
-
-/* 回复表单中的作者名 */
-.reply-form strong {
-    color: #1890ff;
-}
     </style>
 </head>
 <body>
     <div class="page">
-        <!-- Header -->
-        <div class="header">
+        <!-- 顶部导航栏 -->
+        <header class="header">
             <div class="header-left">
-                <button class="btn btn-text" onclick="goBackToTopicList()" style="margin-right:10px;">
+                <button class="btn-text" onclick="goBackToTopicList()" title="返回话题列表">
                     <i class="fas fa-arrow-left"></i>
                 </button>
                 <span class="platform-name">教师视频俱乐部</span>
-                <span style="color: #999; font-weight: normal;"> | 话题讨论</span>
             </div>
             <div class="header-right">
                 <div class="user-info">
-                    <div class="avatar" id="forum-user-avatar">U</div>
-                    <span id="userName">加载中...</span>
+                    <div class="avatar" id="userAvatar">U</div>
+                    <span id="userName">用户</span>
                 </div>
+                <button class="btn-text" onclick="logout()" title="退出登录">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
             </div>
-        </div>
-        </div>
+        </header>
 
-        <!-- Main Content -->
+        <!-- 讨论区主容器 -->
         <div class="forum-container">
-            <!-- 返回按钮 -->
-            <button class="back-btn" onclick="goBackToTopicList()">
-                <i class="fas fa-arrow-left"></i>
-                返回话题列表
-            </button>
-
-            <!-- 话题详情 -->
+            <!-- 话题信息卡片 -->
             <div class="discussion-topic">
-                <div class="topic-label">📚 研讨话题</div>
-                <h2 class="topic-title" id="topicTitle">加载中...</h2>
-                <p class="topic-desc" id="topicDescription">加载中...</p>
+                <div class="topic-label">📌 话题讨论</div>
+                <h1 class="topic-title" id="topicTitle">加载中...</h1>
+                <p class="topic-desc" id="topicDescription">正在加载话题内容...</p>
             </div>
 
-            <!-- 写作区域 -->
+            <!-- 发表观点区域 -->
             <div class="compose-section">
                 <div class="compose-header">
                     <div class="compose-title">
-                        <span class="icon">✍️</span>
-                        发表你的观点
+                        <span class="icon">💬</span>
+                        <span>发表你的观点</span>
                     </div>
                 </div>
                 <p style="color: #666; margin-bottom: 12px; font-size: 0.95rem;">选择一个思考支架来组织你的想法：</p>
 
 
-                <!-- 思考支架选择器 -->
-                <div class="scaffold-selector">
-                    <button class="scaffold-btn" data-scaffold="opinion">💡 论证观点</button>
-                    <button class="scaffold-btn" data-scaffold="question">❓ 提出质疑</button>
-                    <button class="scaffold-btn" data-scaffold="case">🔗 建立联系</button>
-                    <button class="scaffold-btn" data-scaffold="summary">🪞 深度反思</button>
-                    <button class="scaffold-btn" data-scaffold="reflection">🤔 延伸发展</button>
-                </div>
+                <!-- 🆕 支架提示文字(默认隐藏) -->
+                <div id="scaffoldPrompt" style="display: none; margin-bottom: 12px; color: #666; font-size: 0.95rem;"></div>
 
-                <!-- 支架提示 -->
-                <div class="scaffold-hint">
-                    <strong>论证观点支架：</strong>帮助你清晰地表达观点、阐述理由并提供证据支持。
-                </div>
+                <!-- 🆕 支架选择器 (默认隐藏,仅在有支架时显示) -->
+                <div class="scaffold-selector" style="display: none;"></div>
 
-                <!-- 写作区 -->
+                <!-- 支架提示区 -->
+                <div class="scaffold-hint" style="display: none;"></div>
+
+                <!-- 文本输入区 -->
                 <div class="textarea-wrapper">
                     <textarea 
                         class="compose-textarea" 
                         id="commentTextarea"
-                        placeholder="点击上方按钮选择思考支架，开启深度思考之旅..."
+                        placeholder="在这里输入你的想法和观点..."
                     ></textarea>
                 </div>
 
-                <!-- 操作区 -->
+                <!-- 操作按钮区 -->
                 <div class="compose-actions">
                     <div class="char-count">
                         已输入 <span id="charCount">0</span> 字
@@ -612,16 +510,20 @@
                 </div>
             </div>
 
-            <!-- 评论区域 -->
+            <!-- 评论列表区域 -->
             <div class="comments-section">
                 <div class="comments-header">
-                    <div class="comments-title">💬 大家的深度思考</div>
+                    <h2 class="comments-title">
+                        <i class="fas fa-comments"></i>
+                        全部观点
+                    </h2>
                     <div class="comments-count" id="commentsCount">0 条观点</div>
                 </div>
                 <div id="commentsList">
-                    <div class="loading">
-                        <i class="fas fa-spinner"></i>
-                        <p>加载评论中...</p>
+                    <!-- 评论列表将在这里动态生成 -->
+                    <div class="empty-comments">
+                        <i class="fas fa-comments"></i>
+                        <p>暂无评论，快来发表第一条观点吧！</p>
                     </div>
                 </div>
             </div>
@@ -631,174 +533,74 @@
         <div class="toast" id="toast"></div>
     </div>
 
-    <!-- 引入依赖 -->
-    <script src="../config.js"></script>
-    <script src="../js/utils.js"></script>
-    <script src="../js/api.js"></script>
-    <script src="../js/topics.js"></script>
-
     <script>
         // ========== 全局变量 ==========
-        let currentTaskId = null;
         let currentTopicId = null;
+        let currentTaskId = null;
         let currentClubId = null;
-        let currentScaffold = null;
+        let currentScaffold = null;  // 🆕 当前选中的支架(可以是null)
+        let topicScaffold = null;    // 🆕 话题创建者提供的支架内容
         let commentsList = [];
 
-        // ========== DOM元素 ==========
-        const scaffoldBtns = document.querySelectorAll('.scaffold-btn');
-        const scaffoldHint = document.querySelector('.scaffold-hint');
+        // ========== DOM 元素 ==========
         const commentTextarea = document.getElementById('commentTextarea');
         const charCount = document.getElementById('charCount');
+        const scaffoldHint = document.querySelector('.scaffold-hint');
         const clearBtn = document.getElementById('clearBtn');
         const submitBtn = document.getElementById('submitBtn');
         const commentsListEl = document.getElementById('commentsList');
         const commentsCount = document.getElementById('commentsCount');
         const toast = document.getElementById('toast');
 
-        // ========== 思考支架定义 ==========
-        const scaffolds = {
-            opinion: {
-                name: '💡 论证观点',
-                hint: '<strong>论证观点支架</strong>：帮助你清晰地表达观点、阐述理由并提供证据支持。',
-                template: `【我认为】
-（在此写下你的核心观点）
-
-【我的理由是】
-（解释为什么你这样认为）
-
-【支持我观点的证据是】
-（列举事实、数据或例子来支持你的观点）
-
-【可能的反对意见是……但我的回应是】
-（思考可能的质疑并给出回应）`
-            },
-            question: {
-                name: '❓ 提出质疑',
-                hint: '<strong>提出质疑支架</strong>：帮助你系统地表达疑问和进行批判性思考。',
-                template: `【我对……持怀疑态度】
-（指出你质疑的观点或现象）
-
-【我的疑问是】
-（具体说明你的疑问是什么）
-
-【让我产生疑问的原因是】
-（解释为什么你会有这个疑问）
-
-【我认为需要进一步思考的是】
-（提出需要深入探讨的方向）`
-            },
-            case: {
-                name: '🔗 建立联系',
-                hint: '<strong>建立联系支架</strong>：帮助你将新知识与已有经验或其他领域联系起来。',
-                template: `【这让我想到了】
-（联系到的相关经验、知识或案例）
-
-【它们之间的相似之处是】
-（分析两者的共同点）
-
-【不同之处在于】
-（比较两者的差异）
-
-【这种联系让我有了新的理解】
-（总结通过联系获得的新认识）`
-            },
-            summary: {
-                name: '🪞 深度反思',
-                hint: '<strong>深度反思支架</strong>：帮助你对学习过程和认知变化进行元认知思考。',
-                template: `【在这个话题中，我原来的想法是】
-（描述你之前的认知或假设）
-
-【现在我的想法发生了这样的变化】
-（说明你的认知是如何改变的）
-
-【促使我改变想法的关键点是】
-（分析是什么导致了你的认知转变）
-
-【我还想深入了解的是】
-（提出你希望继续探索的方向）`
-            },
-            reflection: {
-                name: '🧱 延伸发展',
-                hint: '<strong>延伸发展支架</strong>：帮助你在他人观点基础上进行建设性拓展。',
-                template: `【我同意……的观点】
-（指明你认同的观点及其作者）
-
-【在此基础上，我想补充】
-（添加新的角度或信息）
-
-【进一步思考，我认为】
-（深化或延伸原有观点）
-
-【这对实际应用的启示是】
-（思考理论如何指导实践）`
-            }
-        };
-
         // ========== 页面初始化 ==========
         async function initTopicForumPage() {
-            console.log('[TopicForum] 页面初始化开始');
-
-            // 获取URL参数
-            currentTaskId = getTaskIdFromURL();
+            console.log('[TopicForum] 初始化讨论页面');
+            
+            // 1. 获取URL参数
             currentTopicId = getTopicIdFromURL();
+            currentTaskId = getTaskIdFromURL();
             currentClubId = getClubIdFromURL();
-
-            console.log('[TopicForum] 参数:', {
-                taskId: currentTaskId,
-                topicId: currentTopicId,
-                clubId: currentClubId
+            
+            console.log('[TopicForum] URL参数:', { 
+                currentTopicId, 
+                currentTaskId, 
+                currentClubId 
             });
-
+            
             if (!currentTopicId) {
-                showToast('缺少话题ID');
-                setTimeout(() => window.location.hash = 'tasks', 1500);
+                console.error('[TopicForum] 缺少话题ID');
+                showToast('话题ID不存在');
                 return;
             }
-
-            if (window.Utils && Utils.sendAnalyticsEvent) {
-                Utils.sendAnalyticsEvent('topic_open_detail', {
-                    category: 'interaction',
-                    target_type: 'topic',
-                    target_id: currentTopicId,
-                    club_id: currentClubId
-                });
-            }
-
-            // 检查依赖
-            if (!window.Topics) {
-                console.error('[TopicForum] Topics 模块未加载');
-                showToast('系统初始化失败');
-                return;
-            }
-
-            // 加载用户信息
-            await loadUserInfo();
-
-            // 加载话题详情和评论
-            await loadTopicDetail();
-            await loadComments();
-        }
-
-        // ========== 加载用户信息 ==========
-        async function loadUserInfo() {
+            
+            // 2. 加载用户信息
             try {
                 const userInfo = Utils.getFromStorage(window.AppConfig.STORAGE_KEYS.USER_INFO);
                 if (userInfo && userInfo.username) {
-                    document.getElementById('userName').textContent = userInfo.username;
-                
-                // 设置头像
-                const avatarEl = document.getElementById('forum-user-avatar');
-                if (avatarEl && userInfo.username) {
-                    avatarEl.textContent = userInfo.username.charAt(0).toUpperCase();
-                }
+                    const userNameEl = document.getElementById('userName');
+                    const userAvatarEl = document.getElementById('userAvatar');
+                    
+                    if (userNameEl) {
+                        userNameEl.textContent = userInfo.username;
+                    }
+                    
+                    if (userAvatarEl) {
+                        userAvatarEl.textContent = userInfo.username.charAt(0).toUpperCase();
+                    }
                 }
             } catch (error) {
-                console.error('加载用户信息失败:', error);
+                console.error('[TopicForum] 加载用户信息失败:', error);
             }
+            
+            // 3. 加载话题详情
+            await loadTopicDetail();
+            
+            // 4. 加载评论列表
+            await loadComments();
+            
+            console.log('[TopicForum] ✅ 页面初始化完成');
         }
 
-        // ========== 获取URL参数 ==========
         function getTaskIdFromURL() {
             const hash = window.location.hash;
             const params = new URLSearchParams(hash.split('?')[1]);
@@ -869,6 +671,15 @@
                     if (pageDiv) {
                         pageDiv.style.display = 'block';
                         pageDiv.style.visibility = 'visible';
+                    }
+                    
+                    // 🆕 保存话题支架
+                    topicScaffold = topicDetail.scaffold && topicDetail.scaffold.trim() ? topicDetail.scaffold : null;
+                    
+                    // 🆕 如果话题创建者提供了支架,显示支架按钮
+                    if (topicScaffold) {
+                        console.log('[TopicForum] 话题创建者提供了回答支架');
+                        setupScaffoldButton(topicScaffold);
                     }
                     
                     console.log('[TopicForum] ✅ 话题详情已显示');
@@ -995,21 +806,96 @@ if (comment.parentId) {
         generateCommentTree(comment, comments)
     ).join('');
 }
-        // ========== 支架按钮点击事件 ==========
-        scaffoldBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                scaffoldBtns.forEach(b => b.classList.remove('active'));
+
+
+        // ========== 🆕 设置支架按钮（可选使用） ==========
+        function setupScaffoldButton(scaffoldText) {
+            console.log('[TopicForum] 设置可选支架按钮');
+            
+            const scaffoldSelector = document.querySelector('.scaffold-selector');
+            const scaffoldHint = document.querySelector('.scaffold-hint');
+            const scaffoldPrompt = document.querySelector('#scaffoldPrompt');
+            
+            if (!scaffoldSelector) return;
+            
+            // 清空现有内容
+            scaffoldSelector.innerHTML = '';
+            
+            // 创建支架按钮
+            const scaffoldBtn = document.createElement('button');
+            scaffoldBtn.className = 'scaffold-btn';
+            scaffoldBtn.innerHTML = '📋 使用回答框架';
+            scaffoldBtn.dataset.scaffold = 'custom';
+            
+            // 点击按钮时的行为
+            scaffoldBtn.addEventListener('click', function() {
+                // 🆕 关键修改：如果用户已经输入内容，提示是否覆盖
+                const currentContent = commentTextarea.value.trim();
+                
+                if (currentContent.length > 0) {
+                    // 用户已有内容，询问是否要覆盖
+                    if (!confirm('你已经输入了一些内容，点击确定将会在现有内容后追加框架模板。是否继续？')) {
+                        return;
+                    }
+                    // 追加模式：在现有内容后面添加框架
+                    commentTextarea.value = currentContent + '\n\n' + topicScaffold;
+                } else {
+                    // 没有内容，直接填充
+                    commentTextarea.value = topicScaffold;
+                }
+                
+                // 切换按钮状态
+                document.querySelectorAll('.scaffold-btn').forEach(b => b.classList.remove('active'));
                 this.classList.add('active');
-
-                const scaffoldType = this.dataset.scaffold;
-                currentScaffold = scaffolds[scaffoldType];
-
-                scaffoldHint.innerHTML = currentScaffold.hint;
-                commentTextarea.value = currentScaffold.template;
+                
+                // 设置当前支架状态
+                currentScaffold = {
+                    name: '📋 回答框架',
+                    hint: '<strong>回答框架：</strong>话题创建者为你提供了以下回答框架，请在框架中填写你的思考。',
+                    template: topicScaffold
+                };
+                
+                // 更新提示
+                if (scaffoldHint) {
+                    scaffoldHint.innerHTML = currentScaffold.hint;
+                    scaffoldHint.style.display = 'block';
+                }
+                
+                // 更新字数统计
                 updateCharCount();
+                
+                // 聚焦到输入框
                 commentTextarea.focus();
+                
+                // 提示信息
+                showToast('已加载回答框架');
             });
-        });
+            
+            scaffoldSelector.appendChild(scaffoldBtn);
+            scaffoldSelector.style.display = 'flex';
+            
+            // 显示支架预览提示
+            if (scaffoldHint) {
+                scaffoldHint.innerHTML = `
+                    <strong>💡 话题创建者提供了回答框架（可选）</strong>
+                    <div style="margin-top: 8px; padding: 12px; background: #f8fafc; border-radius: 8px; white-space: pre-wrap; font-size: 0.9rem; color: #4a5568; max-height: 200px; overflow-y: auto;">
+                        ${escapeHtml(scaffoldText)}
+                    </div>
+                    <div style="margin-top: 8px; font-size: 0.85rem; color: #64748b;">
+                        ℹ️ 点击上方"📋 使用回答框架"按钮可以加载框架模板，也可以直接输入你的想法
+                    </div>
+                `;
+                scaffoldHint.style.display = 'block';
+            }
+            
+            // 显示提示文字
+            if (scaffoldPrompt) {
+                scaffoldPrompt.textContent = '💬 话题创建者为你提供了回答框架（可选使用）：';
+                scaffoldPrompt.style.display = 'block';
+            }
+            
+            console.log('[TopicForum] ✅ 已设置可选支架按钮');
+        }
 
         // ========== 更新字数统计 ==========
         function updateCharCount() {
@@ -1023,13 +909,32 @@ if (comment.parentId) {
         // ========== 清空按钮 ==========
         clearBtn.addEventListener('click', function() {
             commentTextarea.value = '';
-            scaffoldBtns.forEach(b => b.classList.remove('active'));
-            scaffoldHint.innerHTML = '<strong>提示：</strong>点击上方按钮选择一个思考支架，系统将自动生成引导框架帮助你组织思路。';
+            document.querySelectorAll('.scaffold-btn').forEach(b => b.classList.remove('active'));
+            
+            // 恢复提示
+            const scaffoldHint = document.querySelector('.scaffold-hint');
+            if (topicScaffold && scaffoldHint) {
+                // 如果有话题支架,显示支架预览
+                scaffoldHint.innerHTML = `
+                    <strong>💡 话题创建者提供了回答框架（可选）</strong>
+                    <div style="margin-top: 8px; padding: 12px; background: #f8fafc; border-radius: 8px; white-space: pre-wrap; font-size: 0.9rem; color: #4a5568; max-height: 200px; overflow-y: auto;">
+                        ${escapeHtml(topicScaffold)}
+                    </div>
+                    <div style="margin-top: 8px; font-size: 0.85rem; color: #64748b;">
+                        ℹ️ 点击上方"📋 使用回答框架"按钮可以加载框架模板，也可以直接输入你的想法
+                    </div>
+                `;
+                scaffoldHint.style.display = 'block';
+            } else if (scaffoldHint) {
+                // 没有话题支架,隐藏提示
+                scaffoldHint.style.display = 'none';
+            }
+            
             currentScaffold = null;
             updateCharCount();
         });
 
-        // ========== 发布评论 ==========
+        // ========== 🆕 发布评论（支架变为可选） ==========
         submitBtn.addEventListener('click', async function() {
             const content = commentTextarea.value.trim();
 
@@ -1038,16 +943,8 @@ if (comment.parentId) {
                 return;
             }
 
-            if (!currentScaffold) {
-                showToast('请先选择一个思考支架！');
-                return;
-            }
-
-            const hasContent = content.replace(/【[^】]+】/g, '').replace(/（[^）]+）/g, '').trim().length > 0;
-            if (!hasContent) {
-                showToast('请在支架框架中填写你的想法！');
-                return;
-            }
+            // 🆕 移除强制使用支架的检查
+            // 用户可以选择使用支架，也可以不使用直接输入
 
             // 禁用按钮防止重复提交
             submitBtn.disabled = true;
@@ -1067,26 +964,29 @@ if (comment.parentId) {
                 console.log('[TopicForum] 发布结果:', result);
 
                 if (result.success) {
-                    showToast('发布成功！感谢你的深度思考 ✨');
-
-                    if (window.Utils && Utils.sendAnalyticsEvent) {
-                        Utils.sendAnalyticsEvent('reflection_submit', {
-                            category: 'interaction',
-                            target_type: 'topic',
-                            target_id: currentTopicId,
-                            target_object: {
-                                content: content,
-                                content_length: content.length,
-                                scaffold_type: currentScaffold || null,
-                                parent_id: null
-                            }
-                        });
-                    }
+                    showToast('发布成功！');
                     
                     // 清空表单
                     commentTextarea.value = '';
-                    scaffoldBtns.forEach(b => b.classList.remove('active'));
-                    scaffoldHint.innerHTML = '<strong>提示：</strong>点击上方按钮选择一个思考支架，系统将自动生成引导框架帮助你组织思路。';
+                    document.querySelectorAll('.scaffold-btn').forEach(b => b.classList.remove('active'));
+                    
+                    // 恢复提示
+                    const scaffoldHint = document.querySelector('.scaffold-hint');
+                    if (topicScaffold && scaffoldHint) {
+                        scaffoldHint.innerHTML = `
+                            <strong>💡 话题创建者提供了回答框架（可选）</strong>
+                            <div style="margin-top: 8px; padding: 12px; background: #f8fafc; border-radius: 8px; white-space: pre-wrap; font-size: 0.9rem; color: #4a5568; max-height: 200px; overflow-y: auto;">
+                                ${escapeHtml(topicScaffold)}
+                            </div>
+                            <div style="margin-top: 8px; font-size: 0.85rem; color: #64748b;">
+                                ℹ️ 点击上方"📋 使用回答框架"按钮可以加载框架模板，也可以直接输入你的想法
+                            </div>
+                        `;
+                        scaffoldHint.style.display = 'block';
+                    } else if (scaffoldHint) {
+                        scaffoldHint.style.display = 'none';
+                    }
+                    
                     currentScaffold = null;
                     updateCharCount();
 
@@ -1115,7 +1015,7 @@ if (comment.parentId) {
                 console.log('[TopicForum] 点赞结果:', result);
                 
                 if (result.success) {
-                    const isLiked = result.liked !== false; // 默认为true
+                    const isLiked = result.liked;
                     
                     // 更新按钮状态
                     if (buttonElement) {
