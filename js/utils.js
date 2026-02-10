@@ -325,37 +325,126 @@ window.Utils = {
     
     // 发送隐私事件到服务器（埋点）
     sendPrivacyEvent: function(eventName, eventData = {}) {
-        if (!this.isPrivacyAgreed()) {
+        this.sendAnalyticsEvent(eventName, {
+            category: 'session',
+            target_object: eventData
+        });
+    },
+
+    // ================ 统计埋点（科研方案） ================
+
+    getCurrentPage: function() {
+        if (window.App && window.App.state && window.App.state.currentPage) {
+            return window.App.state.currentPage;
+        }
+        const hash = window.location.hash || '';
+        const raw = hash.startsWith('#') ? hash.slice(1) : hash;
+        const page = raw.split('?')[0];
+        return page || 'unknown';
+    },
+
+    getAnalyticsEndpoint: function() {
+        const config = window.AppConfig || {};
+        const endpoint = config.ANALYTICS_ENDPOINT || '/analytics/events';
+        if (endpoint.startsWith('http')) return endpoint;
+        const base = (config.API_BASE_URL || '').replace(/\/$/, '');
+        return `${base}${endpoint}`;
+    },
+
+    isAnalyticsCategoryEnabled: function(category) {
+        const config = window.AppConfig || {};
+        const defaults = {
+            LEARNING: true,
+            TEACHING: true,
+            INTERACTION: true,
+            SESSION: true,
+            SYSTEM: false
+        };
+        const categoryMap = {
+            learning: 'LEARNING',
+            teaching: 'TEACHING',
+            interaction: 'INTERACTION',
+            session: 'SESSION',
+            system: 'SYSTEM'
+        };
+        const key = categoryMap[category] || category?.toUpperCase?.() || 'LEARNING';
+        if (!config.ANALYTICS_CATEGORY) {
+            return defaults[key] !== false;
+        }
+        if (config.ANALYTICS_CATEGORY[key] === undefined) {
+            return defaults[key] !== false;
+        }
+        return config.ANALYTICS_CATEGORY[key] === true;
+    },
+
+    sendAnalyticsEvent: function(eventName, options = {}) {
+        const config = window.AppConfig || {};
+        if (!config.ANALYTICS_ENABLED) return;
+
+        const category = options.category || 'learning';
+        if (!this.isAnalyticsCategoryEnabled(category)) return;
+
+        if (!this.isPrivacyAgreed() && eventName !== 'privacy_agreement_accepted') {
             console.log('[埋点] 隐私协议未同意，不发送事件');
             return;
         }
-        
+
         const user = window.Auth ? window.Auth.getUser() : null;
-        
-        const eventPayload = {
+        const realname = window.Profile && window.Profile.currentProfile ? window.Profile.currentProfile.realname : undefined;
+
+        const targetObject = options.target_object || options.targetObject;
+        const targetObjectValue = targetObject
+            ? (typeof targetObject === 'string' ? targetObject : JSON.stringify(targetObject))
+            : undefined;
+
+        const payload = {
+            user_id: options.user_id ?? (user ? user.userId : undefined),
+            club_id: options.club_id,
+            event_time: Date.now(),
+            user_name: options.user_name ?? (user ? (user.username || user.name) : undefined),
+            user_true_name: options.user_true_name ?? realname,
+            page: options.page ?? this.getCurrentPage(),
             event: eventName,
-            timestamp: new Date().toISOString(),
-            userId: user ? user.userId : 'anonymous',
-            sessionId: this.getSessionId(),
-            data: eventData
+            sub_event: options.sub_event,
+            target_type: options.target_type,
+            target_id: options.target_id !== undefined && options.target_id !== null ? String(options.target_id) : undefined,
+            video_time: typeof options.video_time === 'number' ? options.video_time : undefined,
+            target_object: targetObjectValue
         };
-        
-        console.log('[埋点] 隐私事件:', eventPayload);
-        
-        // 在实际应用中，这里应该发送到分析服务器
-        /*
-        if (window.AppConfig.ANALYTICS_ENABLED) {
-            fetch(window.AppConfig.ANALYTICS_ENDPOINT, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(eventPayload)
-            }).catch(error => {
-                console.error('[埋点] 发送隐私事件失败:', error);
-            });
+
+        // 清理空字段
+        const cleaned = {};
+        Object.keys(payload).forEach(key => {
+            if (payload[key] !== undefined && payload[key] !== null && payload[key] !== '') {
+                cleaned[key] = payload[key];
+            }
+        });
+
+        if (config.DEBUG_MODE) {
+            console.log('[埋点] 发送事件:', cleaned);
         }
-        */
+
+        const headers = { 'Content-Type': 'application/json' };
+        const token = this.getFromStorage(config.STORAGE_KEYS.USER_TOKEN);
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        fetch(this.getAnalyticsEndpoint(), {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(cleaned)
+        }).catch(error => {
+            console.error('[埋点] 发送事件失败:', error);
+        });
+    },
+
+    // 系统通用事件（默认不采集）
+    sendSystemEvent: function(eventName, options = {}) {
+        return this.sendAnalyticsEvent(eventName, {
+            ...options,
+            category: 'system'
+        });
     },
     
     // 生成会话ID

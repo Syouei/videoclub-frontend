@@ -1,7 +1,7 @@
 window.AppConfig = {
     // API基础URL - 修改为你后端的地址
     // 注意：API文档指定基础路径为 /api/v1
-    API_BASE_URL: 'https://teachervideo.cn/api/v1',
+API_BASE_URL: 'https://teachervideo.cn/api/v1',
     
     // API端点配置（完全按照API文档）
     API_ENDPOINTS: {
@@ -201,8 +201,17 @@ window.AppConfig = {
     // 分析功能开关
     ANALYTICS_ENABLED: true,
     
-    // 分析服务器端点（可根据需要配置）
-    ANALYTICS_ENDPOINT: 'https://analytics.teachervideoclub.com/events',
+    // 分析服务器端点（默认对接后端 /analytics/events）
+    ANALYTICS_ENDPOINT: '/analytics/events',
+    
+    // 埋点采集分类开关
+    ANALYTICS_CATEGORY: {
+        LEARNING: true,      // 学习行为
+        TEACHING: true,      // 教学效果/教学活动
+        INTERACTION: true,   // 内容互动
+        SESSION: true,       // 会话与合规
+        SYSTEM: false        // 系统通用事件（默认不采集）
+    },
     
     // 隐私政策版本
     PRIVACY_VERSION: '2026-01',

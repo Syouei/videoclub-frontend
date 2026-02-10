@@ -352,9 +352,12 @@ window.Profile = {
             fieldCount: this.currentProfile ? Object.keys(this.currentProfile).length : 0
         };
         
-        Utils.sendPrivacyEvent('profile_updated', eventData);
+        Utils.sendSystemEvent('generic_interaction', {
+            sub_event: 'profile_updated',
+            target_object: eventData
+        });
         
-        console.log('[埋点] 个人资料更新:', eventData);
+        console.log('[埋点] 个人资料更新（系统事件，默认不采集）:', eventData);
     },
     
     // 导出个人资料

@@ -5,6 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>教师视频俱乐部 - 视频播放</title>
+    <!-- ArtPlayer 库 -->
+    <script src="../js/lib/artplayer.js"></script>
+    <!-- ArtPlayer 控件样式 -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -47,7 +50,7 @@
             height: 100vh;
             color: var(--text-main);
         }
- 
+
         .header {
             background: white;
             padding: 0 24px;
@@ -164,13 +167,31 @@
             min-height: 0;
         }
 
-        #mainVideo {
+        /* ArtPlayer 容器样式 */
+        #artplayer-app {
             width: 100%;
             height: 100%;
-            object-fit: contain;
-            display: block;
-            outline: none;
             background-color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 视频居中显示 */
+        #artplayer-app video,
+        .art-video {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            margin: auto;
+        }
+
+        /* ArtPlayer 内部容器居中 */
+        .artplayer .art-player,
+        .artplayer .art-video-player {
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         /* 修改：评论容器固定高度，占满右侧 */
@@ -691,98 +712,6 @@
             }
         }
 
-        .video-progress-overlay {
-            position: absolute;
-            bottom: 60px;
-            left: 12px;
-            right: 12px;
-            height: 10px;
-            pointer-events: none;
-            z-index: 100;
-        }
-
-        .marker-item {
-            position: absolute;
-            top: 0;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            transform: translateX(-50%);
-            cursor: pointer;
-            pointer-events: auto;
-            border: 2px solid #fff;
-            box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
-            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        .marker-item:hover {
-            transform: translateX(-50%) scale(1.6);
-            z-index: 20;
-        }
-
-        .marker-tooltip {
-            position: absolute;
-            bottom: 18px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.85);
-            color: white;
-            padding: 2px 4px;
-            border-radius: 4px;
-            font-size: 7px;
-            white-space: normal;
-            text-align: center;
-            line-height: 1.4;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.2s, visibility 0.2s;
-            pointer-events: none;
-            z-index: 30;
-            min-width: 50px;
-        }
-        
-        .marker-tooltip > div {
-            white-space: nowrap;
-        }
-
-        .marker-item:hover .marker-tooltip {
-            opacity: 1;
-            visibility: visible;
-        }
-        
-        /* 视频开头的tooltip左对齐 */
-        .marker-item.tooltip-left .marker-tooltip {
-            left: 0;
-            transform: translateX(0);
-        }
-        
-        /* 视频结尾的tooltip右对齐 */
-        .marker-item.tooltip-right .marker-tooltip {
-            left: auto;
-            right: 0;
-            transform: translateX(0);
-        }
-
-        .marker-item.level-0 {
-            background-color: var(--time-color-0);
-        }
-
-        .marker-item.level-1 {
-            background-color: var(--time-color-1);
-        }
-
-        .marker-item.level-2 {
-            background-color: var(--time-color-2);
-        }
-
-        .marker-item.level-3 {
-            background-color: var(--time-color-3);
-        }
-
-        .marker-item.level-4 {
-            background-color: var(--time-color-4);
-        }
-
         /* 自动滚动控制按钮 */
         .auto-scroll-control {
             position: absolute;
@@ -832,6 +761,83 @@
 
         .video-tip i {
             color: var(--warning-color);
+        }
+
+        /* ArtPlayer 自定义样式 */
+        .art-control-progress-inner::before,
+        .art-control-progress-inner::after {
+            background-color: var(--primary-color) !important;
+        }
+
+        .art-control-progress-bar .art-control-progress-inner {
+            background-color: var(--primary-color) !important;
+        }
+
+        .art-icon:hover,
+        .art-control-progress-bar:hover {
+            color: var(--primary-color) !important;
+        }
+
+        /* 进度条热点标记样式 */
+        .art-control-progress-indicator {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            transform: translateX(-50%) translateY(-50%);
+            cursor: pointer;
+            z-index: 2;
+            transition: transform 0.2s;
+        }
+
+        .art-control-progress-indicator:hover {
+            transform: translateX(-50%) translateY(-50%) scale(1.6);
+            z-index: 3;
+        }
+
+        .art-control-progress-indicator.level-0 {
+            background-color: var(--time-color-0);
+        }
+
+        .art-control-progress-indicator.level-1 {
+            background-color: var(--time-color-1);
+        }
+
+        .art-control-progress-indicator.level-2 {
+            background-color: var(--time-color-2);
+        }
+
+        .art-control-progress-indicator.level-3 {
+            background-color: var(--time-color-3);
+        }
+
+        .art-control-progress-indicator.level-4 {
+            background-color: var(--time-color-4);
+        }
+
+        /* 热点标记提示框 */
+        .progress-marker-tooltip {
+            position: absolute;
+            bottom: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+            pointer-events: none;
+            z-index: 4;
+            text-align: center;
+        }
+
+        .art-control-progress-indicator:hover .progress-marker-tooltip {
+            opacity: 1;
+            visibility: visible;
         }
 
         @media (max-width: 768px) {
@@ -893,8 +899,8 @@
                         <div class="loading-spinner"></div>
                         <span>正在加载视频...</span>
                     </div>
-                    <video id="mainVideo" controls poster="" preload="metadata">您的浏览器不支持 HTML5 视频。</video>
-                    <div class="video-progress-overlay" id="videoProgressOverlay"></div>
+                    <!-- ArtPlayer 容器 -->
+                    <div id="artplayer-app"></div>
                 </div>
             </div>
             <div class="video-tip">
@@ -945,9 +951,8 @@
     <script>
         class VideoCommentSystem {
             constructor() {
-                this.video = document.getElementById('mainVideo');
+                this.art = null; // ArtPlayer 实例
                 this.commentsList = document.getElementById('commentsList');
-                this.overlay = document.getElementById('videoProgressOverlay');
                 this.comments = [];
                 this.currentUser = { 
                     name: '您', 
@@ -978,7 +983,12 @@
                 this.autoScrollBtn = document.getElementById('autoScrollBtn');
                 this.autoScrollIcon = document.getElementById('autoScrollIcon');
                 this.autoScrollText = document.getElementById('autoScrollText');
-                
+
+                // 新增：视频跳转防抖相关变量
+                this.lastSeekTime = 0; // 上次 seek 操作的时间
+                this.seekDebounceTime = 300; // seek 操作的防抖时间（毫秒）
+                this.pendingSeekTime = null; // 待执行的 seek 时间
+
                 this.init();
             }
 
@@ -998,11 +1008,7 @@
             async init() {
                 console.log('[init] ===== init() 方法开始 =====');
                 this.loadUserInfo();
-                this.setupVideoEvents();
                 this.setupEventListeners();
-                this.initOverlay();
-                this.setupCommentsHoverListener();
-                this.setupAutoScrollControl(); // 新增：设置自动滚动控制
                 console.log('[init] 准备调用 loadVideo()');
                 const loadResult = await this.loadVideo();
                 console.log('[init] loadVideo() 返回结果:', loadResult);
@@ -1203,27 +1209,230 @@
                     document.title = `${displayTitle} - 教师视频俱乐部`;
                     this.videoInfo.title = displayTitle;
                 }
+            }
 
-                if (videoData.coverUrl) {
-                    this.video.poster = videoData.coverUrl;
+            // 初始化 ArtPlayer
+            initArtPlayer(videoUrl) {
+                console.log('[ArtPlayer] 初始化 ArtPlayer，URL:', videoUrl);
+
+                // 如果已经有实例，先销毁
+                if (this.art) {
+                    this.art.destroy(false);
+                }
+
+                // 获取封面图
+                const poster = document.getElementById('videoTitle').textContent;
+
+                // 创建 ArtPlayer 实例
+                this.art = new Artplayer({
+                    container: '#artplayer-app',
+                    url: videoUrl,
+                    poster: this.videoInfo.posterUrl || '',
+                    volume: 0.7,
+                    isLive: false,
+                    muted: false,
+                    autoplay: false,
+                    pip: true,
+                    autoSize: true,
+                    autoMini: true,
+                    screenshot: true,
+                    setting: true,
+                    loop: false,
+                    flip: true,
+                    playbackRate: true,
+                    aspectRatio: true,
+                    fullscreen: true,
+                    fullscreenWeb: true,
+                    miniProgressBar: true,
+                    theme: '#1890ff',
+                    lang: 'zh-cn',
+                    whitelist: ['*'],
+                    // 优化预加载策略，减少 Range 请求频率
+                    preload: 'metadata', // 只预加载元数据，不预加载整个视频
+                    // 视频元素属性
+                    moreVideoAttr: {
+                        crossorigin: 'anonymous',
+                        playsInline: true,
+                        'webkit-playsinline': true,
+                        preload: 'metadata', // 只预加载元数据
+                        // 设置缓冲区大小，减少请求次数
+                        'x-webkit-airplay': 'allow',
+                    },
+                    customType: {
+                        m3u8: function (video, url) {
+                            // 如果需要 HLS 支持，可以引入 hls.js
+                            console.warn('[ArtPlayer] 需要引入 hls.js 来支持 HLS 流');
+                        },
+                    },
+                    icons: {
+                        state: '<i class="fas fa-play"></i>',
+                    },
+                });
+
+                // 设置 ArtPlayer 事件监听
+                this.setupArtPlayerEvents();
+                this.optimizeBuffering();
+
+                console.log('[ArtPlayer] ArtPlayer 初始化完成');
+            }
+
+            // 优化缓冲策略，减少 Range 请求
+            optimizeBuffering() {
+                if (!this.art || !this.art.video) return;
+
+                const videoElement = this.art.video;
+
+                // 设置视频元素的缓冲策略
+                // 限制最大缓冲区大小，避免过度预加载
+                videoElement.addEventListener('progress', () => {
+                    const buffered = videoElement.buffered;
+                    if (buffered.length > 0) {
+                        // 获取当前已缓冲的时间范围
+                        const bufferedEnd = buffered.end(buffered.length - 1);
+                        const currentTime = videoElement.currentTime;
+                        const duration = videoElement.duration;
+
+                        // 如果已经缓冲了足够的内容（当前时间后至少 90 秒），则不需要继续预加载
+                        const bufferedAhead = bufferedAhead = bufferedEnd - currentTime;
+                        const minBufferAhead = 90; // 缓冲前90秒的内容（增大缓冲量以减少请求频率）
+
+                        if (bufferedAhead > minBufferAhead && duration > 0) {
+                            console.log('[Buffering] 已缓冲足够内容（前', Math.round(bufferedAhead), '秒），停止预加载');
+
+                            // 设置媒体源来暂停预加载
+                            const originalSrc = videoElement.src;
+                            if (videoElement.readyState >= 3) {
+                                // 视频已经缓冲到可以播放的未来时间，保存当前状态
+                                console.log('[Buffering] 缓冲充足，暂停额外预加载');
+                            }
+                        }
+                    }
+                }, { passive: true });
+
+                // 监听 suspend 事件（浏览器暂停下载）
+                videoElement.addEventListener('suspend', () => {
+                    console.log('[Buffering] 浏览器暂停下载视频数据');
+                });
+
+                // 监听 waiting 事件，在缓冲时才请求新数据
+                videoElement.addEventListener('waiting', () => {
+                    console.log('[Buffering] 视频缓冲中，等待数据...');
+                });
+
+                // 监听 canplay 事件，确保可以播放
+                videoElement.addEventListener('canplay', () => {
+                    console.log('[Buffering] 可以继续播放');
+                });
+
+                // 设置视频的缓冲区提示
+                if (typeof videoElement.buffered === 'object') {
+                    // 通过调整 playhead 位置来触发更合理的缓冲
+                    console.log('[Buffering] 缓冲策略已设置');
                 }
             }
 
-            configureVideoElement(videoUrl) {
-                if (videoUrl.startsWith('https://')) {
-                    videoUrl = videoUrl.replace('https://', 'http://');
-                    console.log('[Video] HTTPS降级为HTTP:', videoUrl);
+            // 设置 ArtPlayer 事件监听
+            setupArtPlayerEvents() {
+                if (!this.art) return;
+
+                // 视频元数据加载完成
+                this.art.on('video:loadedmetadata', () => {
+                    this.videoDuration = this.art.duration;
+                    console.log('[ArtPlayer] 视频元数据加载完成，时长:', this.videoDuration);
+                    this.setupCommentsHoverListener();
+                    this.setupAutoScrollControl();
+                    // 视频时长获取后，重新渲染进度条标记
+                    this.renderProgressMarkers();
+                });
+
+                // 视频播放进度更新
+                this.art.on('video:timeupdate', () => {
+                    this.currentVideoTime = this.art.currentTime;
+                    this.updateCurrentTimestampDisplay();
+                    this.highlightCommentsAtCurrentTime();
+                    // 视频播放时自动滚动到对应评论
+                    this.autoScrollToCurrentTime();
+                });
+
+                // 视频加载错误
+                this.art.on('error', (error) => {
+                    console.error('[ArtPlayer] 视频加载错误:', error);
+                    this.handleVideoError(error);
+                });
+
+                // 视频可以播放
+                this.art.on('video:canplay', () => {
+                    console.log('[ArtPlayer] 视频可以播放');
+                    this.showLoading('videoLoading', false);
+                    this.clearVideoLoadTimeout();
+                });
+
+                // 视频开始播放
+                this.art.on('video:playing', () => {
+                    console.log('[ArtPlayer] 视频开始播放');
+                    this.clearVideoLoadTimeout();
+                });
+            }
+
+            updateCurrentTimestampDisplay() {
+                const timestampDisplay = document.getElementById('currentTimestampDisplay');
+                if (timestampDisplay) {
+                    timestampDisplay.textContent = this.formatTime(this.currentVideoTime);
+                }
+            }
+
+            highlightCommentsAtCurrentTime() {
+                const currentTime = this.currentVideoTime;
+                document.querySelectorAll('.comment-item').forEach(el => {
+                    el.classList.remove('highlighted');
+                });
+                
+                const currentComments = this.comments.filter(c => {
+                    if (c.parentId !== null) return false;
+                    const commentTime = c.timestamp || 0;
+                    return Math.abs(commentTime - currentTime) < 1;
+                });
+                
+                if (currentComments.length > 0) {
+                    const firstComment = currentComments[0];
+                    const commentEl = document.querySelector(`[data-comment-id="${firstComment.id}"]`);
+                    if (commentEl) {
+                        commentEl.classList.add('highlighted');
+                        this.currentHighlightedComment = firstComment;
+                    }
+                }
+            }
+
+            setupEventListeners() {
+                // 防止重复绑定事件监听器
+                if (this.eventsSetup) {
+                    console.log('[setupEventListeners] 事件监听器已绑定，跳过');
+                    return;
                 }
 
-                this.video.src = videoUrl;
-                this.video.referrerPolicy = 'no-referrer';
+                console.log('[setupEventListeners] 开始绑定事件监听器');
 
-                if (!this.video.hasAttribute('controls')) {
-                    this.video.setAttribute('controls', '');
+                const submitBtn = document.getElementById('commentSubmit');
+                const sortSelect = document.getElementById('commentSort');
+
+                if (submitBtn) {
+                    submitBtn.addEventListener('click', (e) => {
+                        e.preventDefault(); // 阻止默认提交行为，防止重复请求
+                        this.submitComment();
+                    });
                 }
 
-                this.video.load();
-                this.setupVideoLoadTimeout();
+                if (sortSelect) {
+                    sortSelect.addEventListener('change', (e) => {
+                        this.sortBy = e.target.value;
+                        console.log('[Sort] 排序方式:', this.sortBy);
+                        this.renderComments();
+                    });
+                }
+
+                // 标记事件监听器已绑定
+                this.eventsSetup = true;
+                console.log('[setupEventListeners] 事件监听器绑定完成');
             }
 
             async loadVideo() {
@@ -1257,16 +1466,26 @@
                     this.updateVideoInfo(videoData, taskInfo);
 
                     console.log('[loadVideo] 步骤5: 提取视频URL');
-                    const videoUrl = this.extractVideoUrl(videoData);
+                    let videoUrl = this.extractVideoUrl(videoData);
                     if (!videoUrl) {
                         throw new Error('未获取到视频播放地址');
                     }
                     console.log('[loadVideo] 提取的videoUrl:', videoUrl);
 
-                    console.log('[loadVideo] 步骤6: 配置并加载视频');
-                    this.configureVideoElement(videoUrl);
+                    console.log('[loadVideo] 步骤6: 初始化 ArtPlayer');
+                    // 如果视频URL是HTTPS，降级为HTTP
+                    if (videoUrl.startsWith('https://')) {
+                        videoUrl = videoUrl.replace('https://', 'http://');
+                        console.log('[ArtPlayer] HTTPS降级为HTTP:', videoUrl);
+                    }
+                    
+                    // 更新封面
+                    if (videoData.coverUrl) {
+                        this.videoInfo.posterUrl = videoData.coverUrl;
+                    }
+                    
+                    this.initArtPlayer(videoUrl);
                     this.videoInfo.videoUrl = videoUrl;
-                    console.log('[loadVideo] 视频元素配置完成，video.src:', this.video.src);
 
                     console.log('[loadVideo] 步骤7: 加载评论相关数据');
                     this.loadCommentsFromAPI();
@@ -1353,113 +1572,6 @@
                 }
             }
 
-            setupVideoEvents() {
-                if (this.eventsBound) {
-                    console.log('[setupVideoEvents] 事件监听器已绑定，跳过');
-                    return;
-                }
-
-                console.log('[setupVideoEvents] ===== setupVideoEvents() 开始 =====');
-
-                this.video.addEventListener('loadedmetadata', () => {
-                    this.videoDuration = this.video.duration;
-                    console.log('[setupVideoEvents] loadedmetadata 事件触发，视频时长:', this.videoDuration);
-                    this.renderOverlayMarkers();
-                });
-
-                this.video.addEventListener('timeupdate', () => {
-                    this.currentVideoTime = this.video.currentTime;
-                    this.updateCurrentTimestampDisplay();
-                    this.highlightCommentsAtCurrentTime();
-                    // 新增：视频播放时自动滚动到对应评论
-                    this.autoScrollToCurrentTime();
-                });
-
-                this.video.addEventListener('error', (e) => {
-                    console.error('[setupVideoEvents] error 事件触发:', e);
-                    this.handleVideoError(e);
-                });
-
-                this.video.addEventListener('canplay', () => {
-                    console.log('[setupVideoEvents] canplay 事件触发');
-                    this.showLoading('videoLoading', false);
-                    this.clearVideoLoadTimeout();
-                });
-
-                this.video.addEventListener('playing', () => {
-                    console.log('[setupVideoEvents] playing 事件触发');
-                    this.clearVideoLoadTimeout();
-                });
-
-                this.eventsBound = true;
-                console.log('[setupVideoEvents] ===== setupVideoEvents() 结束 =====');
-            }
-
-            updateCurrentTimestampDisplay() {
-                const timestampDisplay = document.getElementById('currentTimestampDisplay');
-                if (timestampDisplay) {
-                    timestampDisplay.textContent = this.formatTime(this.currentVideoTime);
-                }
-            }
-
-            highlightCommentsAtCurrentTime() {
-                const currentTime = this.currentVideoTime;
-                document.querySelectorAll('.comment-item').forEach(el => {
-                    el.classList.remove('highlighted');
-                });
-                
-                const currentComments = this.comments.filter(c => {
-                    if (c.parentId !== null) return false;
-                    const commentTime = c.timestamp || 0;
-                    return Math.abs(commentTime - currentTime) < 1;
-                });
-                
-                if (currentComments.length > 0) {
-                    const firstComment = currentComments[0];
-                    const commentEl = document.querySelector(`[data-comment-id="${firstComment.id}"]`);
-                    if (commentEl) {
-                        commentEl.classList.add('highlighted');
-                        this.currentHighlightedComment = firstComment;
-                    }
-                }
-            }
-
-            setupEventListeners() {
-                // 防止重复绑定事件监听器
-                if (this.eventsSetup) {
-                    console.log('[setupEventListeners] 事件监听器已绑定，跳过');
-                    return;
-                }
-
-                console.log('[setupEventListeners] 开始绑定事件监听器');
-
-                const submitBtn = document.getElementById('commentSubmit');
-                const sortSelect = document.getElementById('commentSort');
-
-                if (submitBtn) {
-                    submitBtn.addEventListener('click', (e) => {
-                        e.preventDefault(); // 阻止默认提交行为，防止重复请求
-                        this.submitComment();
-                    });
-                }
-
-                if (sortSelect) {
-                    sortSelect.addEventListener('change', (e) => {
-                        this.sortBy = e.target.value;
-                        console.log('[Sort] 排序方式:', this.sortBy);
-                        this.renderComments();
-                    });
-                }
-
-                // 标记事件监听器已绑定
-                this.eventsSetup = true;
-                console.log('[setupEventListeners] 事件监听器绑定完成');
-            }
-
-            initOverlay() {
-                console.log('[Overlay] 进度条覆盖层已初始化');
-            }
-
             async loadCommentsFromAPI() {
                 if (!window.API || !window.API.getVideoComments) {
                     console.warn('API.getVideoComments 不可用');
@@ -1523,6 +1635,7 @@
                     this.updateTimePointCounts();
                     this.renderComments();
                     this.renderOverlayMarkers();
+                    // 注意：进度条标记在视频加载完成后统一渲染
                     
                 } catch (error) {
                     console.error('加载评论失败:', error);
@@ -1569,58 +1682,77 @@
                 if (timestamp === undefined || timestamp === null) return 0;
                 const timeGroup = Math.floor(timestamp / 30) * 30;
                 const count = this.timePointCounts[timeGroup] || 0;
-                if (count <= 1) return 0;
+                if (count <= 1) return 1;  // 只要有评论就显示为 level-1
                 if (count <= 3) return 1;
                 if (count <= 5) return 2;
                 if (count <= 10) return 3;
                 return 4;
             }
 
-            renderOverlayMarkers() {
-                console.log('[Markers] 开始渲染, videoDuration:', this.videoDuration, 'timePointCounts:', this.timePointCounts);
+            // 在 ArtPlayer 进度条上渲染热点标记
+            renderProgressMarkers() {
+                console.log('[Markers] 开始渲染进度条标记, videoDuration:', this.videoDuration, 'timePointCounts:', this.timePointCounts);
                 if (!this.videoDuration || this.videoDuration === 0) {
                     console.warn('[Markers] 视频时长为0，无法渲染标记');
                     return;
                 }
-                this.overlay.innerHTML = '';
-                
-                // 只显示有评论的时间段
-                Object.keys(this.timePointCounts).forEach(timeGroup => {
-                    const count = this.timePointCounts[timeGroup];
-                    if (count > 0) {
-                        const timestamp = parseFloat(timeGroup);
-                        const middleTimestamp = timestamp + 15;
-                        const pos = (middleTimestamp / this.videoDuration) * 100;
-                        
-                        console.log(`[Markers] 添加标记: timeGroup=${timestamp}, pos=${pos}%, count=${count}`);
-                        
-                        const marker = document.createElement('div');
-                        const level = this.getTimeMarkerLevel(timestamp);
-                        marker.className = `marker-item level-${level}`;
-                        marker.style.left = `${pos}%`;
-                        
-                        // 智能调整tooltip位置，防止在视频开头被裁剪
-                        if (pos < 10) {
-                            // 视频开头（0-10%）：tooltip左对齐
-                            marker.classList.add('tooltip-left');
-                        } else if (pos > 90) {
-                            // 视频结尾（90-100%）：tooltip右对齐
-                            marker.classList.add('tooltip-right');
-                        }
-                        
-                        const endTimestamp = timestamp + 30;
-                        marker.innerHTML = `<div class="marker-tooltip"><div>${count} 条评论</div><div>${this.formatTime(timestamp)}-${this.formatTime(endTimestamp)}</div></div>`;
-                        
-                        marker.onclick = (e) => {
-                            e.stopPropagation();
-                            this.jumpToTime(timestamp);
-                        };
-                        
-                        this.overlay.appendChild(marker);
+
+                // 等待 ArtPlayer DOM 渲染完成
+                const checkAndRender = () => {
+                    // 尝试多种方式获取进度条
+                    let progressBar = this.art?.template?.control?.progress;
+                    
+                    // 如果内置路径找不到，使用 DOM 查询
+                    if (!progressBar) {
+                        progressBar = document.querySelector('.art-control-progress') || 
+                                      document.querySelector('.art-progress') ||
+                                      document.querySelector('[class*="progress"]');
                     }
-                });
-                
-                console.log('[Markers] 渲染完成，共', Object.keys(this.timePointCounts).length, '个标记');
+                    
+                    if (!progressBar) {
+                        console.warn('[Markers] 未找到进度条，延迟重试...');
+                        setTimeout(checkAndRender, 200);
+                        return;
+                    }
+                    
+                    console.log('[Markers] 找到进度条:', progressBar);
+
+                    // 移除旧的标记
+                    const oldMarkers = progressBar.querySelectorAll('.art-control-progress-indicator');
+                    oldMarkers.forEach(marker => marker.remove());
+
+                    // 渲染新的标记
+                    Object.keys(this.timePointCounts).forEach(timeGroup => {
+                        const count = this.timePointCounts[timeGroup];
+                        if (count > 0) {
+                            const timestamp = parseFloat(timeGroup);
+                            const middleTimestamp = timestamp + 15;
+                            const pos = (middleTimestamp / this.videoDuration) * 100;
+                            
+                            console.log(`[Markers] 添加标记: timeGroup=${timestamp}, pos=${pos}%, count=${count}`);
+                            
+                            const level = this.getTimeMarkerLevel(timestamp);
+                            const marker = document.createElement('div');
+                            marker.className = `art-control-progress-indicator level-${level}`;
+                            marker.style.left = `${pos}%`;
+                            marker.style.top = '50%';
+                            
+                            const endTimestamp = timestamp + 30;
+                            marker.innerHTML = `<div class="progress-marker-tooltip"><div>${count} 条评论</div><div>${this.formatTime(timestamp)}-${this.formatTime(endTimestamp)}</div></div>`;
+                            
+                            marker.onclick = (e) => {
+                                e.stopPropagation();
+                                this.jumpToTime(timestamp);
+                            };
+                            
+                            progressBar.appendChild(marker);
+                        }
+                    });
+                    
+                    console.log('[Markers] 渲染完成，共', Object.keys(this.timePointCounts).length, '个标记');
+                };
+
+                checkAndRender();
             }
 
             buildCommentTree() {
@@ -1832,7 +1964,7 @@
                         // 更新统计和渲染
                         this.updateTimePointCounts();
                         this.renderComments();
-                        this.renderOverlayMarkers();
+                        this.renderProgressMarkers();
                         
                         input.value = '';
                         this.showError('评论发表成功');
@@ -1873,7 +2005,7 @@
                         // 更新统计和渲染
                         this.updateTimePointCounts();
                         this.renderComments();
-                        this.renderOverlayMarkers();
+                        this.renderProgressMarkers();
                         
                         const form = document.querySelector('.reply-form.active');
                         if (form) form.remove();
@@ -1988,7 +2120,7 @@
                 // 更新统计和渲染
                 this.updateTimePointCounts();
                 this.renderComments();
-                this.renderOverlayMarkers();
+                this.renderProgressMarkers();
             }
 
             convertBackendComment(backendComment) {
@@ -2047,24 +2179,45 @@
 
             jumpToTime(t) {
                 console.log('[jumpToTime] 跳转到时间:', t);
-                this.video.currentTime = t;
-                
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        this.video.play()
-                            .then(() => console.log('[jumpToTime] 播放成功'))
-                            .catch(error => {
-                                console.error('[jumpToTime] 播放失败:', error);
-                                this.video.load();
-                                this.video.currentTime = t;
-                                setTimeout(() => {
-                                    this.video.play().catch(e => {
-                                        this.showError('无法自动播放，请手动点击播放按钮');
-                                    });
-                                }, 300);
-                            });
-                    });
+
+                if (!this.art) {
+                    console.warn('[jumpToTime] ArtPlayer 未初始化');
+                    return;
+                }
+
+                const now = Date.now();
+
+                // 检查是否需要防抖
+                if (now - this.lastSeekTime < this.seekDebounceTime) {
+                    // 如果在防抖时间内，记录待执行的时间
+                    this.pendingSeekTime = t;
+                    console.log('[jumpToTime] 防抖中，记录待执行时间:', t);
+                    return;
+                }
+
+                // 执行跳转
+                this.lastSeekTime = now;
+
+                // 使用 ArtPlayer 的 currentTime 属性跳转
+                this.art.currentTime = t;
+
+                // 尝试播放
+                this.art.play().catch(error => {
+                    console.warn('[jumpToTime] 自动播放失败:', error);
+                    this.showError('无法自动播放，请手动点击播放按钮');
                 });
+
+                // 如果有待执行的 seek 时间，延迟执行
+                if (this.pendingSeekTime !== null) {
+                    setTimeout(() => {
+                        const targetTime = this.pendingSeekTime;
+                        this.pendingSeekTime = null;
+                        if (Math.abs(targetTime - this.art.currentTime) > 0.1) {
+                            console.log('[jumpToTime] 执行延迟的 seek:', targetTime);
+                            this.art.currentTime = targetTime;
+                        }
+                    }, this.seekDebounceTime);
+                }
             }
 
             highlightComment(element, comment) {
@@ -2168,7 +2321,7 @@
                     const result = await window.API.getHotTimestamps(this.videoInfo.videoId);
                     if (result.code === 0 && result.data) {
                         this.hotTimestamps = result.data;
-                        this.renderOverlayMarkers();
+                        this.renderProgressMarkers();
                     }
                 } catch (error) {
                     console.error('加载热门时间点失败:', error);
@@ -2177,7 +2330,7 @@
 
             setupVideoLoadTimeout() {
                 this.videoLoadTimeout = setTimeout(() => {
-                    if (this.video.readyState < 3) {
+                    if (!this.art || this.art.duration === 0) {
                         console.error('[Video] 视频加载超时');
                         this.showLoading('videoLoading', false);
                         this.showError('视频加载超时，请刷新页面重试');
@@ -2192,44 +2345,52 @@
                 }
             }
 
-            handleVideoError(e) {
-                const video = e.target;
-                const error = video.error;
+            handleVideoError(error) {
                 let errorMessage = '视频加载失败';
 
-                if (!error) {
-                    console.warn('[Video] 无具体错误信息');
-                    return;
-                }
-
-                switch (error.code) {
-                    case error.MEDIA_ERR_ABORTED:
-                        errorMessage = '视频加载被中止';
-                        break;
-                    case error.MEDIA_ERR_NETWORK:
-                        errorMessage = '网络错误，无法加载视频。请检查：\n1. 网络连接是否正常\n2. 是否被防火墙拦截\n3. 视频URL是否可访问';
-                        break;
-                    case error.MEDIA_ERR_DECODE:
-                        errorMessage = '视频解码失败，视频格式可能有问题';
-                        break;
-                    case error.MEDIA_ERR_SRC_NOT_SUPPORTED:
-                        errorMessage = '不支持的视频格式或URL错误。当前URL：' + this.videoInfo.videoUrl;
-                        break;
-                    default:
-                        errorMessage = `视频加载失败 (错误码: ${error.code})`;
+                if (error && error.message) {
+                    errorMessage = error.message;
                 }
 
                 console.error('[Video] 错误详情:', {
-                    code: error.code,
-                    message: error.message,
-                    videoUrl: this.video.src,
-                    videoType: this.video.type,
-                    currentProtocol: window.location.protocol
+                    error: error,
+                    videoUrl: this.videoInfo.videoUrl,
                 });
 
                 this.clearVideoLoadTimeout();
                 this.showLoading('videoLoading', false);
                 this.showError(errorMessage);
+            }
+
+            // 销毁播放器和释放资源
+            destroy() {
+                console.log('[destroy] 开始销毁 VideoCommentSystem 实例');
+
+                // 清除视频加载超时
+                this.clearVideoLoadTimeout();
+
+                // 销毁 ArtPlayer 实例
+                if (this.art) {
+                    try {
+                        this.art.pause();
+                        this.art.destroy(true); // true 表示同时移除 DOM 元素
+                        this.art = null;
+                        console.log('[destroy] ArtPlayer 已销毁');
+                    } catch (error) {
+                        console.error('[destroy] 销毁 ArtPlayer 时出错:', error);
+                    }
+                }
+
+                // 清空评论列表
+                this.comments = [];
+                this.timePointCounts = {};
+                this.replyInProgress = null;
+
+                // 隐藏加载状态
+                this.showLoading('videoLoading', false);
+                this.showLoading('commentsLoading', false);
+
+                console.log('[destroy] VideoCommentSystem 实例销毁完成');
             }
         }
 
@@ -2247,31 +2408,64 @@
 
             console.log('[VideoPlayer] 检测到 videoId:', videoId);
 
+            // 如果有旧实例，先销毁
             if (window.videoCommentSystem) {
                 console.log('[VideoPlayer] 发现旧实例，正在销毁...');
-                if (window.videoCommentSystem.video) {
-                    window.videoCommentSystem.video.pause();
-                    window.videoCommentSystem.video.removeAttribute('src');
+                try {
+                    window.videoCommentSystem.destroy();
+                } catch (error) {
+                    console.error('[VideoPlayer] 销毁旧实例时出错:', error);
                 }
                 window.videoCommentSystem = null;
-            }
-
-            const oldVideo = document.getElementById('mainVideo');
-            if (oldVideo) {
-                console.log('[VideoPlayer] 正在重置 video DOM 节点以清除事件监听...');
-                const newVideo = oldVideo.cloneNode(true);
-                newVideo.removeAttribute('src');
-                oldVideo.parentNode.replaceChild(newVideo, oldVideo);
             }
 
             console.log('[VideoPlayer] 创建全新 VideoCommentSystem 实例');
             window.videoCommentSystem = new VideoCommentSystem();
         }
 
-        window.addEventListener('hashchange', () => {
-            console.log('[Event] hashchange 触发');
-            initVideoPlayer();
-        });
+        // 页面卸载时清理资源
+        function cleanupOnPageUnload() {
+            console.log('[cleanup] 页面卸载，开始清理资源');
+
+            // 销毁播放器实例
+            if (window.videoCommentSystem) {
+                try {
+                    window.videoCommentSystem.destroy();
+                    window.videoCommentSystem = null;
+                    console.log('[cleanup] 已清理 VideoCommentSystem 实例');
+                } catch (error) {
+                    console.error('[cleanup] 清理实例时出错:', error);
+                }
+            }
+
+            // 移除所有清理相关的监听器
+            window.removeEventListener('beforeunload', cleanupOnPageUnload);
+            window.removeEventListener('hashchange', handleHashChange);
+        }
+
+        // 处理 hash 变化
+        function handleHashChange(e) {
+            console.log('[Event] hashchange 触发，检查是否离开视频播放页');
+
+            const newHash = e.newURL || '';
+            const oldHash = e.oldURL || '';
+
+            // 检查是否从视频播放页切换到其他页面
+            const isVideoPlayerPage = oldHash.includes('video-player');
+            const isLeavingVideoPlayer = isVideoPlayerPage && !newHash.includes('video-player');
+
+            if (isLeavingVideoPlayer) {
+                console.log('[Event] 离开视频播放页，清理资源');
+                cleanupOnPageUnload();
+            }
+            // 注意：不在这里处理进入视频播放页的情况，因为 app.js 已经通过 loadPage 处理
+        }
+
+        // 监听页面卸载事件
+        window.addEventListener('beforeunload', cleanupOnPageUnload);
+
+        // 监听 hash 变化（页面切换） - 只监听离开的情况
+        window.addEventListener('hashchange', handleHashChange);
 
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initVideoPlayer);
