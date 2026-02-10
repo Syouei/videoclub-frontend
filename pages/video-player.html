@@ -861,7 +861,7 @@
             .video-player-wrapper {
                 min-height: 300px;
             }
-            
+
             .auto-scroll-control {
                 position: relative;
                 top: 0;
@@ -869,7 +869,7 @@
                 margin-bottom: 10px;
                 align-self: flex-start;
             }
-            
+
             .video-tip {
                 padding: 8px 16px;
                 font-size: 12px;
@@ -935,9 +935,11 @@
             <div class="comments-list" id="commentsList"></div>
             <div class="comment-form">
                 <div class="comment-form-header">
-                    <div class="timestamp-display-bar" style="padding: 8px 0; color: #666; font-size: 13px; display: flex; align-items: center; gap: 6px;">
+                    <div class="timestamp-display-bar"
+                        style="padding: 8px 0; color: #666; font-size: 13px; display: flex; align-items: center; gap: 6px;">
                         <span>当前时间: </span>
-                        <span id="currentTimestampDisplay" style="color: var(--primary-color); font-weight: 600;">00:00</span>
+                        <span id="currentTimestampDisplay"
+                            style="color: var(--primary-color); font-weight: 600;">00:00</span>
                     </div>
                 </div>
                 <div class="comment-input-container">
@@ -954,10 +956,10 @@
                 this.art = null; // ArtPlayer 实例
                 this.commentsList = document.getElementById('commentsList');
                 this.comments = [];
-                this.currentUser = { 
-                    name: '您', 
-                    avatar: '?', 
-                    userId: null, 
+                this.currentUser = {
+                    name: '您',
+                    avatar: '?',
+                    userId: null,
                     role: 'guest'
                 };
                 this.currentHighlightedComment = null;
@@ -975,7 +977,7 @@
                 this.isLoadingVideo = false;
                 this.eventsBound = false;
                 this.videoLoadTimeout = null;
-                
+
                 // 新增：自动滚动相关变量
                 this.autoScrollActive = true; // 是否启用自动滚动
                 this.lastAutoScrollTime = 0; // 上次自动滚动的时间
@@ -1043,7 +1045,7 @@
             toggleAutoScroll() {
                 this.autoScrollActive = !this.autoScrollActive;
                 this.updateAutoScrollButton();
-                
+
                 if (this.autoScrollActive) {
                     console.log('[AutoScroll] 已启用跟随播放功能');
                     this.showError('已启用跟随播放功能');
@@ -1080,7 +1082,7 @@
 
                 const currentTime = this.currentVideoTime;
                 const now = Date.now();
-                
+
                 // 防抖处理，避免频繁滚动
                 if (now - this.lastAutoScrollTime < this.autoScrollDebounce) {
                     return;
@@ -1118,7 +1120,7 @@
             isElementInViewport(el) {
                 const rect = el.getBoundingClientRect();
                 const containerRect = this.commentsList.getBoundingClientRect();
-                
+
                 return (
                     rect.top >= containerRect.top &&
                     rect.bottom <= containerRect.bottom &&
@@ -1163,7 +1165,7 @@
                     console.log('[fetchTaskInfo] 没有taskId，跳过获取任务信息');
                     return null;
                 }
-                
+
                 if (!window.Tasks || !window.Tasks.getTaskDetail) {
                     console.warn('[fetchTaskInfo] Tasks.getTaskDetail 不可用');
                     return null;
@@ -1193,14 +1195,14 @@
             updateVideoInfo(videoData, taskInfo = null) {
                 // 优先使用任务标题（主题名称），如果没有任务标题则使用视频标题
                 let displayTitle = videoData.title || '未知视频';
-                
+
                 if (taskInfo && taskInfo.title) {
                     displayTitle = taskInfo.title;
                     console.log('[updateVideoInfo] 使用任务标题（主题名称）:', displayTitle);
                 } else {
                     console.log('[updateVideoInfo] 使用视频标题:', displayTitle);
                 }
-                
+
                 if (displayTitle) {
                     const titleEl = document.getElementById('videoTitle');
                     if (titleEl) {
@@ -1386,13 +1388,13 @@
                 document.querySelectorAll('.comment-item').forEach(el => {
                     el.classList.remove('highlighted');
                 });
-                
+
                 const currentComments = this.comments.filter(c => {
                     if (c.parentId !== null) return false;
                     const commentTime = c.timestamp || 0;
                     return Math.abs(commentTime - currentTime) < 1;
                 });
-                
+
                 if (currentComments.length > 0) {
                     const firstComment = currentComments[0];
                     const commentEl = document.querySelector(`[data-comment-id="${firstComment.id}"]`);
@@ -1447,43 +1449,30 @@
                 console.log('[loadVideo] 设置 isLoadingVideo = true');
 
                 try {
-                    console.log('[loadVideo] 步骤1: 解析URL参数');
                     const params = this.parseURLParams();
                     this.videoInfo = params;
-                    console.log('[loadVideo] 解析结果:', params);
-
-                    console.log('[loadVideo] 步骤2: 显示加载状态');
                     this.showLoading('videoLoading', true);
 
-                    console.log('[loadVideo] 步骤3: 从API获取视频信息，videoId:', params.videoId);
-                    const videoData = await this.fetchVideoInfo(params.videoId);
-                    console.log('[loadVideo] API返回结果:', videoData);
+                    // 1. 获取元数据（用于显示标题等）
+                    const videoDataRes = await this.fetchVideoInfo(params.videoId);
+                    const videoData = videoDataRes; // 假设 fetchVideoInfo 已经处理了 response.data
 
-                    console.log('[loadVideo] 步骤3.5: 获取任务信息（用于显示主题名称）');
                     const taskInfo = await this.fetchTaskInfo(params.taskId);
-
-                    console.log('[loadVideo] 步骤4: 更新页面信息（优先使用任务标题）');
                     this.updateVideoInfo(videoData, taskInfo);
 
-                    console.log('[loadVideo] 步骤5: 提取视频URL');
-                    let videoUrl = this.extractVideoUrl(videoData);
-                    if (!videoUrl) {
-                        throw new Error('未获取到视频播放地址');
-                    }
-                    console.log('[loadVideo] 提取的videoUrl:', videoUrl);
+                    // 2. [关键修改] 获取真实的播放地址
+                    console.log('[loadVideo] 正在获取阿里云播放地址...');
+                    // 调用新加的 API 方法
+                    const playInfoRes = await window.API.getVideoPlayInfo(params.videoId);
 
-                    console.log('[loadVideo] 步骤6: 初始化 ArtPlayer');
-                    // 如果视频URL是HTTPS，降级为HTTP
-                    if (videoUrl.startsWith('https://')) {
-                        videoUrl = videoUrl.replace('https://', 'http://');
-                        console.log('[ArtPlayer] HTTPS降级为HTTP:', videoUrl);
+                    if (playInfoRes.code !== 0 || !playInfoRes.data || !playInfoRes.data.playUrl) {
+                        throw new Error(playInfoRes.msg || '无法获取播放地址，视频可能正在转码中');
                     }
-                    
-                    // 更新封面
-                    if (videoData.coverUrl) {
-                        this.videoInfo.posterUrl = videoData.coverUrl;
-                    }
-                    
+
+                    let videoUrl = playInfoRes.data.playUrl;
+                    console.log('[loadVideo] 获取到真实播放地址:', videoUrl);
+
+                    // 初始化播放器
                     this.initArtPlayer(videoUrl);
                     this.videoInfo.videoUrl = videoUrl;
 
@@ -1514,48 +1503,48 @@
             // 修复：正确加载用户信息
             loadUserInfo() {
                 const userAvatar = document.getElementById('userAvatar');
-                
+
                 // 从localStorage加载用户信息
                 const savedUserName = localStorage.getItem('userName');
                 const savedUserId = localStorage.getItem('userId');
                 const savedAvatarUrl = localStorage.getItem('avatarUrl');
                 const savedRole = localStorage.getItem('role');
-                
+
                 console.log('[UserInfo] 从localStorage加载:', {
                     savedUserName,
                     savedUserId,
                     savedAvatarUrl,
                     savedRole
                 });
-                
+
                 // 设置当前用户信息
                 if (savedUserName) {
                     this.currentUser.name = savedUserName;
                     this.currentUser.avatar = savedUserName.charAt(0).toUpperCase();
                 }
-                
+
                 if (savedUserId) {
                     this.currentUser.userId = savedUserId;
                 }
-                
+
                 if (savedAvatarUrl) {
                     this.currentUser.avatarUrl = savedAvatarUrl;
                     this.currentUser.avatar = savedAvatarUrl; // 也保存到avatar字段
                 }
-                
+
                 if (savedRole) {
                     this.currentUser.role = savedRole;
                 }
-                
+
                 console.log('[UserInfo] 当前用户信息:', this.currentUser);
-                
+
                 // 更新导航栏头像显示
                 // 优先使用真实姓名显示在alt属性中
                 let displayName = this.currentUser.name || '用户';
                 if (window.Profile && window.Profile.currentProfile && window.Profile.currentProfile.realname) {
                     displayName = window.Profile.currentProfile.realname;
                 }
-                
+
                 if (this.currentUser.avatarUrl) {
                     // 如果有头像URL，使用图片
                     userAvatar.innerHTML = `<img src="${this.currentUser.avatarUrl}" alt="${displayName}" style="width:100%;height:100%;object-fit:cover;">`;
@@ -1578,37 +1567,37 @@
                     return;
                 }
                 if (this.pagination.isLoading) return;
-                
+
                 try {
                     this.pagination.isLoading = true;
                     this.showLoading('commentsLoading', true);
-                    
+
                     // 重置评论列表和分页信息
                     this.comments = [];
                     this.pagination.page = 1;
                     this.pagination.hasMore = true;
-                    
+
                     let allComments = [];
                     let currentPage = 1;
                     let hasMorePages = true;
-                    
+
                     console.log('[loadCommentsFromAPI] 开始加载所有评论...');
-                    
+
                     // 循环加载所有页的评论
                     while (hasMorePages) {
                         console.log(`[loadCommentsFromAPI] 正在加载第 ${currentPage} 页...`);
-                        
+
                         const result = await window.API.getVideoComments(this.videoInfo.videoId, {
                             page: currentPage,
                             pageSize: this.pagination.pageSize
                         });
-                        
+
                         if (result.code === 0 && result.data && result.data.list) {
                             const newComments = result.data.list.map(item => this.convertBackendComment(item));
                             allComments = [...allComments, ...newComments];
-                            
+
                             console.log(`[loadCommentsFromAPI] 第 ${currentPage} 页加载了 ${newComments.length} 条评论`);
-                            
+
                             // 判断是否还有更多页
                             // 如果返回的评论数小于pageSize，说明已经是最后一页
                             if (newComments.length < this.pagination.pageSize) {
@@ -1623,19 +1612,19 @@
                             hasMorePages = false;
                         }
                     }
-                    
+
                     // 设置所有评论
                     this.comments = allComments;
                     this.pagination.page = currentPage + 1;
                     this.pagination.hasMore = false;
-                    
+
                     console.log(`[loadCommentsFromAPI] 评论加载完成，总计: ${this.comments.length} 条`);
-                    
+
                     // 更新界面
                     this.updateTimePointCounts();
                     this.renderComments();
                     // 注意：进度条标记在视频加载完成后统一渲染
-                    
+
                 } catch (error) {
                     console.error('加载评论失败:', error);
                     this.showError('加载评论失败，请稍后重试');
@@ -1647,7 +1636,7 @@
 
             updateTimePointCounts() {
                 this.timePointCounts = {};
-                
+
                 // 递归计算评论总数（包括所有子评论）
                 const countTotalComments = (comment) => {
                     let total = 1; // 当前评论本身
@@ -1658,22 +1647,22 @@
                     }
                     return total;
                 };
-                
+
                 // 先构建评论树
                 const commentTree = this.buildCommentTree();
-                
+
                 // 只处理有独立时间戳的顶级评论
                 commentTree.forEach(topComment => {
                     if (topComment.timestamp !== undefined && topComment.timestamp !== null) {
                         // 按30秒为单位分组
                         const timeGroup = Math.floor(topComment.timestamp / 30) * 30;
                         const totalCount = countTotalComments(topComment);
-                        
+
                         // 累加该时间段的评论总数
                         this.timePointCounts[timeGroup] = (this.timePointCounts[timeGroup] || 0) + totalCount;
                     }
                 });
-                
+
                 console.log('[Markers] 时间点统计:', this.timePointCounts);
             }
 
@@ -1700,20 +1689,20 @@
                 const checkAndRender = () => {
                     // 尝试多种方式获取进度条
                     let progressBar = this.art?.template?.control?.progress;
-                    
+
                     // 如果内置路径找不到，使用 DOM 查询
                     if (!progressBar) {
-                        progressBar = document.querySelector('.art-control-progress') || 
-                                      document.querySelector('.art-progress') ||
-                                      document.querySelector('[class*="progress"]');
+                        progressBar = document.querySelector('.art-control-progress') ||
+                            document.querySelector('.art-progress') ||
+                            document.querySelector('[class*="progress"]');
                     }
-                    
+
                     if (!progressBar) {
                         console.warn('[Markers] 未找到进度条，延迟重试...');
                         setTimeout(checkAndRender, 200);
                         return;
                     }
-                    
+
                     console.log('[Markers] 找到进度条:', progressBar);
 
                     // 移除旧的标记
@@ -1727,27 +1716,27 @@
                             const timestamp = parseFloat(timeGroup);
                             const middleTimestamp = timestamp + 15;
                             const pos = (middleTimestamp / this.videoDuration) * 100;
-                            
+
                             console.log(`[Markers] 添加标记: timeGroup=${timestamp}, pos=${pos}%, count=${count}`);
-                            
+
                             const level = this.getTimeMarkerLevel(timestamp);
                             const marker = document.createElement('div');
                             marker.className = `art-control-progress-indicator level-${level}`;
                             marker.style.left = `${pos}%`;
                             marker.style.top = '50%';
-                            
+
                             const endTimestamp = timestamp + 30;
                             marker.innerHTML = `<div class="progress-marker-tooltip"><div>${count} 条评论</div><div>${this.formatTime(timestamp)}-${this.formatTime(endTimestamp)}</div></div>`;
-                            
+
                             marker.onclick = (e) => {
                                 e.stopPropagation();
                                 this.jumpToTime(timestamp);
                             };
-                            
+
                             progressBar.appendChild(marker);
                         }
                     });
-                    
+
                     console.log('[Markers] 渲染完成，共', Object.keys(this.timePointCounts).length, '个标记');
                 };
 
@@ -1776,7 +1765,7 @@
             getSortedTopLevelComments() {
                 const topLevelComments = this.comments.filter(c => c.parentId === null);
                 let sorted = [...topLevelComments];
-                
+
                 switch (this.sortBy) {
                     case 'newest':
                         sorted.sort((a, b) => b.id - a.id);
@@ -1828,7 +1817,7 @@
                 if (c.timestamp !== undefined && c.timestamp !== null && c.parentId === null) {
                     level = this.getTimeMarkerLevel(c.timestamp);
                 }
-                
+
                 const replyIndicator = c.parentId !== null
                     ? `<span class="reply-indicator">回复 ${this.findCommentAuthor(c.parentId)}</span>`
                     : '';
@@ -1837,9 +1826,9 @@
                 // 1. 用户自己的评论可以删除
                 // 2. 管理员或教师可以删除任何评论
                 // 3. 当前用户必须已登录
-                const canDelete = this.currentUser.userId && 
+                const canDelete = this.currentUser.userId &&
                     (this.currentUser.userId == c.userId || this.currentUser.role === 'admin' || this.currentUser.role === 'teacher');
-                
+
                 console.log(`[Delete] 评论ID: ${c.id}, 评论用户ID: ${c.userId}, 当前用户ID: ${this.currentUser.userId}, 角色: ${this.currentUser.role}, 是否有删除权限: ${canDelete}`);
 
                 // 修复：正确显示评论头像
@@ -1937,34 +1926,34 @@
                     this.showError('请输入评论内容');
                     return;
                 }
-                
+
                 // 获取当前视频时间作为时间戳
                 const timestamp = Math.floor(this.currentVideoTime);
                 console.log('[submitComment] 提交评论，当前时间戳:', timestamp, '内容:', text);
-                
+
                 const submitBtn = document.getElementById('commentSubmit');
                 submitBtn.disabled = true;
                 submitBtn.textContent = '发送中...';
-                
+
                 try {
                     const result = await window.API.submitVideoComment({
                         videoId: this.videoInfo.videoId,
                         content: text,
                         timestamp: timestamp
                     });
-                    
+
                     if (result.code === 0 && result.data) {
                         // 修复：使用当前用户信息创建新评论
                         const newComment = this.createNewCommentFromCurrentUser(result.data);
                         this.comments.push(newComment);
                         this.sortBy = 'time';
                         document.getElementById('commentSort').value = 'time';
-                        
+
                         // 更新统计和渲染
                         this.updateTimePointCounts();
                         this.renderComments();
                         this.renderProgressMarkers();
-                        
+
                         input.value = '';
                         this.showError('评论发表成功');
                     } else {
@@ -2000,12 +1989,12 @@
                         // 修复：使用当前用户信息创建新回复
                         const newReply = this.createNewCommentFromCurrentUser(result.data);
                         this.comments.push(newReply);
-                        
+
                         // 更新统计和渲染
                         this.updateTimePointCounts();
                         this.renderComments();
                         this.renderProgressMarkers();
-                        
+
                         const form = document.querySelector('.reply-form.active');
                         if (form) form.remove();
                         this.replyInProgress = null;
@@ -2023,16 +2012,16 @@
             createNewCommentFromCurrentUser(backendComment) {
                 const actualParentId = backendComment.parentId !== undefined ? backendComment.parentId : null;
                 const now = new Date();
-                
+
                 // 优先使用真实姓名（realname），如果没有则使用用户名
                 let displayName = this.currentUser.name || '未知用户';
                 if (window.Profile && window.Profile.currentProfile && window.Profile.currentProfile.realname) {
                     displayName = window.Profile.currentProfile.realname;
                 }
-                
+
                 // 头像优先使用avatarUrl，否则使用显示名称的首字母
                 const avatarDisplay = this.currentUser.avatarUrl || displayName.charAt(0);
-                
+
                 return {
                     id: backendComment.commentId,
                     author: displayName,
@@ -2041,12 +2030,12 @@
                     role: this.currentUser.role || 'user', // 重要：设置当前用户的角色
                     content: backendComment.content,
                     timestamp: backendComment.videoTime,
-                    time: now.toLocaleString('zh-CN', { 
-                        year: 'numeric', 
-                        month: '2-digit', 
-                        day: '2-digit', 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
+                    time: now.toLocaleString('zh-CN', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
                     }),
                     parentId: actualParentId,
                     replies: []
@@ -2055,14 +2044,14 @@
 
             async deleteComment(commentId) {
                 if (!confirm('确定要删除这条评论吗？')) return;
-                
+
                 // 如果是本地测试环境，直接删除本地评论
                 if (!window.API || !window.API.deleteComment) {
                     this.deleteLocalComment(commentId);
                     this.showError('评论已删除（本地模式）');
                     return;
                 }
-                
+
                 try {
                     const result = await window.API.deleteComment(commentId);
                     if (result.code === 0) {
@@ -2079,16 +2068,16 @@
 
             deleteLocalComment(commentId) {
                 console.log('[Delete] 开始删除本地评论:', commentId);
-                
+
                 // 先找到要删除的评论
                 const commentToDelete = this.findComment(commentId);
                 if (!commentToDelete) {
                     console.log('[Delete] 未找到评论:', commentId);
                     return;
                 }
-                
+
                 console.log('[Delete] 找到评论:', commentToDelete);
-                
+
                 // 如果是父评论，需要删除所有子评论
                 const deleteRecursive = (comment) => {
                     // 先删除所有子评论
@@ -2104,18 +2093,18 @@
                         });
                     }
                 };
-                
+
                 // 删除当前评论及其所有子评论
                 deleteRecursive(commentToDelete);
-                
+
                 // 从主数组中删除当前评论
                 const commentIndex = this.comments.findIndex(c => c.id == commentId);
                 if (commentIndex !== -1) {
                     this.comments.splice(commentIndex, 1);
                 }
-                
+
                 console.log('[Delete] 删除后的评论数组:', this.comments);
-                
+
                 // 更新统计和渲染
                 this.updateTimePointCounts();
                 this.renderComments();
@@ -2124,9 +2113,9 @@
 
             convertBackendComment(backendComment) {
                 const actualParentId = backendComment.parentId !== undefined ? backendComment.parentId : null;
-                
+
                 let author, avatar, userId, role, avatarUrl;
-                
+
                 if (backendComment.sender && backendComment.sender.username) {
                     // 后端返回了完整的sender信息
                     // 优先使用真实姓名，如果有的话
@@ -2149,7 +2138,7 @@
                     userId = this.currentUser.userId; // 使用当前用户的userId
                     role = this.currentUser.role || 'user'; // 使用当前用户的角色
                 }
-                
+
                 return {
                     id: backendComment.commentId,
                     author: author,
@@ -2273,7 +2262,7 @@
                 const btn = document.getElementById('btnLoadMore');
                 const text = btn.querySelector('.load-more-text');
                 const spinner = btn.querySelector('.load-more-spinner');
-                
+
                 if (text) text.textContent = '加载中...';
                 if (spinner) spinner.style.display = 'inline-block';
                 if (btn) btn.disabled = true;
