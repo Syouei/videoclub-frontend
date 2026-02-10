@@ -873,12 +873,15 @@ window.API = {
      */
 async createTopic(topicData) {
         const endpoint = AppConfig.API_ENDPOINTS.CREATE_TOPIC;
-        // API文档要求的字段: taskId, title, content
+        // API文档要求的字段: taskId, title, content, scaffold(可选)
         const requestData = {
             taskId: parseInt(topicData.taskId),
             title: topicData.title,
             content: topicData.content || topicData.description || '' // 兼容description字段
         };
+        if (topicData.scaffold !== undefined && topicData.scaffold !== null) {
+            requestData.scaffold = topicData.scaffold;
+        }
         console.log('[API] 创建话题请求:', requestData);
         return await this.request(endpoint, 'POST', requestData);
     },
@@ -914,18 +917,21 @@ async createTopic(topicData) {
     /**
      * 11.4 编辑话题
      * @param {number} topicId - 话题ID
-     * @param {object} topicData - {title?, content?}
+     * @param {object} topicData - {title?, content?, scaffold?}
      * @returns {Promise} {code, msg, data: {topicId, taskId, creatorId, title, content, createdAt}}
      */
     async updateTopic(topicId, topicData) {
         const endpoint = AppConfig.API_ENDPOINTS.UPDATE_TOPIC.replace('{id}', topicId);
-        // API文档要求的字段: title, content (都是可选的)
+        // API文档要求的字段: title, content, scaffold (都是可选的)
         const requestData = {};
-        if (topicData.title) {
+        if (topicData.title !== undefined) {
             requestData.title = topicData.title;
         }
         if (topicData.content !== undefined || topicData.description !== undefined) {
             requestData.content = topicData.content || topicData.description || '';
+        }
+        if (topicData.scaffold !== undefined && topicData.scaffold !== null) {
+            requestData.scaffold = topicData.scaffold;
         }
         console.log('[API] 编辑话题请求:', endpoint, requestData);
         return await this.request(endpoint, 'PATCH', requestData);
