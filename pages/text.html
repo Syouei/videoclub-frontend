@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简洁文本展示页</title>
+    <style>
+        /* 基础重置：消除默认样式干扰 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* 页面基础样式：柔和背景+舒适字体 */
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            line-height: 1.2; /* 合理行高提升文本可读性 */
+            padding: 12px;
+        }
+
+        /* 文本容器：限制宽度避免行过长，居中展示 */
+        .text-container {
+            max-width: 1000px; /* 最佳阅读宽度，避免一行文字太长 */
+            margin: 0 auto; /* 水平居中 */
+            background: white;
+            padding: 40px 50px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); /* 轻微阴影增加层次感，不突兀 */
+        }
+
+        /* 标题样式：区分层级，不夸张 */
+        .text-title {
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: #222;
+            margin-bottom: 16px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        /* 正文样式：舒适字号，合理间距 + 保留空格/换行 */
+        .text-content {
+            font-size: 0.80rem;
+            color: #444;
+            margin-bottom: 12px;
+            /* 核心修改：保留空格和换行，且自动换行 */
+            white-space: pre-wrap;
+            /* 可选：如果需要让空格更明显，可添加以下属性（中文一般不需要） */
+            /* word-break: break-all; */
+        }
+
+        /* 段落间距：避免拥挤 */
+        .text-content p {
+            margin-bottom: 12px;
+        }
+
+        /* 响应式适配：小屏幕自动调整 */
+        @media (max-width: 768px) {
+            .text-container {
+                padding: 25px 20px;
+                max-width: 100%;
+            }
+            .text-title {
+                font-size: 1.5rem;
+            }
+            .text-content {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="text-container">
+        <!-- 标题：可替换成你的文本标题 -->
+        <h1 class="text-title">用户协议</h1>
+        
+        <!-- 正文：包含多空格、回车的示例文本 -->
+        <div class="text-content">
+
+1. 数据收集目的
+
+为了提供更好的教学协作体验，我们会收集以下数据：
+
+    账户信息：用户名、邮箱（如有）等注册信息
+    教学行为数据：俱乐部创建与参与、任务完成情况、视频观看进度
+    互动数据：评论、点赞、分享等社交互动行为
+    设备信息：浏览器类型、设备型号、IP地址（用于安全防护）
+
+2. 数据使用方式
+
+我们承诺将您的数据用于：
+
+    平台功能实现：提供俱乐部管理、任务发布、视频观看等核心功能
+    个性化推荐：根据您的教学兴趣推荐相关俱乐部和内容
+    平台优化：分析使用模式以改进产品体验
+    安全保护：检测和防止欺诈、滥用等非法行为
+
+3. 数据存储与保护
+
+    所有数据均存储在加密的服务器中
+    采用行业标准的SSL/TLS加密传输技术
+    定期进行安全审计和漏洞扫描
+    访问权限严格控制，仅限必要人员访问
+
+4. 数据共享政策
+
+我们不会：
+
+    出售您的个人信息给第三方
+    未经您同意将数据用于商业广告
+    与无关第三方共享您的教学数据
+
+仅在以下情况可能共享数据：
+
+    法律要求或政府机构合法请求
+    保护平台、用户或公众的安全
+    与受信任的服务提供商合作（需签订保密协议）
+
+5. 您的权利
+
+    访问权：查看我们收集的您的个人信息
+    更正权：更正不准确或不完整的个人信息
+    删除权：在特定条件下要求删除您的个人信息
+    撤回同意权：随时撤回对数据处理的同意
+    导出权：获取您的个人数据副本
+
+6. 数据保留期限
+
+    账户数据：在您使用期间持续保留，注销后30天内删除
+    行为数据：匿名化后用于分析，最长保留2年
+    日志数据：安全日志保留6个月，访问日志保留1年
+
+7. 联系方式
+
+如果您对隐私政策有任何疑问，或想行使您的权利，请联系：
+
+    邮箱：privacy@teachervideoclub.com
+    电话：400-xxx-xxxx
+    办公时间：周一至周五 9:00-18:00
+
+本政策可能会不时更新，我们会在平台上发布最新版本，并通知您重大变更。
+
+        </div>
+    </div>
+</body>
+</html>

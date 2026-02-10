@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - 页面未找到</title>
+    <style>
+        /* 基础重置，减少默认样式干扰 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        /* 页面整体布局：垂直水平居中，轻量背景 */
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f8f9fa;
+            color: #333;
+            padding: 20px;
+        }
+        /* 核心容器：限制最大宽度，确保页面不大 */
+        .error-container {
+            text-align: center;
+            max-width: 400px; /* 关键：控制整体宽度，避免过大 */
+            width: 100%;
+        }
+        /* 404数字样式：醒目但不夸张 */
+        .error-code {
+            font-size: 8rem;
+            font-weight: 700;
+            color: #6c757d;
+            line-height: 1;
+            margin-bottom: 20px;
+        }
+        /* 提示文字：简洁友好 */
+        .error-message {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            color: #495057;
+        }
+        /* 返回首页按钮：基础交互效果 */
+        .back-home {
+            display: inline-block;
+            padding: 10px 25px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+        .back-home:hover {
+            background-color: #0056b3;
+        }
+        /* 响应式适配：小屏幕自动缩小字号 */
+        @media (max-width: 480px) {
+            .error-code {
+                font-size: 6rem;
+            }
+            .error-message {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-code">404</div>
+        <div class="error-message">您访问的资源不存在</div>
+        <a href="https://teachervideo.cn/" class="back-home">返回首页</a>
+    </div>
+</body>
+</html>
