@@ -416,11 +416,18 @@
                 const isResearch = sub.type === 'research';
                 const isCompleted = sub.status === 'completed';
                 const subId = sub.subtaskId || sub.id;
+                // 获取具体的 videoId，如果不存在则为 null
+                const specificVideoId = sub.videoId || 'null'; 
 
                 let actionBtn = '';
-                if (isRead) actionBtn = `<button class="btn btn-primary" onclick="previewTeachingDesign(${taskInfo.taskId})"><i class="fas fa-eye"></i> 查看文档</button>`;
-                else if (isWatch) actionBtn = `<button class="btn btn-primary" onclick="goToVideoPlayer(${taskInfo.taskId})"><i class="fas fa-video"></i> 观看视频</button>`;
-                else actionBtn = `<button class="btn btn-primary" onclick="goToPlatform(${subId})"><i class="fas fa-comments"></i> 进入研讨</button>`;
+                if (isRead) {
+                    actionBtn = `<button class="btn btn-primary" onclick="previewTeachingDesign(${taskInfo.taskId})"><i class="fas fa-eye"></i> 查看文档</button>`;
+                } else if (isWatch) {
+                    // 【修改点】这里传入 specificVideoId
+                    actionBtn = `<button class="btn btn-primary" onclick="goToVideoPlayer(${taskInfo.taskId}, ${specificVideoId})"><i class="fas fa-video"></i> 观看视频</button>`;
+                } else {
+                    actionBtn = `<button class="btn btn-primary" onclick="goToPlatform(${subId})"><i class="fas fa-comments"></i> 进入研讨</button>`;
+                }
 
                 let completeBtn = isCompleted
                     ? `<button class="btn btn-outline" disabled><i class="fas fa-check"></i> 已完成</button>`
@@ -651,12 +658,34 @@
         }
 
         // 页面跳转相关
-        window.goToVideoPlayer = async function (taskId) {
-            const detail = await Tasks.getTaskDetail(taskId);
-            const watchTask = detail.taskInfo.subTasks.find(t => t.type === 'watch');
-            const videoId = watchTask ? watchTask.videoId : detail.taskInfo.videoId;
-            if (videoId) window.location.hash = `video-player?videoId=${videoId}&taskId=${taskId}`;
-            else showMessage('未找到视频', 'error');
+        // 【修改点】增加了 optionalVideoId 参数
+        window.goToVideoPlayer = async function (taskId, optionalVideoId) {
+            // 1. 如果按钮直接传来了有效的 ID，直接跳转
+            if (optionalVideoId && optionalVideoId !== 'null' && optionalVideoId !== null) {
+                window.location.hash = `video-player?videoId=${optionalVideoId}&taskId=${taskId}`;
+                return;
+            }
+
+            // 2. 如果没有传 ID（比如从其他地方调用），则去详情里找
+            try {
+                const detail = await Tasks.getTaskDetail(taskId);
+                const subTasks = detail.taskInfo.subTasks || [];
+                
+                // 【修改点】查找时增加条件：必须有 videoId 且不为 null
+                const watchTask = subTasks.find(t => t.type === 'watch' && t.videoId);
+                
+                // 优先用找到的子任务视频，其次用主任务视频
+                const videoId = watchTask ? watchTask.videoId : detail.taskInfo.videoId;
+
+                if (videoId) {
+                    window.location.hash = `video-player?videoId=${videoId}&taskId=${taskId}`;
+                } else {
+                    showMessage('未找到关联的视频资源', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showMessage('跳转失败，无法获取任务详情', 'error');
+            }
         };
 
         window.goToPlatform = function (subId) {
