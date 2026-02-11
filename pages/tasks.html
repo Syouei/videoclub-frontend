@@ -1,12 +1,219 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>任务管理 - 教师视频俱乐部</title>
     <link rel="stylesheet" href="../css/styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qiniu-js/3.4.1/qiniu.min.js"></script>
+    <script src="https://gosspublic.alicdn.com/aliyun-oss-sdk-6.17.1.min.js"></script>
+    <script src="js/lib/aliyun-upload-sdk-1.5.7.min.js"></script>
+
+    <style>
+        /* 新增：模态框与上传样式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        .form-control:focus {
+            border-color: #1890ff;
+            outline: none;
+        }
+
+        /* 上传框样式 */
+        .file-upload-box {
+            border: 2px dashed #d9d9d9;
+            padding: 24px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #fafafa;
+        }
+
+        .file-upload-box:hover {
+            border-color: #1890ff;
+            background: #f0f9ff;
+        }
+
+        .upload-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .upload-text {
+            color: #666;
+            font-size: 13px;
+            margin: 0;
+        }
+
+        /* 进度条 */
+        .progress-wrapper {
+            margin-top: 12px;
+            display: none;
+        }
+
+        .progress-bg {
+            height: 6px;
+            background: #f0f0f0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: #1890ff;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            font-size: 12px;
+            color: #666;
+            text-align: right;
+            margin-top: 4px;
+        }
+
+        /* 浮动添加按钮 */
+        .btn-add-float {
+            position: fixed;
+            bottom: 40px;
+            right: 40px;
+            width: 56px;
+            height: 56px;
+            background: #1890ff;
+            color: white;
+            border-radius: 50%;
+            display: none;
+            /* 默认隐藏 */
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 4px 12px rgba(24, 144, 255, 0.4);
+            cursor: pointer;
+            z-index: 900;
+            transition: transform 0.2s;
+        }
+
+        .btn-add-float:hover {
+            transform: scale(1.1);
+            background: #40a9ff;
+        }
+
+        /* 全屏预览模态框样式 */
+        .fullscreen-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .fullscreen-modal.active {
+            display: flex;
+            animation: fadeIn 0.3s;
+        }
+
+        .fullscreen-modal-content {
+            width: 90%;
+            height: 90%;
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .fullscreen-modal-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #333;
+            color: white;
+        }
+
+        .fullscreen-modal-body {
+            flex: 1;
+            background: #f5f5f5;
+            position: relative;
+        }
+
+        .btn-close-fullscreen {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            opacity: 0.8;
+        }
+
+        .btn-close-fullscreen:hover {
+            opacity: 1;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
 </head>
+
 <body>
     <div id="page-task" class="page active">
         <div class="header">
@@ -19,911 +226,552 @@
             </div>
             <div class="header-right">
                 <div class="user-info">
-                    <div class="avatar" id="task-user-avatar">王</div>
-                    <span id="task-user-name">王老师</span>
+                    <div class="avatar" id="task-user-avatar">U</div>
+                    <span id="task-user-name">用户</span>
                 </div>
             </div>
         </div>
-        
+
         <div class="task-page-container">
             <h3 style="margin: 20px 0; color: #333;">教学视频任务</h3>
-            
-            <!-- 任务列表容器 -->
+
             <div class="task-list-container" id="taskList">
-                <!-- 这里会自动显示2个任务 -->
+            </div>
+        </div>
+
+        <div id="btn-add-subtask" class="btn-add-float" onclick="openSubtaskModal()" title="添加子任务">
+            <i class="fas fa-plus"></i>
+        </div>
+    </div>
+
+    <div id="subtask-modal" class="modal-overlay">
+        <div class="modal">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 style="margin:0;">添加子任务</h3>
+                <i class="fas fa-times" style="cursor:pointer; color:#999;" onclick="closeSubtaskModal()"></i>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">任务类型</label>
+                <select id="st-type" class="form-control" onchange="handleTypeChange()">
+                    <option value="watch">看视频任务</option>
+                    <option value="read_design">阅读教学设计</option>
+                    <option value="research">研视频（话题讨论）</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">子任务标题 <span style="color:red">*</span></label>
+                <input type="text" id="st-title" class="form-control" placeholder="请输入子任务标题">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">任务描述</label>
+                <textarea id="st-desc" class="form-control" rows="3" placeholder="请输入任务说明..."></textarea>
+            </div>
+
+            <div id="section-watch" class="type-section">
+                <label class="form-label">上传教学视频 <span style="color:red">*</span></label>
+                <div class="file-upload-box" onclick="document.getElementById('st-video-file').click()">
+                    <i class="fas fa-video upload-icon" style="color: #1890ff;"></i>
+                    <p id="st-video-name" class="upload-text">点击选择视频文件 (MP4/MOV)</p>
+                    <input type="file" id="st-video-file" accept="video/*" style="display:none"
+                        onchange="handleFileSelect('video')">
+                </div>
+                <div id="video-progress" class="progress-wrapper">
+                    <div class="progress-bg">
+                        <div id="video-progress-bar" class="progress-bar"></div>
+                    </div>
+                    <div id="video-progress-text" class="progress-text">上传进度: 0%</div>
+                </div>
+            </div>
+
+            <div id="section-read" class="type-section" style="display:none;">
+                <label class="form-label">上传PDF文档 <span style="color:red">*</span></label>
+                <div class="file-upload-box" onclick="document.getElementById('st-pdf-file').click()">
+                    <i class="fas fa-file-pdf upload-icon" style="color: #722ed1;"></i>
+                    <p id="st-pdf-name" class="upload-text">点击选择PDF文件</p>
+                    <input type="file" id="st-pdf-file" accept=".pdf" style="display:none"
+                        onchange="handleFileSelect('pdf')">
+                </div>
+                <div id="pdf-progress" class="progress-wrapper">
+                    <div class="progress-bg">
+                        <div id="pdf-progress-bar" class="progress-bar" style="background:#722ed1;"></div>
+                    </div>
+                    <div id="pdf-progress-text" class="progress-text">上传进度: 0%</div>
+                </div>
+            </div>
+
+            <div id="section-research" class="type-section" style="display:none;">
+                <div class="form-group">
+                    <label class="form-label">话题引导语（脚手架）</label>
+                    <textarea id="st-scaffold" class="form-control" rows="3"
+                        placeholder="例如：请结合视频中的...谈谈你的看法"></textarea>
+                    <p style="font-size:12px; color:#999; margin-top:4px;">* 系统将自动创建一个以此为内容的话题，供学员讨论。</p>
+                </div>
+            </div>
+
+            <div style="margin-top: 24px; text-align: right;">
+                <button class="btn btn-outline" onclick="closeSubtaskModal()">取消</button>
+                <button class="btn btn-primary" onclick="submitCreateSubtask()">创建子任务</button>
             </div>
         </div>
     </div>
 
-<script>
-    // ========== 0. 页面状态 ==========
-    let clubTaskList = [];
-    let taskPageInitialized = false;
-    let currentClubId = null;
-    let currentClubName = '';
-    let currentPreviewPdfId = null;
-    let currentPreviewTaskId = null;
+    <script>
+        // ========== 0. 全局变量与状态 ==========
+        let clubTaskList = [];
+        let taskPageInitialized = false;
+        let currentClubId = null;
+        let currentClubName = '';
+        let currentPreviewPdfId = null;
+        let currentPreviewTaskId = null;
+        let isManager = false;
 
-    // ========== 1. 页面加载后获取任务详情 ==========
-    async function initTaskPage() {
-        if (taskPageInitialized) return;
-        taskPageInitialized = true;
+        // 文件上传相关
+        let selectedVideoFile = null;
+        let selectedPdfFile = null;
 
-        console.log('任务页面初始化');
-        
-        // 更新用户显示
-        updateUserDisplay();
-        
-        // 拉取任务列表并显示子任务
-        await loadTasksAndDetail();
-    }
-    
-    document.addEventListener('DOMContentLoaded', initTaskPage);
+        // ========== 1. 阿里云上传 SDK 封装 ==========
+        window.AliyunVodUploader = {
+            ensureLoaded: function () {
+                return new Promise((resolve, reject) => {
+                    if (window.AliyunUpload && window.AliyunUpload.Vod) return resolve();
+                    if (window.AliyunUpload) resolve();
+                    else setTimeout(() => window.AliyunUpload ? resolve() : reject(new Error('Aliyun Upload SDK 未加载')), 1000);
+                });
+            },
+            uploadVideo: function (file, token, onProgress) {
+                return new Promise((resolve, reject) => {
+                    if (!window.AliyunUpload || !window.AliyunUpload.Vod) return reject(new Error('SDK 未加载'));
+                    try {
+                        var uploader = new window.AliyunUpload.Vod({
+                            userId: "123", partSize: 1048576, parallel: 5, retryCount: 3, retryDuration: 2,
+                            onUploadstarted: function (uploadInfo) {
+                                uploader.setUploadAuthAndAddress(uploadInfo, token.uploadAuth, token.uploadAddress, uploadInfo.videoId || token.videoId);
+                            },
+                            onUploadSucceed: function (uploadInfo) { resolve({ videoId: uploadInfo.videoId || token.videoId }); },
+                            onUploadFailed: function (uploadInfo, code, message) { reject(new Error(`上传失败: ${message}`)); },
+                            onUploadProgress: function (uploadInfo, totalSize, progress) { if (onProgress) onProgress(Math.ceil(progress * 100)); },
+                            onUploadTokenExpired: function () { reject(new Error('凭证过期')); }
+                        });
+                        uploader.addFile(file, null, null, null, '{"Vod":{}}');
+                        uploader.startUpload();
+                    } catch (error) { reject(error); }
+                });
+            }
+        };
 
-    // ========== 2. 更新用户显示 ==========
-    function updateUserDisplay() {
-        if (window.Auth && window.Auth.getUser()) {
-            const user = window.Auth.getUser();
-            const avatarElements = document.querySelectorAll('#task-user-avatar');
-            const nameElements = document.querySelectorAll('#task-user-name');
-            
-            avatarElements.forEach(element => {
-                if (element) element.textContent = user.name.charAt(0);
-            });
-            nameElements.forEach(element => {
-                if (element) element.textContent = user.name;
-            });
+        // ========== 2. 页面初始化 (核心修复) ==========
+        async function initTaskPage() {
+            if (taskPageInitialized) return;
+            taskPageInitialized = true;
+            console.log('任务页面初始化启动...');
+
+            updateUserDisplay();
+
+            // 【修复】优先加载数据，不再因缺少 ClubID 而中断
+            await loadPageData();
         }
-    }
 
-    // ========== 3. 从URL获取任务ID ==========
-    function getTaskIdFromURL() {
-        // 方法1：从hash参数获取
-        const hash = window.location.hash;
-        const params = new URLSearchParams(hash.split('?')[1]);
-        let taskId = params.get('taskId');
-        
-        // 方法2：从App状态获取
-        if (!taskId && window.App && window.App.state && window.App.state.currentTaskId) {
-            taskId = window.App.state.currentTaskId;
+        // 监听 DOM 加载
+        document.addEventListener('DOMContentLoaded', initTaskPage);
+        // 兼容 SPA 切换
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            initTaskPage();
         }
-        
-        // 方法3：从Tasks模块获取
-        if (!taskId && window.Tasks && window.Tasks.currentTaskDetail) {
-            taskId = window.Tasks.currentTaskDetail.taskInfo.taskId;
-        }
-        
-        console.log('获取到的任务ID:', taskId);
-        return taskId ? parseInt(taskId) : null;
-    }
 
-    // ========== 3.1 获取俱乐部ID（任务列表查询用） ==========
-    function getClubIdFromContext() {
-        const hash = window.location.hash;
-        const params = new URLSearchParams(hash.split('?')[1]);
-        let clubId = params.get('clubId');
-        
-        if (!clubId && window.App && window.App.state && window.App.state.currentClubId) {
-            clubId = window.App.state.currentClubId;
-        }
-        
-        if (!clubId && window.Clubs && window.Clubs.getCurrentClub) {
-            const currentClub = window.Clubs.getCurrentClub();
-            if (currentClub) {
-                clubId = currentClub.id || currentClub.clubId;
-                currentClubName = currentClub.name || '';
+        function updateUserDisplay() {
+            if (window.Auth && window.Auth.getUser()) {
+                const user = window.Auth.getUser();
+                document.querySelectorAll('#task-user-avatar').forEach(el => el.textContent = user.name.charAt(0));
+                document.querySelectorAll('#task-user-name').forEach(el => el.textContent = user.name);
             }
         }
 
-        if (!clubId && window.Utils) {
-            const savedClub = Utils.getFromStorage('current_club');
-            if (savedClub) {
-                clubId = savedClub.id || savedClub.clubId;
-                currentClubName = savedClub.name || '';
+        // 获取 TaskID (增强版)
+        function getTaskIdFromURL() {
+            const params = new URLSearchParams(window.location.hash.split('?')[1]);
+            let taskId = params.get('taskId');
+
+            // 尝试从全局状态获取
+            if (!taskId && window.App?.state?.currentTaskId) taskId = window.App.state.currentTaskId;
+            if (!taskId && window.Tasks?.currentTaskDetail) taskId = window.Tasks.currentTaskDetail.taskInfo.taskId;
+
+            return taskId ? parseInt(taskId) : null;
+        }
+
+        // ========== 3. 数据加载逻辑 (逻辑重构) ==========
+        async function loadPageData() {
+            try {
+                // 1. 先尝试获取 TaskID
+                const taskId = getTaskIdFromURL();
+
+                if (taskId) {
+                    // 有 TaskID，直接加载详情
+                    console.log('检测到 TaskID:', taskId, '开始加载详情...');
+                    await loadTaskDetail(taskId);
+
+                    // 详情加载完后，补充加载 Club 信息用于权限判断
+                    if (currentClubId) {
+                        checkManagerPermission(currentClubId);
+                        // 可选：顺便加载该俱乐部的其他任务列表（左侧导航用）
+                        // loadClubTaskList(currentClubId); 
+                    }
+                } else {
+                    // 没有 TaskID，尝试从 ClubID 加载列表
+                    console.log('未检测到 TaskID，尝试加载列表...');
+                    await loadClubTaskListAndSelectFirst();
+                }
+            } catch (error) {
+                console.error('页面数据加载失败:', error);
+                showMessage('加载失败: ' + error.message, 'error');
             }
         }
-        
-        if (clubId) {
-            currentClubId = parseInt(clubId);
-        }
-        
-        return currentClubId;
-    }
 
-    // ========== 4. 先拉取任务列表，再加载任务详情 ==========
-    async function loadTasksAndDetail() {
-        try {
-            const clubId = getClubIdFromContext();
+        // 加载详情并渲染
+        async function loadTaskDetail(taskId) {
+            try {
+                // document.getElementById('taskList').innerHTML = '<div class="loading">加载中...</div>'; // 可选加载动画
+
+                const taskDetail = await Tasks.getTaskDetail(taskId);
+                const taskInfo = taskDetail?.taskInfo || taskDetail;
+
+                if (!taskInfo) throw new Error('未获取到任务数据');
+
+                // 反向设置 ClubID
+                if (taskInfo.clubId) currentClubId = taskInfo.clubId;
+
+                console.log('任务详情获取成功，准备渲染:', taskInfo);
+
+                // 渲染 UI
+                displayTaskDetail(taskInfo);
+
+            } catch (error) {
+                console.error('加载详情异常:', error);
+                throw error;
+            }
+        }
+
+        // (备用) 如果没有 TaskID，尝试加载列表取第一个
+        async function loadClubTaskListAndSelectFirst() {
+            // 尝试获取 ClubID
+            let clubId = null;
+            const params = new URLSearchParams(window.location.hash.split('?')[1]);
+            clubId = params.get('clubId') || window.App?.state?.currentClubId || Utils.getFromStorage('current_club')?.id;
+
             if (!clubId) {
-                showMessage('无法获取俱乐部信息', 'error');
-                goBackToHome();
+                document.getElementById('taskList').innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <h3>无法加载任务</h3>
+                    <p>缺少任务信息</p>
+                    <button class="btn btn-primary" onclick="goBackToHome()">返回</button>
+                </div>`;
                 return;
             }
 
-            if (!window.API || !API.getTasks) {
-                throw new Error('任务接口不可用');
-            }
+            currentClubId = parseInt(clubId);
+            checkManagerPermission(currentClubId);
 
-            const listResult = await API.getTasks(clubId);
-            if (listResult && listResult.code === 0 && Array.isArray(listResult.data)) {
-                clubTaskList = listResult.data;
-                console.log('已获取任务列表', clubTaskList.length);
+            const res = await API.getTasks(currentClubId);
+            if (res && res.code === 0 && res.data && res.data.length > 0) {
+                // 加载第一个任务
+                await loadTaskDetail(res.data[0].taskId || res.data[0].id);
             } else {
-                clubTaskList = [];
-                console.warn('任务列表为空或格式不正确');
+                document.getElementById('taskList').innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-tasks"></i>
+                    <h3>暂无任务</h3>
+                    <p>该俱乐部暂无已发布任务</p>
+                </div>`;
             }
+        }
 
-            let taskId = getTaskIdFromURL();
-            if (!taskId && clubTaskList.length > 0) {
-                taskId = clubTaskList[0].taskId || clubTaskList[0].id;
-            }
+        async function checkManagerPermission(clubId) {
+            if (!clubId) return;
+            try {
+                const myClubsRes = await API.getMyClubs();
+                if (myClubsRes.code === 0) {
+                    const club = myClubsRes.data.find(c => c.clubId === clubId);
+                    isManager = club && (club.memberRole === 'manager' || club.memberRole === 'creator');
+                }
+                const btnAdd = document.getElementById('btn-add-subtask');
+                if (btnAdd) btnAdd.style.display = isManager ? 'flex' : 'none';
+            } catch (e) { console.error(e); }
+        }
 
-            if (!taskId) {
-                showMessage('暂无可用任务', 'warning');
+        // ========== 4. 渲染逻辑 (关键点) ==========
+        function displayTaskDetail(taskInfo) {
+            // 1. 更新大标题
+            const titleElement = document.querySelector('.task-page-container h3');
+            if (titleElement) titleElement.textContent = taskInfo.title || '未命名任务';
+
+            // 2. 渲染子任务列表
+            displaySubTasks(taskInfo);
+        }
+
+        function displaySubTasks(taskInfo) {
+            const container = document.getElementById('taskList');
+            if (!container) return console.error('找不到 #taskList 容器');
+
+            // 数据兼容处理
+            const subTasks = taskInfo.subTasks || taskInfo.subtasks || [];
+            console.log('渲染子任务数据:', subTasks);
+
+            if (subTasks.length === 0) {
+                container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-tasks"></i>
+                    <h3>暂无子任务</h3>
+                    <p>尚未添加任何学习内容</p>
+                </div>`;
                 return;
             }
 
-            if (window.Utils && Utils.sendAnalyticsEvent) {
-                Utils.sendAnalyticsEvent('task_enter', {
-                    category: 'learning',
-                    target_type: 'task',
-                    target_id: taskId,
-                    club_id: clubId
-                });
-            }
+            // 排序：阅读 -> 视频 -> 研讨 -> 其他
+            const sorted = [...subTasks].sort((a, b) => {
+                const getOrder = (t) => t.type === 'read_design' ? 0 : (t.type === 'watch' ? 1 : 2);
+                return getOrder(a) - getOrder(b);
+            });
 
-            await loadTaskDetail(taskId);
-        } catch (error) {
-            console.error('加载任务列表或详情失败:', error);
-            showMessage('加载任务失败: ' + error.message, 'error');
-        }
-    }
+            let html = '';
+            sorted.forEach(sub => {
+                const isRead = sub.type === 'read_design';
+                const isWatch = sub.type === 'watch';
+                const isResearch = sub.type === 'research';
+                const isCompleted = sub.status === 'completed';
+                const subId = sub.subtaskId || sub.id;
 
-    // ========== 5. 加载任务详情 ==========
-    async function loadTaskDetail(taskId) {
-        try {
-            showMessage('正在加载任务...', 'info');
-            
-            // 确保Tasks模块已加载
-            if (!window.Tasks) {
-                throw new Error('任务模块未加载');
-            }
-            
-            // 获取任务详情
-            const taskDetail = await Tasks.getTaskDetail(taskId);
-            const taskInfo = taskDetail?.taskInfo || taskDetail;
-            
-            if (!taskInfo) {
-                throw new Error('获取任务详情失败');
-            }
+                // 按钮点击事件
+                let actionBtn = '';
+                if (isRead) {
+                    actionBtn = `<button class="btn btn-primary" onclick="previewTeachingDesign(${taskInfo.taskId})"><i class="fas fa-eye"></i> 查看文档</button>`;
+                } else if (isWatch) {
+                    actionBtn = `<button class="btn btn-primary" onclick="goToVideoPlayer(${taskInfo.taskId})"><i class="fas fa-video"></i> 观看视频</button>`;
+                } else {
+                    actionBtn = `<button class="btn btn-primary" onclick="goToPlatform(${subId})"><i class="fas fa-comments"></i> 进入研讨</button>`;
+                }
 
-            if (taskInfo.clubId) {
-                currentClubId = taskInfo.clubId;
-            }
-            if (!currentClubName && window.Clubs && Array.isArray(window.Clubs.myClubs)) {
-                const found = window.Clubs.myClubs.find(c => c.id === currentClubId || c.clubId === currentClubId);
-                if (found) currentClubName = found.name || '';
-            }
-            
-            // 仅使用接口文档的 subTasks 字段
-            const mergedTask = {
-                ...taskInfo,
-                subTasks: Array.isArray(taskInfo.subTasks) ? taskInfo.subTasks : []
-            };
+                // 完成按钮状态
+                let completeBtn = isCompleted
+                    ? `<button class="btn btn-outline" disabled><i class="fas fa-check"></i> 已完成</button>`
+                    : `<button class="btn btn-success" onclick="completeSubTask(${taskInfo.taskId}, ${subId}, ${isResearch})">标记完成</button>`;
 
-            if (window.Utils && Utils.sendAnalyticsEvent) {
-                Utils.sendAnalyticsEvent('view_task', {
-                    category: 'learning',
-                    target_type: 'task',
-                    target_id: taskInfo.taskId || taskId,
-                    club_id: currentClubId
-                });
-            }
-            
-            // 显示任务详情
-            displayTaskDetail(mergedTask);
-            
-        } catch (error) {
-            console.error('加载任务详情失败:', error);
-            showMessage('加载任务失败: ' + error.message, 'error');
-            
-            // 如果失败，3秒后返回
-            setTimeout(() => {
-                goBackToHome();
-            }, 3000);
-        }
-    }
-
-    // ========== 6. 显示任务详情和子任务 ==========
-    function displayTaskDetail(taskInfo) {
-        console.log('显示任务详情:', taskInfo);
-        
-        // 更新页面标题
-        const titleElement = document.querySelector('.task-page-container h3');
-        if (titleElement && taskInfo.title) {
-            titleElement.textContent = taskInfo.title;
-        }
-        
-        // 显示子任务
-        displaySubTasks(taskInfo);
-    }
-
-    // ========== 7. 显示子任务 ==========
-function displaySubTasks(taskInfo) {
-    const taskListContainer = document.getElementById('taskList');
-    
-    if (!taskListContainer) {
-        console.error('找不到任务列表容器');
-        return;
-    }
-
-    // 兼容不同字段命名
-    const subTasks = Array.isArray(taskInfo.subTasks)
-        ? taskInfo.subTasks
-        : Array.isArray(taskInfo.subtasks)
-            ? taskInfo.subtasks
-            : [];
-
-    // 按order字段排序，确保阅读教学设计排在第一位
-    const sortedSubTasks = [...subTasks].sort((a, b) => {
-        const orderA = a.order !== undefined ? a.order : (a.type === 'read_design' ? 0 : 999);
-        const orderB = b.order !== undefined ? b.order : (b.type === 'read_design' ? 0 : 999);
-        return orderA - orderB;
-    });
-
-    // 清空容器
-    taskListContainer.innerHTML = '';
-
-    if (!sortedSubTasks || sortedSubTasks.length === 0) {
-        taskListContainer.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-tasks"></i>
-                <h3>暂无子任务</h3>
-                <p>该任务还没有子任务</p>
-            </div>
-        `;
-        return;
-    }
-    
-    // 显示每个子任务
-    sortedSubTasks.forEach((subTask, index) => {
-        // 判断子任务类型
-        const isReadDesignTask = subTask.type === 'read_design';
-        const isWatchTask = subTask.type === 'watch';
-        const isResearchTask = subTask.type === 'research';
-        
-        const statusClass = subTask.status === 'completed' ? 'task-status-complete' : 'task-status-incomplete';
-        const statusText = subTask.status === 'completed' ? '已完成 <i class="fas fa-check"></i>' : '未完成';
-        const subtaskId = subTask.subtaskId || subTask.id;
-        
-        // 修改这里：直接使用简化的描述，移除具体平台名称
-        let description = '';
-        if (isReadDesignTask) {
-            description = '阅读并理解本课的教学设计方案';
-        } else if (isWatchTask) {
-            // 移除"前往分秒帧平台观看完整教学视频"，简化为"观看完整教学视频"
-            description = '观看完整教学视频';
-        } else if (isResearchTask) {
-            // 移除"前往石墨文档完成教学反思与研讨笔记"，简化为"完成教学反思与研讨"
-            description = '完成教学反思与研讨';
-        }
-        
-        // 根据任务类型设置平台信息
-        let platformInfo = '';
-        let buttonAction = '';
-        
-        if (isReadDesignTask) {
-            platformInfo = '<div style="font-size:14px; color:#666; margin-top:8px; display: flex; align-items: center; gap: 6px;"><i class="fas fa-file-pdf"></i> 点击查看教学设计文档</div>';
-            buttonAction = `onclick="previewTeachingDesign(${taskInfo.taskId})"`;
-        } else if (isWatchTask) {
-            platformInfo = '<div style="font-size:14px; color:#666; margin-top:8px; display: flex; align-items: center; gap: 6px;"><i class="fas fa-video"></i> 观看教学视频</div>';
-            buttonAction = `onclick="goToVideoPlayer(${taskInfo.taskId}, '${taskInfo.title}')"`;
-        } else if (isResearchTask) {
-            platformInfo = '<div style="font-size:14px; color:#666; margin-top:8px; display: flex; align-items: center; gap: 6px;"><i class="fas fa-file-alt"></i> 完成教学研讨</div>';
-            buttonAction = `onclick="goToPlatform(${subtaskId})"`;
-        }
-        
-        // 创建子任务卡片
-        const taskCardHTML = `
-            <div class="task-card-item" data-subtask-id="${subtaskId}" data-task-id="${taskInfo.taskId}">
-                <div class="task-card-header">
-                    <div class="task-card-title">${subTask.title}</div>
-                    <div class="task-card-status ${statusClass}">${statusText}</div>
-                </div>
-                <div class="task-card-description">
-                    ${description}
-                    ${platformInfo}
-                    ${subTask.status === 'completed' && subTask.submission ? `
-                    <div style="font-size:12px; color:#52c41a; margin-top:4px; padding:8px; background:rgba(82,196,26,0.1); border-radius:4px;">
-                        <i class="fas fa-check-circle"></i> 
-                        已完成于: ${formatDate(subTask.submission.completedAt)}
+                html += `
+                <div class="task-card-item">
+                    <div class="task-card-header">
+                        <div class="task-card-title">${sub.title}</div>
+                        <div class="task-card-status ${isCompleted ? 'task-status-complete' : 'task-status-incomplete'}">
+                            ${isCompleted ? '已完成' : '进行中'}
+                        </div>
                     </div>
-                    ` : ''}
+                    <div class="task-card-description">
+                        ${sub.description || '暂无描述'}
+                        ${isRead ? '<br><small style="color:#666"><i class="fas fa-file-pdf"></i> PDF文档</small>' : ''}
+                        ${isWatch ? '<br><small style="color:#666"><i class="fas fa-play-circle"></i> 教学视频</small>' : ''}
+                    </div>
+                    <div class="task-card-actions">
+                        ${actionBtn}
+                        ${completeBtn}
+                    </div>
                 </div>
-                <div class="task-card-actions">
-                    <!-- 任务操作按钮 -->
-                    ${isReadDesignTask ? `
-                    <button class="btn btn-primary" ${buttonAction}>
-                        <i class="fas fa-eye"></i> 
-                        查看教学设计
-                    </button>
-                    ` : isWatchTask ? `
-                    <button class="btn btn-primary" ${buttonAction}>
-                        <i class="fas fa-video"></i> 
-                        观看视频
-                    </button>
-                    ` : `
-                    <button class="btn btn-primary" ${buttonAction}>
-                        <i class="fas fa-file-alt"></i> 
-                        前往研讨区
-                    </button>
-                    `}
-                    
-                    <!-- 标记完成按钮（未完成时才显示） -->
-                    ${subTask.status !== 'completed' ? `
-                    <button class="btn btn-success" onclick="completeSubTask(${taskInfo.taskId}, ${subtaskId}, ${isResearchTask})">
-                        <i class="fas fa-check-circle"></i> 标记完成
-                    </button>
-                    ` : `
-                    <button class="btn btn-outline" disabled>
-                        <i class="fas fa-check-circle"></i> 已完成
-                    </button>
-                    `}
-                </div>
-            </div>
-        `;
-        
-        taskListContainer.innerHTML += taskCardHTML;
-    });
-    
-    console.log('子任务显示完成，共', sortedSubTasks.length, '个子任务');
-}
+            `;
+            });
 
-    // ========== 8. 跳转到视频播放页面 ==========
-    /**
-     * 从task页跳转到视频播放页
-     * 原则：只传递videoId，所有视频信息由播放页从API获取
-     */
-    async function goToVideoPlayer(taskId) {
-        try {
-            // 1. 获取任务详情
-            const taskDetail = await Tasks.getTaskDetail(taskId);
-            const taskInfo = taskDetail?.taskInfo || taskDetail;
+            container.innerHTML = html;
+        }
 
-            // 2. 提取videoId（唯一必需参数）
-            const videoId = taskInfo.videoId;
+        // ========== 5. 交互与工具函数 ==========
 
-            if (!videoId) {
-                console.error('[goToVideoPlayer] 任务未关联视频，taskId:', taskId);
-                showMessage('该任务未关联视频，无法播放', 'error');
-                return;
+        // 打开/关闭模态框
+        window.openSubtaskModal = function () {
+            document.getElementById('subtask-modal').style.display = 'flex';
+            resetForm();
+        };
+        window.closeSubtaskModal = function () {
+            document.getElementById('subtask-modal').style.display = 'none';
+        };
+
+        function resetForm() {
+            document.getElementById('st-title').value = '';
+            document.getElementById('st-desc').value = '';
+            document.getElementById('st-scaffold').value = '';
+            document.getElementById('st-type').value = 'watch';
+            handleTypeChange();
+            resetFileUploads();
+        }
+
+        window.handleTypeChange = function () {
+            const type = document.getElementById('st-type').value;
+            ['watch', 'read', 'research'].forEach(t => {
+                const el = document.getElementById(`section-${t}`);
+                if (el) el.style.display = (t === type || (type === 'read_design' && t === 'read')) ? 'block' : 'none';
+            });
+
+            const titleInput = document.getElementById('st-title');
+            if (!titleInput.value) {
+                const titles = { 'watch': '观看教学视频', 'read_design': '阅读教学设计', 'research': '教学反思与研讨' };
+                if (titles[type]) titleInput.value = titles[type];
             }
+        };
 
-            if (window.Utils && Utils.sendAnalyticsEvent) {
-                Utils.sendAnalyticsEvent('video_open_player', {
-                    category: 'learning',
-                    target_type: 'video',
-                    target_id: videoId,
-                    target_object: {
-                        task_id: parseInt(taskId)
+        function resetFileUploads() {
+            selectedVideoFile = null; selectedPdfFile = null;
+            document.getElementById('st-video-name').textContent = '点击选择视频 (MP4)';
+            document.getElementById('st-pdf-name').textContent = '点击选择PDF';
+            document.getElementById('st-video-file').value = '';
+            document.getElementById('st-pdf-file').value = '';
+            document.getElementById('video-progress').style.display = 'none';
+            document.getElementById('pdf-progress').style.display = 'none';
+        }
+
+        window.handleFileSelect = function (type) {
+            const file = document.getElementById(type === 'video' ? 'st-video-file' : 'st-pdf-file').files[0];
+            if (!file) return;
+            if (type === 'video') { selectedVideoFile = file; document.getElementById('st-video-name').textContent = file.name; }
+            else { selectedPdfFile = file; document.getElementById('st-pdf-name').textContent = file.name; }
+        };
+
+        // 提交创建
+        window.submitCreateSubtask = async function () {
+            const taskId = getTaskIdFromURL();
+            if (!taskId) return showMessage('任务ID丢失', 'error');
+
+            const type = document.getElementById('st-type').value;
+            const title = document.getElementById('st-title').value.trim();
+            const desc = document.getElementById('st-desc').value.trim();
+
+            if (!title) return showMessage('请输入标题', 'warning');
+
+            try {
+                showMessage('正在处理...', 'info');
+                let payload = { type, title, description: desc, videoId: null, pdfId: null };
+
+                if (type === 'watch') {
+                    if (!selectedVideoFile) return showMessage('请选择视频', 'warning');
+                    payload.videoId = await performVideoUpload(selectedVideoFile);
+                } else if (type === 'read_design') {
+                    if (!selectedPdfFile) return showMessage('请选择PDF', 'warning');
+                    payload.pdfId = await performPdfUpload(selectedPdfFile);
+                } else if (type === 'research') {
+                    const scaffold = document.getElementById('st-scaffold').value.trim();
+                    payload.videoId = await performCreateTopic(taskId, title, desc, scaffold);
+                }
+
+                await API.request(`/tasks/${taskId}/subtasks`, 'POST', payload);
+                showMessage('创建成功', 'success');
+                closeSubtaskModal();
+                loadTaskDetail(taskId);
+            } catch (e) {
+                console.error(e);
+                showMessage(e.message, 'error');
+            }
+        };
+
+        // 辅助上传函数
+        async function performVideoUpload(file) {
+            document.getElementById('video-progress').style.display = 'block';
+            const tokenRes = await API.getUploadToken();
+            if (tokenRes.code !== 0) throw new Error(tokenRes.msg);
+
+            await window.AliyunVodUploader.ensureLoaded();
+            const res = await window.AliyunVodUploader.uploadVideo(file, tokenRes.data, (pct) => {
+                document.getElementById('video-progress-bar').style.width = pct + '%';
+                document.getElementById('video-progress-text').textContent = pct + '%';
+            });
+
+            // 保存信息
+            const saveRes = await API.saveVideoInfo({
+                clubId: currentClubId, title: file.name, videoId: res.videoId,
+                etag: "etag_" + Date.now(), fileSize: file.size, mimeType: file.type
+            });
+            if (saveRes.code === 0) return saveRes.data.videoId;
+            throw new Error(saveRes.msg);
+        }
+
+        async function performPdfUpload(file) {
+            document.getElementById('pdf-progress').style.display = 'block';
+            const tokenRes = await API.request('/resources/token', 'GET');
+            const { uploadToken, bucket, region } = tokenRes.data;
+
+            const key = `resource/${Date.now()}/${file.name}`;
+            const observable = qiniu.upload(file, key, uploadToken, { fname: file.name, mimeType: file.type }, { useCdnDomain: true, region: qiniu.region.z1 });
+
+            return new Promise((resolve, reject) => {
+                observable.subscribe({
+                    next(res) {
+                        const pct = Math.floor(res.total.percent);
+                        document.getElementById('pdf-progress-bar').style.width = pct + '%';
+                    },
+                    error(err) { reject(err); },
+                    async complete(res) {
+                        const saveRes = await API.request('/resources', 'POST', {
+                            clubId: currentClubId, title: file.name, filename: file.name,
+                            objectKey: key, etag: res.hash, bucket, mimeType: file.type, fileSize: file.size
+                        });
+                        if (saveRes.code === 0) resolve(saveRes.data.resourceId);
+                        else reject(new Error(saveRes.msg));
                     }
                 });
-            }
-
-            // 3. 跳转到视频播放页（只传递必要参数）
-            const params = new URLSearchParams({
-                videoId: videoId.toString(),
-                taskId: taskId.toString()
-            });
-
-            const newHash = `video-player?${params}`;
-            console.log('[goToVideoPlayer] 跳转:', newHash);
-            window.location.hash = newHash;
-
-        } catch (error) {
-            console.error('[goToVideoPlayer] 跳转失败:', error);
-            showMessage('加载视频失败: ' + error.message, 'error');
-        }
-    }
-
-    // ========== 8.1 跳转到平台（用于研视频任务） ==========
-    function goToPlatform(subtaskId) {
-        // 根据子任务ID找到对应的子任务信息
-        const taskCards = document.querySelectorAll('.task-card-item');
-        let targetTaskCard = null;
-        
-        // 查找包含当前subtaskId的任务卡片
-        for (const card of taskCards) {
-            const cardSubtaskId = card.getAttribute('data-subtask-id');
-            if (cardSubtaskId && parseInt(cardSubtaskId) === subtaskId) {
-                targetTaskCard = card;
-                break;
-            }
-        }
-        
-        let externalLink = '';
-        let platformName = '';
-        
-        // 检查是否为看视频任务（通过卡片内的图标判断）
-        if (targetTaskCard) {
-            const watchIcon = targetTaskCard.querySelector('.fa-video');
-            if (watchIcon) {
-                // 看视频任务 - 跳转到我们的视频播放页面
-                const taskId = targetTaskCard.getAttribute('data-task-id');
-                const taskTitle = targetTaskCard.querySelector('.task-card-title').textContent;
-                goToVideoPlayer(taskId, taskTitle);
-                return;
-            } else {
-                // 研视频任务 - 跳转到话题列表页
-                const taskId = targetTaskCard.getAttribute('data-task-id');
-                platformName = '话题讨论区';
-                showMessage(`正在进入 ${platformName}...`, 'info');
-                
-                // 跳转到话题列表页
-                const hash = `topiclist?taskId=${taskId}&clubId=${currentClubId}`;
-                window.location.hash = hash;
-                return;
-            }
-        } else {
-            // 如果没有找到任务卡片，使用原来的逻辑作为fallback
-            if (subtaskId === 1) {
-                // 看视频任务 - 跳转到我们的视频播放页面
-                const taskCards = document.querySelectorAll('.task-card-item');
-                if (taskCards.length > 0) {
-                    const taskId = taskCards[0].getAttribute('data-task-id');
-                    const taskTitle = taskCards[0].querySelector('.task-card-title').textContent;
-                    goToVideoPlayer(taskId, taskTitle);
-                }
-                return;
-            } else {
-                // 研视频任务 - 跳转到话题列表页
-                const taskIdFromURL = getTaskIdFromURL();
-                platformName = '话题讨论区';
-                showMessage(`正在进入 ${platformName}...`, 'info');
-                
-                const hash = `topic-list?taskId=${taskIdFromURL}&clubId=${currentClubId}`;
-                window.location.hash = hash;
-                return;
-            }
-        }
-        
-        console.log('打开平台链接:', externalLink);
-        window.open(externalLink, '_blank');
-        
-        // 提示用户
-        const message = `请在${platformName}完成任务后，返回此页面点击"标记完成"按钮`;
-        showMessage(message, 'info');
-    }
-
-    // ========== 9. 完成子任务 ==========
-async function completeSubTask(taskId, subtaskId, isResearchTask = false) {
-    console.log('完成子任务:', { taskId, subtaskId, isResearchTask });
-    
-    // 根据子任务ID找到对应的子任务信息
-    const taskCards = document.querySelectorAll('.task-card-item');
-    let targetTaskCard = null;
-    
-    // 查找包含当前subtaskId的任务卡片
-    for (const card of taskCards) {
-        const cardSubtaskId = card.getAttribute('data-subtask-id');
-        if (cardSubtaskId && parseInt(cardSubtaskId) === subtaskId) {
-            targetTaskCard = card;
-            break;
-        }
-    }
-    
-    // 判断子任务类型
-    let taskType = 'unknown';
-    let platformName = '';
-    let confirmMessage = '';
-    
-    if (targetTaskCard) {
-        // 检查任务类型
-        const readDesignIcon = targetTaskCard.querySelector('.fa-eye');
-        const watchIcon = targetTaskCard.querySelector('.fa-video');
-        const researchIcon = targetTaskCard.querySelector('.fa-file-alt');
-        
-        if (readDesignIcon) {
-            // 阅读教学设计任务
-            taskType = 'read_design';
-            platformName = '教学设计文档';
-            confirmMessage = `请确认：\n\n✅ 已认真阅读教学设计文档\n✅ 理解教学设计的核心要点\n\n确定标记为已完成吗？`;
-        } else if (watchIcon) {
-            // 看视频任务
-            taskType = 'watch';
-            platformName = '视频研讨平台';
-            confirmMessage = `请确认：\n\n✅ 已在 ${platformName} 完整观看视频\n✅ 视频研讨已完成\n\n确定标记为已完成吗？`;
-        } else if (researchIcon) {
-            // 研视频任务
-            taskType = 'research';
-            platformName = '研讨区';
-            confirmMessage = `请确认：\n\n✅ 已在 ${platformName} 完成研讨\n✅ 讨论内容已提交\n\n确定标记为已完成吗？`;
-        }
-    }
-    
-    // 特殊处理阅读教学设计任务
-    if (taskType === 'read_design') {
-        return await completeReadDesignTask(taskId, subtaskId);
-    }
-    
-    if (!confirm(confirmMessage)) {
-        showMessage('请先完成任务', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('正在提交任务...', 'info');
-        
-        // 准备提交数据
-        const completionData = {};
-        
-        // 调用API提交子任务
-        const result = await Tasks.completeSubTask(taskId, subtaskId, completionData);
-        
-        if (result.success) {
-            showMessage('任务提交成功！', 'success');
-
-            if (window.Utils && Utils.sendAnalyticsEvent) {
-                Utils.sendAnalyticsEvent('subtask_complete', {
-                    category: 'learning',
-                    target_type: 'subtask',
-                    target_id: subtaskId,
-                    target_object: {
-                        subtask_type: taskType
-                    },
-                    club_id: currentClubId
-                });
-            }
-            
-            // 重新加载任务详情
-            setTimeout(async () => {
-                await loadTaskDetail(taskId);
-                
-                // ========== 新增：通知视频页面更新 ==========
-                if (window.parent && window.parent.videoPageInitialized) {
-                    // 如果视频页面已初始化，刷新任务列表
-                    window.parent.loadVideoTasks && window.parent.loadVideoTasks();
-                }
-            }, 1000);
-        } else {
-            showMessage(result.message || '提交任务失败', 'error');
-        }
-    } catch (error) {
-        console.error('完成子任务失败:', error);
-        showMessage('提交任务失败: ' + error.message, 'error');
-    }
-}
-
-    // ========== 10. 格式化日期 ==========
-    function formatDate(dateString) {
-        if (!dateString) return '刚刚';
-        const date = new Date(dateString);
-        return date.toLocaleString('zh-CN', {
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    }
-
-    // ========== 11. 显示消息 ==========
-    function showMessage(message, type = 'info') {
-        if (window.Utils && window.Utils.showNotification) {
-            window.Utils.showNotification(message, type);
-            return;
-        }
-        
-        // 简单的通知实现
-        const notification = document.createElement('div');
-        notification.textContent = message;
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: ${type === 'error' ? '#ff4d4f' : type === 'success' ? '#52c41a' : '#1890ff'};
-            color: white;
-            padding: 12px 20px;
-            border-radius: 6px;
-            z-index: 1000;
-            font-size: 14px;
-            max-width: 300px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        `;
-        
-        document.body.appendChild(notification);
-        setTimeout(() => notification.remove(), 3000);
-    }
-
-    // ========== 12. 返回视频页 ==========
-    function goBackToHome() {
-        const clubId = currentClubId || getClubIdFromContext();
-        const clubName = currentClubName;
-        const targetHash = clubId ? `video?clubId=${clubId}${clubName ? `&clubName=${encodeURIComponent(clubName)}` : ''}` : 'home';
-
-        if (window.App && window.App.navigateToWithParams && clubId) {
-            window.App.navigateToWithParams('video', { clubId, clubName });
-            return;
-        }
-
-        if (window.App && window.App.navigateTo && !clubId) {
-            window.App.navigateTo('home');
-            return;
-        }
-
-        window.location.hash = targetHash;
-    }
-
-    // ========== 13.1 预览教学设计 ==========
-async function previewTeachingDesign(taskId) {
-    console.log('预览教学设计，任务ID:', taskId);
-    
-    try {
-        // 1. 获取任务详情
-        const taskDetail = await Tasks.getTaskDetail(taskId);
-        console.log('任务详情:', taskDetail);
-        
-        if (!taskDetail || !taskDetail.taskInfo) {
-            showMessage('获取任务详情失败', 'error');
-            return;
-        }
-        
-        // 2. 从任务信息中获取pdfId（后端返回的字段名为pdfId）
-        const resourceId = taskDetail.taskInfo.pdfId;
-        
-        console.log('从任务详情获取到的resourceId:', resourceId);
-        
-        if (!resourceId) {
-            showMessage('该任务暂无教学设计文档', 'info');
-            return;
-        }
-
-        currentPreviewPdfId = resourceId;
-        currentPreviewTaskId = taskId;
-        
-        // 3. 获取资源详情
-        const config = window.AppConfig;
-        const token = Utils.getFromStorage(config.STORAGE_KEYS.USER_TOKEN);
-        
-        showMessage('正在加载教学设计文档...', 'info');
-        
-        const response = await fetch(`${config.API_BASE_URL}/resources/${resourceId}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error(`获取资源信息失败: HTTP ${response.status}`);
-        }
-        
-        const result = await response.json();
-        console.log('资源详情:', result);
-        
-        if (result.code !== 0) {
-            throw new Error(result.msg || '获取资源信息失败');
-        }
-        
-        const pdfUrl = result.data?.downloadUrl || result.data?.sourceUrl;
-        console.log('PDF URL:', pdfUrl);
-        
-        if (!pdfUrl) {
-            showMessage('未找到PDF下载地址', 'error');
-            return;
-        }
-
-        if (window.Utils && Utils.sendAnalyticsEvent) {
-            Utils.sendAnalyticsEvent('pdf_preview_open', {
-                category: 'learning',
-                target_type: 'pdf',
-                target_id: resourceId,
-                target_object: {
-                    task_id: taskId
-                }
             });
         }
-        
-        // 将http升级为https用于预览（下载功能保持原样）
-        const previewPdfUrl = pdfUrl.replace(/^http:\/\//, 'https://');
-        
-        // 4. 创建全屏预览模态框（带下载按钮和加载状态）
-        const modalHTML = `
-            <div id="design-preview-modal" class="fullscreen-modal">
-                <div class="fullscreen-modal-content">
-                    <div class="fullscreen-modal-header">
-                        <h3>教学设计文档预览</h3>
-                        <div style="display:flex; gap:8px; align-items:center;">
-                            <a href="${pdfUrl}" 
-                               target="_blank" 
-                               download="教学设计.pdf"
-                               class="btn-download-pdf"
-                               style="background:rgba(255,255,255,0.1); color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; text-decoration:none; display:flex; align-items:center; gap:6px; font-size:14px; transition:background 0.3s;">
-                                <i class="fas fa-download"></i> 下载PDF
-                            </a>
-                            <button class="btn-close-fullscreen" onclick="closeDesignPreview()">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="fullscreen-modal-body">
-                        <div id="pdf-loading" style="display:flex; align-items:center; justify-content:center; height:100%; color:#666;">
-                            <div style="text-align:center;">
-                                <i class="fas fa-spinner fa-spin" style="font-size:48px; margin-bottom:16px; color:#1890ff;"></i>
-                                <p>正在加载PDF文档...</p>
-                                <p style="font-size:12px; color:#999; margin-top:8px;">如果加载较慢，请点击右上角下载按钮</p>
-                            </div>
-                        </div>
-                        <iframe id="design-preview-frame"
-                                style="width:100%; height:100%; border:none; display:none;"
-                                title="教学设计文档预览"
-                                src="${previewPdfUrl}">
-                        </iframe>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // 5. 添加模态框到页面
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        
-        // 6. 显示模态框
-        setTimeout(() => {
-            document.getElementById('design-preview-modal').classList.add('active');
-        }, 10);
-        
-        // 7. 阻止背景滚动
-        document.body.style.overflow = 'hidden';
-        
-        // 8. 监听iframe加载事件
-        const iframe = document.getElementById('design-preview-frame');
-        const loading = document.getElementById('pdf-loading');
-        
-        if (iframe) {
-            iframe.onload = function() {
-                console.log('PDF iframe加载完成');
-                if (loading) {
-                    loading.style.display = 'none';
-                }
-                if (iframe) {
-                    iframe.style.display = 'block';
-                }
-            };
-            
-            iframe.onerror = function() {
-                console.error('PDF iframe加载失败');
-                if (loading) {
-                    loading.innerHTML = `
-                        <div style="text-align:center;">
-                            <i class="fas fa-exclamation-triangle" style="font-size:48px; margin-bottom:16px; color:#ff4d4f;"></i>
-                            <p style="color:#ff4d4f;">PDF加载失败</p>
-                            <p style="font-size:12px; color:#999; margin:8px 0;">请点击右上角下载按钮直接查看</p>
-                            <a href="${pdfUrl}" 
-                               target="_blank" 
-                               class="btn btn-primary"
-                               style="margin-top:16px;">
-                                <i class="fas fa-download"></i> 下载PDF文档
-                            </a>
-                        </div>
-                    `;
-                }
-            };
-            
-            // 设置超时：如果10秒还没加载完成，显示下载提示
-            setTimeout(() => {
-                if (loading && loading.style.display !== 'none') {
-                    console.log('PDF加载超时，显示下载提示');
-                    loading.innerHTML = `
-                        <div style="text-align:center;">
-                            <i class="fas fa-file-pdf" style="font-size:48px; margin-bottom:16px; color:#722ed1;"></i>
-                            <p>PDF加载较慢</p>
-                            <p style="font-size:12px; color:#999; margin:8px 0;">请点击右上角下载按钮直接查看</p>
-                            <a href="${pdfUrl}" 
-                               target="_blank" 
-                               class="btn btn-primary"
-                               style="margin-top:16px;">
-                                <i class="fas fa-download"></i> 下载PDF文档
-                            </a>
-                        </div>
-                    `;
-                }
-            }, 10000);
+
+        async function performCreateTopic(taskId, title, desc, scaffold) {
+            const res = await API.createTopic({ taskId, title, content: desc || title, scaffold });
+            if (res.code === 0) return res.data.topicId;
+            throw new Error(res.msg);
         }
-        
-    } catch (error) {
-        console.error('预览教学设计失败:', error);
-        showMessage('预览教学设计失败: ' + error.message, 'error');
-    }
-}
 
-// ========== 13.2 关闭教学设计预览 ==========
-function closeDesignPreview() {
-    const modal = document.getElementById('design-preview-modal');
-    if (modal) {
-        modal.classList.remove('active');
-        setTimeout(() => {
-            modal.remove();
-        }, 300);
-    }
-    
-    // 恢复背景滚动
-    document.body.style.overflow = 'auto';
+        // 跳转与操作
+        window.goToVideoPlayer = async function (taskId) {
+            const detail = await Tasks.getTaskDetail(taskId);
+            // 优先找 watch 类型的子任务的 videoId
+            const watchTask = detail.taskInfo.subTasks.find(t => t.type === 'watch');
+            const videoId = watchTask ? watchTask.videoId : detail.taskInfo.videoId;
 
-    if (window.Utils && Utils.sendAnalyticsEvent && currentPreviewPdfId) {
-        Utils.sendAnalyticsEvent('pdf_preview_close', {
-            category: 'learning',
-            target_type: 'pdf',
-            target_id: currentPreviewPdfId,
-            target_object: {
-                task_id: currentPreviewTaskId
-            }
-        });
-    }
-    currentPreviewPdfId = null;
-    currentPreviewTaskId = null;
-}
-
-// ========== 13.3 完成阅读教学设计子任务 ==========
-async function completeReadDesignTask(taskId, subtaskId) {
-    const confirmMessage = `请确认：\n\n✅ 已认真阅读教学设计文档\n✅ 理解教学设计的核心要点\n\n确定标记为已完成吗？`;
-    
-    if (!confirm(confirmMessage)) {
-        showMessage('请先阅读教学设计文档', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('正在提交任务...', 'info');
-        
-        // 准备提交数据
-        const completionData = {
-            researchNotes: '已阅读教学设计文档'
+            if (videoId) window.location.hash = `video-player?videoId=${videoId}&taskId=${taskId}`;
+            else showMessage('未找到视频', 'error');
         };
-        
-        // 调用API提交子任务
-        const result = await Tasks.completeSubTask(taskId, subtaskId, completionData);
-        
-        if (result.success) {
-            showMessage('教学设计阅读任务提交成功！', 'success');
 
-            if (window.Utils && Utils.sendAnalyticsEvent) {
-                Utils.sendAnalyticsEvent('subtask_complete', {
-                    category: 'learning',
-                    target_type: 'subtask',
-                    target_id: subtaskId,
-                    target_object: {
-                        subtask_type: 'read_design'
-                    },
-                    club_id: currentClubId
+        window.goToPlatform = function (subId) {
+            const taskId = getTaskIdFromURL();
+            // 研讨通常跳话题列表
+            window.location.hash = `topiclist?taskId=${taskId}&clubId=${currentClubId}`;
+        };
+
+        window.previewTeachingDesign = async function (taskId) {
+            const detail = await Tasks.getTaskDetail(taskId);
+            const pdfId = detail.taskInfo.subTasks.find(t => t.type === 'read_design')?.pdfId;
+            if (!pdfId) return showMessage('未找到文档', 'error');
+
+            const token = Utils.getFromStorage(window.AppConfig.STORAGE_KEYS.USER_TOKEN);
+            fetch(`${window.AppConfig.API_BASE_URL}/resources/${pdfId}`, { headers: { 'Authorization': `Bearer ${token}` } })
+                .then(r => r.json()).then(res => {
+                    if (res.code === 0) window.open(res.data.downloadUrl, '_blank');
+                    else showMessage(res.msg, 'error');
                 });
-            }
-            
-            // 重新加载任务详情
-            setTimeout(async () => {
-                await loadTaskDetail(taskId);
-            }, 1000);
-        } else {
-            showMessage(result.message || '提交任务失败', 'error');
+        };
+
+        window.completeSubTask = async function (taskId, subId) {
+            if (!confirm('确认标记完成？')) return;
+            try {
+                await API.completeSubTask(taskId, subId, {});
+                showMessage('已完成', 'success');
+                loadTaskDetail(taskId);
+            } catch (e) { showMessage(e.message, 'error'); }
+        };
+
+        window.goBackToHome = function () {
+            if (currentClubId) window.location.hash = `video?clubId=${currentClubId}`;
+            else window.location.hash = 'home';
+        };
+
+        function showMessage(msg, type) {
+            if (window.Utils?.showNotification) Utils.showNotification(msg, type);
+            else alert(msg);
         }
-    } catch (error) {
-        console.error('完成教学设计阅读任务失败:', error);
-        showMessage('提交任务失败: ' + error.message, 'error');
-    }
-}
-
-    // ========== 14. 确保函数在全局可用 ==========
-    window.goToPlatform = goToPlatform;
-    window.goToVideoPlayer = goToVideoPlayer;
-    window.completeSubTask = completeSubTask;
-    window.goBackToHome = goBackToHome;
-    window.initTaskPage = initTaskPage;
-    window.previewTeachingDesign = previewTeachingDesign; // 新增
-    window.closeDesignPreview = closeDesignPreview; // 新增
-    window.completeReadDesignTask = completeReadDesignTask; // 新增
-
-    // 立即尝试初始化（兼容 SPA 动态加载）
-    initTaskPage();
-</script>
-
+    </script>
 </body>
+
 </html>
