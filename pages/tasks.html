@@ -135,7 +135,7 @@
             font-size: 24px;
             box-shadow: 0 4px 12px rgba(24, 144, 255, 0.4);
             cursor: pointer;
-            z-index: 900;
+            z-index: 9999;
             transition: transform 0.2s;
         }
 
@@ -215,6 +215,8 @@
 </head>
 
 <body>
+
+
     <div id="page-task" class="page active">
         <div class="header">
             <div class="header-left">
@@ -242,81 +244,84 @@
         <div id="btn-add-subtask" class="btn-add-float" onclick="openSubtaskModal()" title="添加子任务">
             <i class="fas fa-plus"></i>
         </div>
-    </div>
 
-    <div id="subtask-modal" class="modal-overlay">
-        <div class="modal">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h3 style="margin:0;">添加子任务</h3>
-                <i class="fas fa-times" style="cursor:pointer; color:#999;" onclick="closeSubtaskModal()"></i>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">任务类型</label>
-                <select id="st-type" class="form-control" onchange="handleTypeChange()">
-                    <option value="watch">看视频任务</option>
-                    <option value="read_design">阅读教学设计</option>
-                    <option value="research">研视频（话题讨论）</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">子任务标题 <span style="color:red">*</span></label>
-                <input type="text" id="st-title" class="form-control" placeholder="请输入子任务标题">
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">任务描述</label>
-                <textarea id="st-desc" class="form-control" rows="3" placeholder="请输入任务说明..."></textarea>
-            </div>
-
-            <div id="section-watch" class="type-section">
-                <label class="form-label">上传教学视频 <span style="color:red">*</span></label>
-                <div class="file-upload-box" onclick="document.getElementById('st-video-file').click()">
-                    <i class="fas fa-video upload-icon" style="color: #1890ff;"></i>
-                    <p id="st-video-name" class="upload-text">点击选择视频文件 (MP4/MOV)</p>
-                    <input type="file" id="st-video-file" accept="video/*" style="display:none"
-                        onchange="handleFileSelect('video')">
+        <div id="subtask-modal" class="modal-overlay">
+            <div class="modal">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h3 style="margin:0;">添加子任务</h3>
+                    <i class="fas fa-times" style="cursor:pointer; color:#999;" onclick="closeSubtaskModal()"></i>
                 </div>
-                <div id="video-progress" class="progress-wrapper">
-                    <div class="progress-bg">
-                        <div id="video-progress-bar" class="progress-bar"></div>
-                    </div>
-                    <div id="video-progress-text" class="progress-text">上传进度: 0%</div>
-                </div>
-            </div>
 
-            <div id="section-read" class="type-section" style="display:none;">
-                <label class="form-label">上传PDF文档 <span style="color:red">*</span></label>
-                <div class="file-upload-box" onclick="document.getElementById('st-pdf-file').click()">
-                    <i class="fas fa-file-pdf upload-icon" style="color: #722ed1;"></i>
-                    <p id="st-pdf-name" class="upload-text">点击选择PDF文件</p>
-                    <input type="file" id="st-pdf-file" accept=".pdf" style="display:none"
-                        onchange="handleFileSelect('pdf')">
-                </div>
-                <div id="pdf-progress" class="progress-wrapper">
-                    <div class="progress-bg">
-                        <div id="pdf-progress-bar" class="progress-bar" style="background:#722ed1;"></div>
-                    </div>
-                    <div id="pdf-progress-text" class="progress-text">上传进度: 0%</div>
-                </div>
-            </div>
-
-            <div id="section-research" class="type-section" style="display:none;">
                 <div class="form-group">
-                    <label class="form-label">话题引导语（脚手架）</label>
-                    <textarea id="st-scaffold" class="form-control" rows="3"
-                        placeholder="例如：请结合视频中的...谈谈你的看法"></textarea>
-                    <p style="font-size:12px; color:#999; margin-top:4px;">* 系统将自动创建一个以此为内容的话题，供学员讨论。</p>
+                    <label class="form-label">任务类型</label>
+                    <select id="st-type" class="form-control" onchange="handleTypeChange()">
+                        <option value="watch">看视频任务</option>
+                        <option value="read_design">阅读教学设计</option>
+                        <option value="research">研视频（话题讨论）</option>
+                    </select>
                 </div>
-            </div>
 
-            <div style="margin-top: 24px; text-align: right;">
-                <button class="btn btn-outline" onclick="closeSubtaskModal()">取消</button>
-                <button class="btn btn-primary" onclick="submitCreateSubtask()">创建子任务</button>
+                <div class="form-group">
+                    <label class="form-label">子任务标题 <span style="color:red">*</span></label>
+                    <input type="text" id="st-title" class="form-control" placeholder="请输入子任务标题">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">任务描述</label>
+                    <textarea id="st-desc" class="form-control" rows="3" placeholder="请输入任务说明..."></textarea>
+                </div>
+
+                <div id="section-watch" class="type-section">
+                    <label class="form-label">上传教学视频 <span style="color:red">*</span></label>
+                    <div class="file-upload-box" onclick="document.getElementById('st-video-file').click()">
+                        <i class="fas fa-video upload-icon" style="color: #1890ff;"></i>
+                        <p id="st-video-name" class="upload-text">点击选择视频文件 (MP4/MOV)</p>
+                        <input type="file" id="st-video-file" accept="video/*" style="display:none"
+                            onchange="handleFileSelect('video')">
+                    </div>
+                    <div id="video-progress" class="progress-wrapper">
+                        <div class="progress-bg">
+                            <div id="video-progress-bar" class="progress-bar"></div>
+                        </div>
+                        <div id="video-progress-text" class="progress-text">上传进度: 0%</div>
+                    </div>
+                </div>
+
+                <div id="section-read" class="type-section" style="display:none;">
+                    <label class="form-label">上传PDF文档 <span style="color:red">*</span></label>
+                    <div class="file-upload-box" onclick="document.getElementById('st-pdf-file').click()">
+                        <i class="fas fa-file-pdf upload-icon" style="color: #722ed1;"></i>
+                        <p id="st-pdf-name" class="upload-text">点击选择PDF文件</p>
+                        <input type="file" id="st-pdf-file" accept=".pdf" style="display:none"
+                            onchange="handleFileSelect('pdf')">
+                    </div>
+                    <div id="pdf-progress" class="progress-wrapper">
+                        <div class="progress-bg">
+                            <div id="pdf-progress-bar" class="progress-bar" style="background:#722ed1;"></div>
+                        </div>
+                        <div id="pdf-progress-text" class="progress-text">上传进度: 0%</div>
+                    </div>
+                </div>
+
+                <div id="section-research" class="type-section" style="display:none;">
+                    <div class="form-group">
+                        <label class="form-label">话题引导语（脚手架）</label>
+                        <textarea id="st-scaffold" class="form-control" rows="3"
+                            placeholder="例如：请结合视频中的...谈谈你的看法"></textarea>
+                        <p style="font-size:12px; color:#999; margin-top:4px;">* 系统将自动创建一个以此为内容的话题，供学员讨论。</p>
+                    </div>
+                </div>
+
+                <div style="margin-top: 24px; text-align: right;">
+                    <button class="btn btn-outline" onclick="closeSubtaskModal()">取消</button>
+                    <button class="btn btn-primary" onclick="submitCreateSubtask()">创建子任务</button>
+                </div>
             </div>
         </div>
+
     </div>
+
+
 
     <script>
         // ========== 0. 全局变量与状态 ==========
@@ -490,15 +495,45 @@
 
         async function checkManagerPermission(clubId) {
             if (!clubId) return;
+
+            console.log(`[权限检查] 开始检查俱乐部 ID: ${clubId}`);
+
             try {
+                // 1. 获取我的俱乐部列表
                 const myClubsRes = await API.getMyClubs();
+
                 if (myClubsRes.code === 0) {
-                    const club = myClubsRes.data.find(c => c.clubId === clubId);
-                    isManager = club && (club.memberRole === 'manager' || club.memberRole === 'creator');
+                    // 打印列表以供调试
+                    console.log('[权限检查] 我的俱乐部列表:', myClubsRes.data);
+
+                    // 2. 查找匹配 (使用 == 进行弱类型比较，防止 '1' != 1)
+                    const club = myClubsRes.data.find(c => c.clubId == clubId);
+
+                    if (club) {
+                        console.log(`[权限检查] 找到俱乐部: ${club.clubName}, 角色: ${club.memberRole}`);
+                        // 检查角色
+                        isManager = (club.memberRole === 'manager' || club.memberRole === 'creator');
+                    } else {
+                        console.warn(`[权限检查] 未在列表中找到 ID 为 ${clubId} 的俱乐部`);
+                        isManager = false;
+                    }
                 }
+
+                console.log(`[权限检查] 最终结果 isManager: ${isManager}`);
+
+                // 3. 控制按钮显示
                 const btnAdd = document.getElementById('btn-add-subtask');
-                if (btnAdd) btnAdd.style.display = isManager ? 'flex' : 'none';
-            } catch (e) { console.error(e); }
+                if (btnAdd) {
+                    // 如果是管理员，显示 flex；否则隐藏
+                    btnAdd.style.display = isManager ? 'flex' : 'none';
+                    console.log(`[权限检查] 按钮样式已设置为: ${btnAdd.style.display}`);
+                } else {
+                    console.error('[权限检查] 错误: 未找到 ID 为 btn-add-subtask 的按钮元素');
+                }
+
+            } catch (e) {
+                console.error('[权限检查] 发生异常:', e);
+            }
         }
 
         // ========== 4. 渲染逻辑 (关键点) ==========
