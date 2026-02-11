@@ -11,7 +11,7 @@ window.API = {
      */
     async request(endpoint, method = 'GET', data = null, headers = {}) {
         const config = window.AppConfig;
-        
+
         // 替换路径中的占位符 {id}
         let url = endpoint;
         if (data && data._pathParams) {
@@ -21,15 +21,15 @@ window.API = {
             // 删除路径参数，不发送到body
             delete data._pathParams;
         }
-        
+
         // 构建完整URL
         const fullUrl = config.API_BASE_URL + url;
-        
+
         // 设置请求头
         const defaultHeaders = {
             'Content-Type': 'application/json',
         };
-        
+
         // 添加认证token（除了登录和注册）
         if (!endpoint.includes('/auth/')) {
             const token = Utils.getFromStorage(config.STORAGE_KEYS.USER_TOKEN);
@@ -37,57 +37,57 @@ window.API = {
                 defaultHeaders['Authorization'] = `Bearer ${token}`;
             }
         }
-        
+
         // 合并headers
         const requestHeaders = { ...defaultHeaders, ...headers };
-        
+
         // 请求配置
         const requestOptions = {
             method: method,
             headers: requestHeaders,
             signal: AbortSignal.timeout ? AbortSignal.timeout(config.REQUEST_TIMEOUT) : null
         };
-        
+
         // 添加请求体
         if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
             requestOptions.body = JSON.stringify(data);
         }
-        
+
         try {
             if (config.DEBUG_MODE) {
                 console.log(`[API请求] ${method} ${fullUrl}`, data || '');
             }
-            
+
             const response = await fetch(fullUrl, requestOptions);
-            
+
             // 解析响应
             let result;
             const contentType = response.headers.get('content-type');
-            
+
             if (contentType && contentType.includes('application/json')) {
                 result = await response.json();
             } else {
                 const text = await response.text();
                 throw new Error(`非JSON响应: ${text}`);
             }
-            
+
             if (config.DEBUG_MODE) {
                 console.log(`[API响应] ${response.status} ${fullUrl}:`, result);
             }
-            
+
             // 检查HTTP状态码
             if (!response.ok) {
                 // HTTP错误
                 throw new Error(result.msg || `HTTP错误: ${response.status}`);
             }
-            
+
             // API文档格式：所有接口都返回 {code, msg, data}
             if (result.code !== undefined && result.msg !== undefined) {
                 // 业务错误（code !== 0）
                 if (result.code !== 0) {
                     throw new Error(result.msg || '业务逻辑错误');
                 }
-                
+
                 return result; // 返回完整的 {code, msg, data}
             } else {
                 // 响应格式不符合API文档
@@ -99,36 +99,36 @@ window.API = {
                     data: result
                 };
             }
-            
+
         } catch (error) {
             console.error(`[API错误] ${method} ${fullUrl}:`, error);
-            
+
             // 如果是网络错误或超时，返回离线数据（开发用）
-            if (error.name === 'TypeError' || 
-                error.name === 'AbortError' || 
+            if (error.name === 'TypeError' ||
+                error.name === 'AbortError' ||
                 error.message.includes('Network') ||
                 error.message.includes('timeout')) {
-                
+
                 if (config.DEBUG_MODE) {
                     console.warn('使用离线数据');
                 }
                 return this.getOfflineData(endpoint, method, data);
             }
-            
+
             // 其他错误，包装后抛出
             throw new Error(error.message || 'API请求失败');
         }
     },
 
-    
-    
+
+
     /**
      * 获取离线数据（开发/测试用）
      * 所有数据都按照 {code: 0, msg: 'success', data: ...} 格式
      */
     getOfflineData(endpoint, method, data) {
         const config = window.AppConfig;
-        
+
         if (!config.DEBUG_MODE) {
             return {
                 code: 10001,
@@ -136,9 +136,9 @@ window.API = {
                 data: null
             };
         }
-        
+
         console.warn(`[离线模式] ${endpoint}`);
-        
+
         // 离线数据响应（模拟API格式）
         const mockResponses = {
             // 认证模块
@@ -165,7 +165,7 @@ window.API = {
                     createdAt: new Date().toISOString()
                 }
             },
-            
+
             // 用户模块
             '/users/me': {
                 code: 0,
@@ -195,7 +195,7 @@ window.API = {
                     }
                 ]
             },
-            
+
             // 俱乐部模块
             '/clubs': {
                 code: 0,
@@ -233,7 +233,7 @@ window.API = {
                     }
                 ]
             },
-            
+
             // 任务模块
             '/tasks': {
                 code: 0,
@@ -255,7 +255,7 @@ window.API = {
                     }
                 ]
             },
-            
+
             // 通知模块 - 新增离线数据
             '/notifications': {
                 code: 0,
@@ -285,7 +285,7 @@ window.API = {
                     pageSize: 20
                 }
             },
-            
+
             '/notifications/unread-count': {
                 code: 0,
                 msg: 'success',
@@ -346,14 +346,14 @@ window.API = {
                 ]
             }
         };
-        
+
         // 查找匹配的模拟数据
         for (const [key, value] of Object.entries(mockResponses)) {
             if (endpoint.includes(key)) {
                 return value;
             }
         }
-        
+
         // 默认返回成功（但不包含数据）
         return {
             code: 0,
@@ -361,7 +361,7 @@ window.API = {
             data: null
         };
     },
-    
+
     /**
      * 构建查询字符串
      * @param {object} params - 查询参数对象
@@ -371,23 +371,23 @@ window.API = {
         if (!params || Object.keys(params).length === 0) {
             return '';
         }
-        
+
         const validParams = {};
         Object.keys(params).forEach(key => {
             if (params[key] !== undefined && params[key] !== null && params[key] !== '') {
                 validParams[key] = params[key];
             }
         });
-        
+
         if (Object.keys(validParams).length === 0) {
             return '';
         }
-        
+
         return '?' + new URLSearchParams(validParams).toString();
     },
-    
+
     // ================ 认证模块（无需Token） ================
-    
+
     /**
      * 2.2 用户登录
      * @param {object} credentials - 登录凭证
@@ -397,7 +397,7 @@ window.API = {
         const endpoint = window.AppConfig.API_ENDPOINTS.LOGIN;
         return await this.request(endpoint, 'POST', credentials);
     },
-    
+
     /**
      * 2.1 用户注册
      * @param {object} userData - 用户注册数据
@@ -407,9 +407,9 @@ window.API = {
         const endpoint = window.AppConfig.API_ENDPOINTS.REGISTER;
         return await this.request(endpoint, 'POST', userData);
     },
-    
+
     // ================ 用户模块（需Token） ================
-    
+
     /**
      * 3.1 获取我的个人资料
      * @returns {Promise} {code, msg, data: {userId, username, role, avatarUrl}}
@@ -418,7 +418,7 @@ window.API = {
         const endpoint = window.AppConfig.API_ENDPOINTS.GET_USER_INFO;
         return await this.request(endpoint, 'GET');
     },
-    
+
     /**
      * 3.2 修改个人资料
      * @param {object} userData - 更新的用户数据
@@ -428,7 +428,7 @@ window.API = {
         const endpoint = window.AppConfig.API_ENDPOINTS.UPDATE_USER_INFO;
         return await this.request(endpoint, 'PATCH', userData);
     },
-    
+
     /**
      * 3.3 修改密码
      * @param {object} passwordData - 密码数据 {oldPassword, newPassword}
@@ -438,7 +438,7 @@ window.API = {
         const endpoint = window.AppConfig.API_ENDPOINTS.CHANGE_PASSWORD;
         return await this.request(endpoint, 'POST', passwordData);
     },
-    
+
     /**
      * 3.4 获取我加入的俱乐部
      * @returns {Promise} {code, msg, data: Array<{clubId, clubName, memberRole, joinTime}>}
@@ -452,9 +452,9 @@ window.API = {
         const endpoint = window.AppConfig.API_ENDPOINTS.GET_USER_DETAIL;
         return await this.request(endpoint, 'GET', { _pathParams: { id: userId } });
     },
-    
+
     // ================ 俱乐部模块（需Token） ================
-    
+
     /**
      * 4.1 创建俱乐部
      * @param {object} clubData - 俱乐部数据 {name, tag, description, joinPolicy, joinConditions}
@@ -464,7 +464,7 @@ window.API = {
         const endpoint = window.AppConfig.API_ENDPOINTS.CREATE_CLUB;
         return await this.request(endpoint, 'POST', clubData);
     },
-    
+
     /**
      * 4.2 查询俱乐部列表
      * @param {object} params - 查询参数 {keyword, type, page, pageSize}
@@ -475,7 +475,7 @@ window.API = {
         const queryString = this.buildQueryString(params);
         return await this.request(endpoint + queryString, 'GET');
     },
-    
+
     /**
      * 4.3 查询俱乐部详情
      * @param {number} clubId - 俱乐部ID
@@ -486,7 +486,7 @@ window.API = {
         // 使用_pathParams传递路径参数
         return await this.request(endpoint, 'GET', { _pathParams: { id: clubId } });
     },
-    
+
     /**
      * 4.4 加入俱乐部
      * @param {number} clubId - 俱乐部ID
@@ -498,7 +498,7 @@ window.API = {
         const data = { ...joinData, _pathParams: { id: clubId } };
         return await this.request(endpoint, 'POST', data);
     },
-    
+
     /**
      * 4.5 退出俱乐部
      * @param {number} clubId - 俱乐部ID
@@ -508,7 +508,7 @@ window.API = {
         const endpoint = window.AppConfig.API_ENDPOINTS.QUIT_CLUB;
         return await this.request(endpoint, 'POST', { _pathParams: { id: clubId } });
     },
-    
+
     /**
      * 4.6 编辑俱乐部
      * @param {number} clubId - 俱乐部ID
@@ -520,7 +520,7 @@ window.API = {
         const data = { ...clubData, _pathParams: { id: clubId } };
         return await this.request(endpoint, 'PATCH', data);
     },
-    
+
     /**
      * 4.7 解散俱乐部
      * @param {number} clubId - 俱乐部ID
@@ -579,9 +579,9 @@ window.API = {
         const fullEndpoint = endpoint.replace('{id}', clubId).replace('{requestId}', requestId);
         return await this.request(fullEndpoint, 'POST');
     },
-    
+
     // ================ 通知模块（需Token） ================
-    
+
     /**
      * 9.1 站内信列表
      * @param {object} params - 查询参数 {isRead, page, pageSize}
@@ -616,7 +616,7 @@ window.API = {
     async markAllNotificationsAsRead() {
         return await this.request('/notifications/read-all', 'POST');
     },
-    
+
     // ================ 任务模块（需Token） ================
 
     /**
@@ -625,40 +625,38 @@ window.API = {
      * @returns {Promise} {code, msg, data: {taskId}}
      */
     async createTask(taskData) {
-    const endpoint = window.AppConfig.API_ENDPOINTS.CREATE_TASK;
-    
-    // 构建请求数据，确保 unlockAt 和 videoId 被正确处理
-    const requestData = {
-        clubId: parseInt(taskData.clubId),
-        title: taskData.title,
-        description: taskData.description || '',
-        type: 'all'
-    };
-    
-    // 添加 unlockAt（如果有）
-    if (taskData.unlockAt) {
-        requestData.unlockAt = taskData.unlockAt;
-    }
-    
-    // 添加 videoId（如果有）- 修复视频关联问题
-    if (taskData.videoId !== undefined && taskData.videoId !== null) {
-        requestData.videoId = parseInt(taskData.videoId);
-    }
-    
-    // 添加 pdfId（如果有）- 关联教学设计PDF
-    if (taskData.pdfId !== undefined && taskData.pdfId !== null) {
-        requestData.pdfId = parseInt(taskData.pdfId);
-    }
-    
-    // 添加 isUnlocked（如果有）- 用于手动解锁状态
-    if (taskData.isUnlocked !== undefined) {
-        requestData.isUnlocked = taskData.isUnlocked;
-    }
-    
-    console.log('发送到后端的最终数据:', requestData);
-    
-    return await this.request(endpoint, 'POST', requestData);
-},
+        const endpoint = window.AppConfig.API_ENDPOINTS.CREATE_TASK;
+
+        const requestData = {
+            clubId: parseInt(taskData.clubId),
+            title: taskData.title,
+            description: taskData.description || '',
+            type: taskData.type || 'all' // 建议允许外部传入 type
+        };
+
+        // 1. 添加 subtasks 支持 (新增代码)
+        if (taskData.subtasks && Array.isArray(taskData.subtasks)) {
+            requestData.subtasks = taskData.subtasks;
+        }
+
+        // 2. 只有在没有 subtasks 时，才处理旧的 videoId/pdfId (为了兼容性)
+        // 或者你可以保留它们，取决于后端逻辑。如果后端优先取 subtasks，保留也无妨。
+        if (taskData.videoId !== undefined && taskData.videoId !== null) {
+            requestData.videoId = parseInt(taskData.videoId);
+        }
+
+        if (taskData.pdfId !== undefined && taskData.pdfId !== null) {
+            requestData.pdfId = parseInt(taskData.pdfId);
+        }
+
+        if (taskData.isUnlocked !== undefined) {
+            requestData.isUnlocked = taskData.isUnlocked;
+        }
+
+        console.log('发送到后端的最终数据:', requestData);
+
+        return await this.request(endpoint, 'POST', requestData);
+    },
 
     /**
      * 7.3 任务列表
@@ -700,18 +698,18 @@ window.API = {
      * @returns {Promise} {code, msg, data: null}
      */
     async updateTask(taskId, taskData) {
-    // 获取配置中的端点
-    const baseEndpoint = window.AppConfig.API_ENDPOINTS.UPDATE_TASK;
-    
-    // 手动替换 :id 为实际taskId
-    const endpoint = baseEndpoint.replace(':id', taskId);
-    
-    // 确保unlockAt是有效的日期字符串或null
-    const requestData = { ...taskData };
-    
-    console.log('修改任务请求:', { endpoint, requestData });
-    return await this.request(endpoint, 'PATCH', requestData);
-},
+        // 获取配置中的端点
+        const baseEndpoint = window.AppConfig.API_ENDPOINTS.UPDATE_TASK;
+
+        // 手动替换 :id 为实际taskId
+        const endpoint = baseEndpoint.replace(':id', taskId);
+
+        // 确保unlockAt是有效的日期字符串或null
+        const requestData = { ...taskData };
+
+        console.log('修改任务请求:', { endpoint, requestData });
+        return await this.request(endpoint, 'PATCH', requestData);
+    },
     /**
      * 7.6 删除任务
      * @param {number} taskId - 任务ID
@@ -720,16 +718,16 @@ window.API = {
     async deleteTask(taskId) {
         // 获取配置中的端点
         const baseEndpoint = window.AppConfig.API_ENDPOINTS.DELETE_TASK;
-        
+
         // 手动替换 :id 为实际taskId
         const endpoint = baseEndpoint.replace(':id', taskId);
-        
+
         console.log('删除任务请求:', endpoint);
         return await this.request(endpoint, 'DELETE');
     },
 
     // ================ 视频评论模块（需Token） ================
-    
+
     /**
      * 获取视频评论列表
      * @param {number} videoId - 视频ID
@@ -746,7 +744,7 @@ window.API = {
         const queryString = this.buildQueryString(queryParams);
         return await this.request(endpoint + queryString, 'GET');
     },
-    
+
     /**
      * 提交视频评论
      * @param {object} commentData - 评论数据 {videoId, content, timestamp}
@@ -766,7 +764,7 @@ window.API = {
         }
         return await this.request(endpoint, 'POST', requestData);
     },
-    
+
     /**
      * 点赞评论
      * @param {number} commentId - 评论ID
@@ -776,7 +774,7 @@ window.API = {
         const endpoint = `/comments/${commentId}/like`;
         return await this.request(endpoint, 'POST');
     },
-    
+
     /**
      * 删除评论
      * @param {number} commentId - 评论ID
@@ -786,7 +784,7 @@ window.API = {
         const endpoint = `/comments/${commentId}`;
         return await this.request(endpoint, 'DELETE');
     },
-    
+
     /**
      * 获取热门评论时间点
      * @param {number} videoId - 视频ID
@@ -865,13 +863,13 @@ window.API = {
 
 
     // ================ 话题模块（需Token） ================
-    
-/**
-     * 11.1 创建话题
-     * @param {object} topicData - {taskId, title, content}
-     * @returns {Promise} {code, msg, data: {topicId, taskId, creatorId, title, content, createdAt}}
-     */
-async createTopic(topicData) {
+
+    /**
+         * 11.1 创建话题
+         * @param {object} topicData - {taskId, title, content}
+         * @returns {Promise} {code, msg, data: {topicId, taskId, creatorId, title, content, createdAt}}
+         */
+    async createTopic(topicData) {
         const endpoint = AppConfig.API_ENDPOINTS.CREATE_TOPIC;
         // API文档要求的字段: taskId, title, content, scaffold(可选)
         const requestData = {
@@ -885,7 +883,7 @@ async createTopic(topicData) {
         console.log('[API] 创建话题请求:', requestData);
         return await this.request(endpoint, 'POST', requestData);
     },
-    
+
     /**
      * 11.2 获取话题列表
      * @param {number} taskId - 任务ID
@@ -902,7 +900,7 @@ async createTopic(topicData) {
         console.log('[API] 获取话题列表请求:', endpoint + queryString);
         return await this.request(endpoint + queryString, 'GET');
     },
-    
+
     /**
      * 11.3 获取话题详情
      * @param {number} topicId - 话题ID
@@ -913,7 +911,7 @@ async createTopic(topicData) {
         console.log('[API] 获取话题详情请求:', endpoint);
         return await this.request(endpoint, 'GET');
     },
-    
+
     /**
      * 11.4 编辑话题
      * @param {number} topicId - 话题ID
@@ -936,7 +934,7 @@ async createTopic(topicData) {
         console.log('[API] 编辑话题请求:', endpoint, requestData);
         return await this.request(endpoint, 'PATCH', requestData);
     },
-    
+
     /**
      * 11.5 删除话题
      * @param {number} topicId - 话题ID
@@ -947,7 +945,7 @@ async createTopic(topicData) {
         console.log('[API] 删除话题请求:', endpoint);
         return await this.request(endpoint, 'DELETE');
     },
-    
+
     /**
      * 11.6 获取评论列表
      * @param {number} topicId - 话题ID
@@ -960,7 +958,7 @@ async createTopic(topicData) {
         console.log('[API] 获取评论列表请求:', endpoint + queryString);
         return await this.request(endpoint + queryString, 'GET');
     },
-    
+
     /**
      * 11.7 发表评论
      * @param {number} topicId - 话题ID
@@ -979,7 +977,7 @@ async createTopic(topicData) {
         console.log('[API] 发表评论请求:', endpoint, requestData);
         return await this.request(endpoint, 'POST', requestData);
     },
-    
+
     /**
      * 11.8 点赞/取消点赞
      * @param {number} commentId - 评论ID

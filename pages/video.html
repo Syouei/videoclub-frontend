@@ -4,250 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>视频管理 - 教师视频俱乐部</title>
+    <title>视频主题管理 - 教师视频俱乐部</title>
     <link rel="stylesheet" href="../css/styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qiniu-js/3.4.1/qiniu.min.js"></script>
 
     <style>
-        /* 文件上传区域样式 */
-        .file-upload-area {
-            border: 2px dashed #d9d9d9;
-            border-radius: 12px;
-            padding: 32px 24px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background: #fafafa;
-            margin-bottom: 12px;
-        }
-
-        .file-upload-area:hover {
-            border-color: #1890ff;
-            background: #f0f9ff;
-        }
-
-        .upload-placeholder {
-            color: #666;
-        }
-
-        .upload-placeholder h4 {
-            margin: 12px 0 8px;
-            font-size: 16px;
-            color: #333;
-        }
-
-        .upload-progress {
-            text-align: left;
-        }
-
-        .file-info {
-            font-size: 13px;
-            color: #666;
-            margin-top: 8px;
-            display: flex;
-            gap: 16px;
-            align-items: center;
-        }
-
-        .btn-remove {
-            padding: 4px 12px;
-            background: #f5f5f5;
-            color: #666;
-            border: 1px solid #d9d9d9;
-            border-radius: 4px;
-            font-size: 12px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            transition: all 0.3s;
-        }
-
-        .btn-remove:hover {
-            background: #ff4d4f;
-            color: white;
-            border-color: #ff4d4f;
-        }
-
-        /* 进度条样式 */
-        .progress-container {
-            width: 100%;
-            height: 6px;
-            background: #f0f0f0;
-            border-radius: 3px;
-            margin: 12px 0;
-            overflow: hidden;
-        }
-
-        .progress-bar {
-            height: 100%;
-            background: linear-gradient(90deg, #1890ff, #722ed1);
-            border-radius: 3px;
-            transition: width 0.3s ease;
-        }
-
-        .progress-text {
-            font-size: 12px;
-            color: #666;
-            text-align: right;
-            margin-top: 4px;
-        }
-
-        /* 锁定状态 */
-        .video-task-card.locked {
-            background: #fafafa;
-            border-color: #e0e0e0;
-        }
-
-        .video-task-card.locked .video-task-title {
-            color: #999;
-        }
-
-        .video-task-card.locked::before {
-            background: #ccc;
-        }
-
-        .task-lock-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255, 255, 255, 0.8);
-            z-index: 1;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .lock-icon {
-            color: #999;
-            font-size: 24px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 12px;
-            border-radius: 50%;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        /* 解锁状态标签 */
-        .unlock-status-tag {
-            background: #f6ffed;
-            color: #389e0d;
-            border: 1px solid #b7eb8f;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 12px;
-            display: inline-flex;
-            align-items: center;
-            margin-left: 8px;
-            gap: 4px;
-        }
-
-        .lock-status-tag {
-            background: #fff2e8;
-            color: #d46b08;
-            border: 1px solid #ffd8bf;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 12px;
-            display: inline-flex;
-            align-items: center;
-            margin-left: 8px;
-            gap: 4px;
-        }
-
-        /* 解锁按钮样式 */
-        .btn-unlock {
-            padding: 4px 12px;
-            background: #f6ffed;
-            color: #389e0d;
-            border: 1px solid #b7eb8f;
-            border-radius: 4px;
-            font-size: 12px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            transition: all 0.3s;
-        }
-
-        .btn-unlock:hover {
-            background: #52c41a;
-            color: white;
-            border-color: #52c41a;
-        }
-
-        .btn-lock {
-            padding: 4px 12px;
-            background: #fff2e8;
-            color: #d46b08;
-            border: 1px solid #ffd8bf;
-            border-radius: 4px;
-            font-size: 12px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            transition: all 0.3s;
-        }
-
-        .btn-lock:hover {
-            background: #ff7a45;
-            color: white;
-            border-color: #ff7a45;
-        }
-
-        /* ================ 修复PDF预览问题 ================ */
-        #preview-modal .modal {
-            max-width: 95vw !important;
-            max-height: 95vh !important;
-            width: 95vw;
-            height: 95vh;
-            display: flex;
-            flex-direction: column;
-            padding: 0 !important;
-            margin: 0 !important;
-        }
-
-        #preview-modal .modal-body {
-            flex: 1;
-            overflow: hidden;
-            padding: 0 !important;
-            width: 100%;
-            height: 100%;
-        }
-
-        #preview-content {
-            width: 100% !important;
-            height: 100% !important;
-            display: block;
-        }
-
-        #preview-content embed {
-            width: 100% !important;
-            height: 100% !important;
-            min-height: 600px;
-            display: block;
-        }
-
-        #preview-content video {
-            max-width: 100%;
-            max-height: 100%;
-            width: auto;
-            height: auto;
-        }
-
-        .video-preview-container {
-            width: 100%;
-            height: 100%;
-            background: #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
         /* 视频页面特定样式 */
         .video-page-container {
             padding: 32px;
@@ -292,6 +53,9 @@
             border: 1px solid rgba(0, 0, 0, 0.05);
             position: relative;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 180px;
         }
 
         .video-task-card:hover {
@@ -324,13 +88,14 @@
             flex: 1;
             display: flex;
             align-items: center;
+            line-height: 1.4;
         }
 
         .video-task-description {
             font-size: 14px;
             color: #666;
             line-height: 1.5;
-            margin-bottom: 20px;
+            margin-bottom: auto;
             padding: 12px;
             background: rgba(0, 0, 0, 0.02);
             border-radius: 8px;
@@ -342,8 +107,47 @@
             align-items: center;
             padding-top: 16px;
             border-top: 1px solid #eee;
+            margin-top: 16px;
         }
 
+        /* 锁定状态 */
+        .video-task-card.locked {
+            background: #fafafa;
+            border-color: #e0e0e0;
+        }
+
+        .video-task-card.locked .video-task-title {
+            color: #999;
+        }
+
+        .video-task-card.locked::before {
+            background: #ccc;
+        }
+
+        .task-lock-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 1;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lock-icon {
+            color: #999;
+            font-size: 24px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 12px;
+            border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 提示框样式 */
         .usage-tips {
             background: white;
             border-radius: 16px;
@@ -382,65 +186,6 @@
             left: 8px;
         }
 
-        .task-preview {
-            margin-top: 20px;
-        }
-
-        .task-preview h4 {
-            font-size: 16px;
-            margin-bottom: 12px;
-            color: #666;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .preview-card {
-            background: rgba(0, 0, 0, 0.02);
-            border-radius: 12px;
-            padding: 16px;
-            border: 1px dashed #eee;
-        }
-
-        .preview-title {
-            font-weight: 600;
-            font-size: 16px;
-            margin-bottom: 8px;
-            color: #333;
-        }
-
-        .preview-description {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 16px;
-            line-height: 1.5;
-        }
-
-        .preview-tips {
-            font-size: 13px;
-            color: #666;
-        }
-
-        .preview-tips p {
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .preview-tips ul {
-            list-style: none;
-            padding-left: 20px;
-            margin-top: 8px;
-        }
-
-        .preview-tips li {
-            margin-bottom: 4px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
         /* 响应式调整 */
         @media (max-width: 768px) {
             .video-page-container {
@@ -449,21 +194,6 @@
 
             .video-list-container {
                 grid-template-columns: 1fr;
-            }
-
-            .video-task-header {
-                flex-direction: column;
-                gap: 12px;
-            }
-
-            .video-task-footer {
-                flex-direction: column;
-                gap: 16px;
-                align-items: stretch;
-            }
-
-            .video-task-action {
-                align-self: flex-end;
             }
         }
 
@@ -536,112 +266,101 @@
             color: white;
             border-color: #ff7875;
         }
-
-        /* PDF 上传区域样式 */
-        .pdf-upload-area {
-            border: 2px dashed #d9d9d9;
-            border-radius: 12px;
-            padding: 28px 24px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background: #fafafa;
-            margin-bottom: 12px;
+        
+        .progress-container {
+            width: 100%;
+            height: 6px;
+            background: #f0f0f0;
+            border-radius: 3px;
+            margin: 12px 0;
+            overflow: hidden;
         }
 
-        .pdf-upload-area:hover {
-            border-color: #722ed1;
-            background: #f9f0ff;
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #1890ff, #722ed1);
+            border-radius: 3px;
+            transition: width 0.3s ease;
         }
-
-        .pdf-upload-area .upload-placeholder {
+        
+        .progress-text {
+            font-size: 12px;
             color: #666;
+            text-align: right;
+            margin-top: 4px;
         }
-
-        .pdf-upload-area .upload-placeholder .pdf-icon {
-            color: #722ed1;
+        
+        .form-item {
+            margin-bottom: 20px;
         }
-
-        /* 编辑弹窗 - 已有文件展示卡片 */
-        .existing-file-card {
+        
+        .form-item label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .form-item label.required::after {
+            content: '*';
+            color: #ff4d4f;
+            margin-left: 4px;
+        }
+        
+        .form-item input, .form-item textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+        
+        .error-message {
+            color: #ff4d4f;
+            font-size: 12px;
+            margin-top: 6px;
             display: flex;
             align-items: center;
-            gap: 12px;
-            background: #f6f0ff;
-            border: 1px solid #d3b6ff;
-            border-radius: 10px;
-            padding: 12px 16px;
-            margin-bottom: 8px;
+            gap: 4px;
         }
-
-        .existing-file-card .efc-icon {
-            font-size: 22px;
-            color: #722ed1;
-            flex-shrink: 0;
-        }
-
-        .existing-file-card .efc-icon.video-icon {
-            color: #1890ff;
-        }
-
-        .existing-file-card .efc-meta {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .existing-file-card .efc-meta .efc-name {
-            font-size: 14px;
-            font-weight: 600;
-            color: #333;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .existing-file-card .efc-meta .efc-label {
-            font-size: 12px;
-            color: #722ed1;
-        }
-
-        .existing-file-card .efc-meta .efc-label.video-label {
-            color: #1890ff;
-        }
-
-        .existing-file-card .btn-remove-efc {
-            padding: 4px 10px;
-            background: #fff0f0;
-            color: #ff4d4f;
-            border: 1px solid #ffccc7;
+        
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
             border-radius: 4px;
             font-size: 12px;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: all 0.2s;
         }
-
-        .existing-file-card .btn-remove-efc:hover {
-            background: #ff4d4f;
-            color: white;
-            border-color: #ff4d4f;
-        }
-
-        .existing-file-card.video-card {
-            background: #f0f7ff;
-            border-color: #b3d9ff;
-        }
-
-        /* 编辑弹窗分隔标题 */
-        .edit-section-title {
-            font-size: 13px;
-            color: #888;
-            margin: 16px 0 8px;
-            display: flex;
+        
+        /* 模态框样式修正 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
             align-items: center;
-            gap: 6px;
+            justify-content: center;
+            z-index: 1000;
         }
 
-        .edit-section-title i {
-            font-size: 14px;
+        .modal {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn-sm {
+            padding: 4px 12px;
+            font-size: 12px;
         }
     </style>
 </head>
@@ -657,42 +376,36 @@
             </div>
             <div class="header-right">
                 <button class="btn btn-primary" onclick="openCreateTaskModal()" style="margin-right:15px;">
-                    <i class="fas fa-plus"></i> 创建视频
+                    <i class="fas fa-plus"></i> 创建主题
                 </button>
                 <div class="user-info">
-                    <div class="avatar" id="video-user-avatar">王</div>
-                    <span id="video-user-name">王老师</span>
+                    <div class="avatar" id="video-user-avatar">U</div>
+                    <span id="video-user-name">用户</span>
                 </div>
             </div>
         </div>
 
         <div class="video-page-container">
             <div class="welcome-section">
-                <h1 id="welcome-title">视频主题</h1>
-                <p id="welcome-subtitle">为您的俱乐部创建和管理教学视频主题</p>
+                <h1 id="welcome-title">教学主题</h1>
+                <p id="welcome-subtitle">为您的俱乐部创建和管理教学主题活动</p>
             </div>
 
             <div class="video-list-container" id="videoTaskList">
                 <div class="empty-state">
                     <i class="fas fa-tasks"></i>
-                    <h3>暂无任务</h3>
-                    <p>点击右上角"创建视频"按钮开始</p>
+                    <h3>暂无主题</h3>
+                    <p>点击右上角"创建主题"按钮开始</p>
                 </div>
             </div>
 
             <div class="usage-tips">
-                <h4><i class="fas fa-lightbulb"></i> 使用提示</h4>
-                <ul>
-                    <li>点击"创建视频"按钮创建新的教学视频</li>
-                    <li>创建视频时，需填写视频名称</li>
-                    <li>点击视频卡片可以进入视频详情页</li>
-                </ul>
-            </div>
+                </div>
         </div>
 
         <div id="create-task-modal" class="modal-overlay" style="display: none;">
             <div class="modal">
-                <h3 style="margin-bottom: 24px;"><i class="fas fa-plus-circle"></i> 创建新的视频主题</h3>
+                <h3 style="margin-bottom: 24px;"><i class="fas fa-plus-circle"></i> 创建新的教学主题</h3>
 
                 <div class="form-item">
                     <label class="required">主题名称</label>
@@ -703,1134 +416,48 @@
                 </div>
                 <div class="form-item">
                     <label>主题描述（可选）</label>
-                    <textarea id="new-task-description" placeholder="请简要描述这个主题..." rows="3"></textarea>
+                    <textarea id="new-task-description" placeholder="请简要描述这个主题的学习目标..." rows="4"></textarea>
                 </div>
 
-                <div class="form-item">
-                    <label class="required">点击上传教学视频</label>
-                    <div class="file-upload-area" id="video-upload-area">
-                        <input type="file" id="video-file" accept="video/*" style="display: none;">
-                        <div class="upload-placeholder" onclick="document.getElementById('video-file').click()">
-                            <i class="fas fa-video" style="font-size: 32px; color: #1890ff; margin-bottom: 12px;"></i>
-                            <p style="color: #999; font-size: 14px;">支持MP4、MOV等格式，最大20GB</p>
-                        </div>
-                        <div class="upload-progress" id="video-progress" style="display: none;">
-                            <div class="progress-container">
-                                <div class="progress-bar" id="video-progress-bar" style="width: 0%"></div>
-                            </div>
-                            <div
-                                style="display: flex; justify-content: space-between; font-size: 12px; color: #666; margin-top: 4px;">
-                                <span id="video-upload-speed">0 KB/s</span> <span id="video-progress-text">0%</span>
-                            </div>
-                            <div class="file-info" id="video-file-info">
-                                <span id="video-duration-info" style="display: none;">
-                                    <i class="fas fa-clock"></i> 时长: <span id="video-duration">0</span>秒
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="error-message" id="video-error" style="display: none;">
-                        <i class="fas fa-exclamation-circle"></i> <span id="video-error-text">请上传视频文件</span>
-                    </div>
-                </div>
-
-                <div class="form-item" id="upload-preview" style="display: none;">
-                    <div class="preview-container">
-                        <div class="preview-item" id="video-preview">
-                            <div class="preview-icon">
-                                <i class="fas fa-video"></i>
-                            </div>
-                            <div class="preview-info">
-                                <div class="preview-title" id="video-preview-title"></div>
-                                <div class="preview-size" id="video-preview-size"></div>
-                                <div class="preview-duration" id="video-preview-duration"></div>
-                                <div class="preview-actions">
-                                    <button class="btn-remove" onclick="removeFile('video')">
-                                        <i class="fas fa-times"></i> 移除
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="form-item">
-                    <label class="required">上传教学设计案例（PDF）</label>
-                    <div class="pdf-upload-area" id="pdf-upload-area">
-                        <input type="file" id="pdf-file" accept=".pdf" style="display: none;">
-                        <div class="upload-placeholder" onclick="document.getElementById('pdf-file').click()">
-                            <i class="fas fa-file-pdf pdf-icon" style="font-size: 32px; margin-bottom: 12px;"></i>
-                            <h4 style="margin: 8px 0 4px; font-size: 15px; color: #333;">点击上传 PDF 文件</h4>
-                            <p style="color: #999; font-size: 13px;">仅支持 PDF 格式</p>
-                        </div>
-                        <div class="upload-progress" id="pdf-progress" style="display: none;">
-                            <div class="progress-container">
-                                <div class="progress-bar" id="pdf-progress-bar"
-                                    style="width: 0%; background: linear-gradient(90deg, #722ed1, #a855f7);"></div>
-                            </div>
-                            <div class="progress-text" id="pdf-progress-text">0%</div>
-                            <div class="file-info" id="pdf-file-info"></div>
-                        </div>
-                    </div>
-                    <div class="error-message" id="pdf-error" style="display: none;">
-                        <i class="fas fa-exclamation-circle"></i> <span id="pdf-error-text">请上传PDF文件</span>
-                    </div>
-                </div>
-                <div class="form-item" id="pdf-upload-preview" style="display: none;">
-                    <div class="preview-container">
-                        <div class="preview-item" id="pdf-preview" style="display:none;">
-                            <div class="preview-icon" style="color:#722ed1;">
-                                <i class="fas fa-file-pdf"></i>
-                            </div>
-                            <div class="preview-info">
-                                <div class="preview-title" id="pdf-preview-title"></div>
-                                <div class="preview-size" id="pdf-preview-size"></div>
-                                <div class="preview-actions">
-                                    <button class="btn-remove" onclick="removeFile('pdf')">
-                                        <i class="fas fa-times"></i> 移除
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div id="preview-modal" class="modal-overlay" style="display: none;">
-                    <div class="modal" style="max-width: 95%; max-height: 95%;">
-                        <div class="modal-header">
-                            <h3 id="preview-title">文件预览</h3>
-                            <button class="btn-close" onclick="closePreview()">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <div class="modal-body" id="preview-content" style="flex:1;overflow:hidden;">
-                        </div>
-                    </div>
-                </div>
                 <div style="text-align:right; margin-top: 24px;">
                     <button class="btn btn-outline" onclick="closeCreateTaskModal()">取消</button>
-                    <button class="btn btn-primary" onclick="createNewTask()">创建任务</button>
+                    <button class="btn btn-primary" onclick="createNewTask()">创建主题</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // ==========================================
-        // 【核心修复】内联 AliyunVodUploader 逻辑
-        // 解决 SPA 模式下脚本加载失败和 UploadAuth 设置时机问题
-        // ==========================================
-        window.AliyunVodUploader = {
-            ensureLoaded: function () {
-                return new Promise((resolve, reject) => {
-                    // 1. 检查全局变量是否已存在
-                    if (window.AliyunUpload && window.AliyunUpload.Vod) {
-                        return resolve();
-                    }
-
-                    // 辅助函数：加载脚本
-                    function loadScript(src) {
-                        return new Promise((res, rej) => {
-                            // 检查是否重复加载
-                            if (document.querySelector(`script[src="${src}"]`)) {
-                                res(); return;
-                            }
-                            const s = document.createElement('script');
-                            s.src = src;
-                            s.onload = res;
-                            s.onerror = () => rej(new Error(`加载失败: ${src}`));
-                            document.head.appendChild(s);
-                        });
-                    }
-
-                    // --- 配置路径 ---
-                    // 1. OSS SDK (官方公共CDN，稳定)
-                    const ossUrl = 'https://gosspublic.alicdn.com/aliyun-oss-sdk-6.17.1.min.js';
-                    
-                    // 2. Upload SDK (请确保文件已放入该本地路径!)
-                    // 注意：这里必须是你本地存放文件的相对路径
-                    const uploadUrl = 'js/lib/aliyun-upload-sdk-1.5.7.min.js'; 
-
-                    console.log('开始加载 SDK...');
-
-                    // 串行加载：必须先加载 OSS，再加载 Upload
-                    loadScript(ossUrl)
-                        .then(() => {
-                            console.log('✅ OSS SDK 加载成功');
-                            return loadScript(uploadUrl);
-                        })
-                        .then(() => {
-                            // 双重检查
-                            if (window.AliyunUpload && window.AliyunUpload.Vod) {
-                                console.log('✅ Aliyun Upload SDK 加载成功');
-                                resolve();
-                            } else {
-                                reject(new Error('SDK 脚本加载完成，但 window.AliyunUpload 未定义'));
-                            }
-                        })
-                        .catch((err) => {
-                            console.error('❌ SDK 加载失败:', err);
-                            console.error('请检查 frontend/js/lib/ 目录下是否存在 aliyun-upload-sdk-1.5.7.min.js 文件');
-                            reject(err);
-                        });
-                });
-            },
-
-            // 上传逻辑 (保持不变，已兼容 1.5.x)
-            uploadVideo: function (file, token, onProgress) {
-                return new Promise((resolve, reject) => {
-                    if (!window.AliyunUpload || !window.AliyunUpload.Vod) {
-                        return reject(new Error('SDK 未加载'));
-                    }
-
-                    try {
-                        var uploader = new window.AliyunUpload.Vod({
-                            userId: "123", // 必填，任意值
-                            partSize: 1048576,
-                            parallel: 5,
-                            retryCount: 3,
-                            retryDuration: 2,
-                            // 开始上传回调
-                            onUploadstarted: function (uploadInfo) {
-                                console.log("SDK: onUploadstarted", uploadInfo);
-                                uploader.setUploadAuthAndAddress(
-                                    uploadInfo,
-                                    token.uploadAuth,
-                                    token.uploadAddress,
-                                    uploadInfo.videoId || token.videoId
-                                );
-                            },
-                            // 成功回调
-                            onUploadSucceed: function (uploadInfo) {
-                                console.log("SDK: onUploadSucceed", uploadInfo);
-                                resolve({ videoId: uploadInfo.videoId || token.videoId });
-                            },
-                            // 失败回调
-                            onUploadFailed: function (uploadInfo, code, message) {
-                                console.error("SDK: onUploadFailed", code, message);
-                                reject(new Error(`上传失败: ${message} (${code})`));
-                            },
-                            // 进度回调
-                            onUploadProgress: function (uploadInfo, totalSize, progress) {
-                                var pct = Math.ceil(progress * 100);
-                                if (onProgress) onProgress(pct, "");
-                            },
-                            // 凭证过期
-                            onUploadTokenExpired: function (uploadInfo) {
-                                console.error("SDK: Token Expired");
-                                reject(new Error('凭证过期'));
-                            }
-                        });
-
-                        // 添加文件
-                        uploader.addFile(file, null, null, null, '{"Vod":{}}');
-                        
-                        // 启动
-                        console.log('🚀 启动上传...');
-                        uploader.startUpload();
-
-                    } catch (error) {
-                        console.error('初始化异常:', error);
-                        reject(error);
-                    }
-                });
-            }
-        };
+    // 使用立即执行函数 (IIFE) 包裹，防止变量重复声明导致页面崩溃
+    (function() {
+        console.log('Video page script loaded (Safe Mode)');
 
         // ==========================================
-        // 原有页面逻辑
+        // 局部变量 (只在当前闭包内有效)
         // ==========================================
-
-        // 全局变量
         let currentClub = null;
         let videoTasks = [];
-        let currentTaskId = null;
-        let videoPageInitialized = false;
         let isClubCreator = false;
-        let uploadedVideoId = null;
-        let uploadedPdfId = null;
-        let currentVideoSubscription = null;
-        let currentPdfSubscription = null;
-        let currentEditTaskId = null;
-        let currentEditVideoId = null;
-        let currentEditPdfId = null;
 
-        function buildTaskTargetObject(taskId) {
-            if (taskId === undefined || taskId === null) return undefined;
-            return { task_id: taskId };
-        }
-
-        function sendFileAnalytics(eventName, fileType, fileId, taskId) {
-            if (!window.Utils || !Utils.sendAnalyticsEvent) return;
-            if (fileId === undefined || fileId === null) return;
-            Utils.sendAnalyticsEvent(eventName, {
-                category: 'teaching',
-                target_type: fileType,
-                target_id: fileId,
-                target_object: buildTaskTargetObject(taskId)
-            });
-        }
+        // ==========================================
+        // 核心逻辑函数
+        // ==========================================
 
         // 页面初始化
         function initVideoPage() {
-            if (!videoPageInitialized) {
-                videoPageInitialized = true;
-                console.log('视频页面初始化');
-                updateUserDisplay();
-                loadCurrentClub();
-                initFileUpload();
-                window.isVideoPage = true;
-            }
-            // 每次进页面都重新拉数据
+            console.log('视频/主题页面初始化...');
+            updateUserDisplay();
+            loadCurrentClub();
             loadVideoTasks();
-            setTimeout(() => {
-                updatePermissionBasedUI();
-            }, 100);
+            setTimeout(updatePermissionBasedUI, 100);
         }
-
-        // 计算文件的ETag
-        async function calculateETag(file) {
-            try {
-                if (window.crypto && window.crypto.subtle) {
-                    const maxBytes = Math.min(file.size, 1024 * 1024);
-                    const blob = file.slice(0, maxBytes);
-                    const arrayBuffer = await blob.arrayBuffer();
-                    const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
-                    const hashArray = Array.from(new Uint8Array(hashBuffer));
-                    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-                    const etag = `${hashHex}-${file.size}`;
-                    return etag;
-                } else {
-                    const fileInfo = [
-                        file.name,
-                        file.size,
-                        file.lastModified || Date.now(),
-                        file.type || ''
-                    ].join('|');
-                    let hash = 0;
-                    for (let i = 0; i < fileInfo.length; i++) {
-                        const char = fileInfo.charCodeAt(i);
-                        hash = ((hash << 5) - hash) + char;
-                        hash = hash & hash;
-                    }
-                    const hashHex = Math.abs(hash).toString(16).padStart(16, '0');
-                    const etag = `${hashHex}-${file.size}`;
-                    return etag;
-                }
-            } catch (error) {
-                console.error('计算ETag失败:', error);
-                throw new Error(`计算ETag失败：${error.message}`);
-            }
-        }
-
-
-        // 初始化文件上传
-        function initFileUpload() {
-            const videoFileInput = document.getElementById('video-file');
-            if (videoFileInput) {
-                videoFileInput.addEventListener('change', function (e) {
-                    handleFileSelect(e, 'video');
-                });
-            }
-
-            const pdfFileInput = document.getElementById('pdf-file');
-            if (pdfFileInput) {
-                pdfFileInput.addEventListener('change', function (e) {
-                    handleFileSelect(e, 'pdf');
-                });
-            }
-        }
-
-        // 处理文件选择
-        async function handleFileSelect(event, fileType) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            // 清除错误提示
-            const uploadArea = document.getElementById(`${fileType}-upload-area`);
-            const errorDiv = document.getElementById(`${fileType}-error`);
-            if (uploadArea) {
-                uploadArea.style.borderColor = '';
-                uploadArea.style.background = '';
-            }
-            if (errorDiv) {
-                errorDiv.style.display = 'none';
-            }
-
-            // 验证文件类型和大小
-            if (!validateFile(file, fileType)) {
-                return;
-            }
-
-            // 显示文件信息和上传进度区域
-            showFileInfo(file, fileType);
-
-            // 如果是视频，进行真实上传流程
-            if (fileType === 'video') {
-                try {
-                    const duration = await getVideoDuration(file);
-                    const durationEl = document.getElementById('video-duration');
-                    const durationInfoEl = document.getElementById('video-duration-info');
-                    if (durationEl) durationEl.textContent = duration;
-                    if (durationInfoEl) durationInfoEl.style.display = 'inline';
-
-                    await uploadVideo(file, duration);
-                } catch (error) {
-                    console.error('视频处理失败:', error);
-                    showFileError('video', '视频处理失败: ' + error.message);
-                }
-            }
-
-            // 如果是PDF，进行上传流程
-            if (fileType === 'pdf') {
-                try {
-                    await uploadPdf(file);
-                } catch (error) {
-                    console.error('PDF处理失败:', error);
-                    showFileError('pdf', 'PDF上传失败: ' + error.message);
-                }
-            }
-        }
-
-        // 真实视频上传流程
-        async function uploadVideo(file, duration) {
-            const fileType = 'video';
-            currentVideoSubscription = null;
-
-            if (uploadedVideoId) {
-                console.log('视频已上传，使用已有的videoId:', uploadedVideoId);
-                Utils.showNotification('视频已上传，无需重复上传', 'info');
-                return;
-            }
-
-            try {
-                // 1. 计算ETag
-                Utils.showNotification('正在计算文件特征...', 'info');
-                const etag = await calculateETag(file);
-
-                // 2. 秒传检测
-                Utils.showNotification('正在进行秒传检测...', 'info');
-                const clubId = currentClub ? parseInt(currentClub.id || currentClub.clubId) : null;
-                const config = window.AppConfig;
-                const token = Utils.getFromStorage(config.STORAGE_KEYS.USER_TOKEN);
-
-                let fastUploadResult = null;
-                let isNetworkError = false;
-                try {
-                    const response = await fetch(config.API_BASE_URL + '/videos/fast-upload', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify({
-                            clubId: clubId,
-                            title: file.name,
-                            etag: etag,
-                        })
-                    });
-                    if (!response.ok) throw new Error(`HTTP错误: ${response.status}`);
-                    fastUploadResult = await response.json();
-                } catch (error) {
-                    isNetworkError = true;
-                }
-
-                if (fastUploadResult && fastUploadResult.code === 0) {
-                    if (fastUploadResult.data && fastUploadResult.data.videoId) {
-                        uploadedVideoId = fastUploadResult.data.videoId;
-                        showUploadComplete(fileType);
-                        Utils.showNotification('秒传成功！视频已存在', 'success');
-                        sendFileAnalytics('file_upload_video', 'video', uploadedVideoId, null);
-                        return;
-                    }
-                }
-
-                Utils.showNotification('秒传检测未通过，准备上传...', 'info');
-
-                // 3. 获取上传凭证
-                const tokenResult = await API.getUploadToken();
-                if (!tokenResult || tokenResult.code !== 0) {
-                    throw new Error(tokenResult?.msg || '获取上传凭证失败');
-                }
-                const vodToken = tokenResult.data;
-
-                // 4. 确保SDK加载并开始上传
-                // 使用刚刚定义的 window.AliyunVodUploader
-                await window.AliyunVodUploader.ensureLoaded();
-
-                Utils.showNotification('正在上传到阿里云 VOD...', 'info');
-
-                const vodResp = await window.AliyunVodUploader.uploadVideo(file, vodToken, (pct, speed) => {
-                    const progressBar = document.getElementById(`${fileType}-progress-bar`);
-                    const progressText = document.getElementById(`${fileType}-progress-text`);
-                    const speedText = document.getElementById('video-upload-speed');
-                    if (progressBar) progressBar.style.width = `${pct}%`;
-                    if (progressText) progressText.textContent = `${Math.round(pct)}%`;
-                    if (speedText && speed) speedText.textContent = speed;
-                });
-
-                const videoIdFromVod = vodResp?.videoId;
-                if (!videoIdFromVod) throw new Error('阿里云上传未返回 videoId');
-
-                // 5. 保存视频信息
-                Utils.showNotification('正在保存视频信息...', 'info');
-                const saveResult = await API.saveVideoInfo({
-                    clubId: clubId,
-                    title: file.name,
-                    videoId: videoIdFromVod,
-                    etag: etag,
-                    duration: duration,
-                    mimeType: file.type,
-                    fileSize: file.size
-                });
-
-                if (saveResult && saveResult.code === 0) {
-                    uploadedVideoId = videoIdFromVod;
-                    showUploadComplete(fileType);
-                    Utils.showNotification('视频上传成功！', 'success');
-                    sendFileAnalytics('file_upload_video', 'video', uploadedVideoId, null);
-                } else {
-                    throw new Error(saveResult?.msg || '保存视频信息失败');
-                }
-
-            } catch (error) {
-                console.error('视频上传失败:', error);
-                showFileError(fileType, '上传失败: ' + error.message);
-                throw error;
-            }
-        }
-
-        // 上传PDF到七牛云（使用 SDK 分片上传方式 - 优化版）
-        async function uploadToQiniu(file, uploadData, objectKey, fileType, onProgress) {
-            return new Promise((resolve, reject) => {
-                // 1. 配置区域
-                let regionConfig = qiniu.region.z1;
-                const regionMap = {
-                    'z0': qiniu.region.z0,
-                    'z1': qiniu.region.z1,
-                    'z2': qiniu.region.z2,
-                    'na0': qiniu.region.na0,
-                    'as0': qiniu.region.as0,
-                    'cn-east-2': qiniu.region.cn_east_2
-                };
-
-                if (uploadData.region && regionMap[uploadData.region]) {
-                    regionConfig = regionMap[uploadData.region];
-                }
-
-                const config = {
-                    useCdnDomain: true, // 使用 CDN 加速
-                    region: regionConfig,
-                    retryCount: 2,      // 失败重试次数
-                    concurrentRequestLimit: 4, // 【优化】增加并发请求数（默认是3），提高带宽利用率
-                    chunkSize: 64 // 分片大小。不建议设置过大，否则弱网下容易失败。
-                };
-
-                // 2. 配置上传参数
-                const putExtra = {
-                    fname: file.name,
-                    mimeType: file.type || null,
-                    checkCrc: 1,
-                    params: {}
-                };
-
-                let lastLoaded = 0;           // 上次记录的已上传字节数
-                let lastTime = Date.now();    // 上次记录的时间戳
-                let speedStr = '0 KB/s';
-
-                // 3. 开始上传
-                const observable = qiniu.upload(file, objectKey, uploadData.uploadToken, putExtra, config);
-
-                // 4. 订阅上传状态
-                const subscription = observable.subscribe({
-                    next(res) {
-                        const now = Date.now();
-                        // 每 1000ms (1秒) 更新一次速度
-                        if (now - lastTime >= 1000) {
-                            const loadedDiff = res.total.loaded - lastLoaded;
-                            const timeDiff = (now - lastTime) / 1000;
-
-                            if (timeDiff > 0) {
-                                const bytesPerSecond = loadedDiff / timeDiff;
-                                speedStr = formatSpeed(bytesPerSecond);
-                            }
-
-                            // 更新基准点
-                            lastLoaded = res.total.loaded;
-                            lastTime = now;
-                        }
-
-                        if (onProgress) {
-                            onProgress(res.total.percent, speedStr);
-                        }
-                    },
-                    error(err) {
-                        console.error('Qiniu SDK Error:', err);
-                        reject(new Error(err.message || '上传过程中发生错误'));
-                    },
-                    complete(res) {
-                        console.log('七牛云上传完成:', res);
-                        onProgress(100);
-                        resolve(res);
-                    },
-
-                });
-
-                if (fileType === 'pdf') {
-                    currentPdfSubscription = subscription;
-                }
-            });
-        }
-
-        // PDF 上传流程
-        async function uploadPdf(file) {
-            currentPdfSubscription = null;
-
-            if (uploadedPdfId) {
-                Utils.showNotification('PDF已上传，无需重复上传', 'info');
-                return;
-            }
-
-            try {
-                Utils.showNotification('正在计算文件特征...', 'info');
-                const etag = await calculateETag(file);
-                const clubId = currentClub ? parseInt(currentClub.id || currentClub.clubId) : null;
-
-                // 秒传检测
-                Utils.showNotification('正在进行秒传检测...', 'info');
-                const config = window.AppConfig;
-                const token = Utils.getFromStorage(config.STORAGE_KEYS.USER_TOKEN);
-                let fastUploadResult = null;
-                try {
-                    const response = await fetch(config.API_BASE_URL + '/resources/fast-upload', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify({ clubId, title: file.name, filename: file.name, etag })
-                    });
-                    if (response.ok) fastUploadResult = await response.json();
-                } catch (error) { }
-
-                if (fastUploadResult && fastUploadResult.code === 0 && fastUploadResult.data?.resourceId) {
-                    uploadedPdfId = fastUploadResult.data.resourceId;
-                    showUploadComplete('pdf');
-                    Utils.showNotification('秒传成功！PDF已存在', 'success');
-                    sendFileAnalytics('file_upload_pdf', 'pdf', uploadedPdfId, null);
-                    return;
-                }
-
-                Utils.showNotification('准备上传PDF...', 'info');
-
-                // 获取凭证
-                const tokenResponse = await fetch(config.API_BASE_URL + '/resources/token', {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
-                });
-                if (!tokenResponse.ok) throw new Error('获取上传凭证失败');
-                const tokenResult = await tokenResponse.json();
-                if (!tokenResult || tokenResult.code !== 0) throw new Error(tokenResult?.msg || '获取上传凭证失败');
-                const uploadData = tokenResult.data;
-
-                const objectKey = `resource/${etag}/${file.name}`;
-
-                await uploadToQiniu(file, uploadData, objectKey, 'pdf', (progress) => {
-                    const progressBar = document.getElementById('pdf-progress-bar');
-                    const progressText = document.getElementById('pdf-progress-text');
-                    if (progressBar) progressBar.style.width = `${progress}%`;
-                    if (progressText) progressText.textContent = `${Math.round(progress)}%`;
-                });
-
-                Utils.showNotification('正在保存资源信息...', 'info');
-                const saveResponse = await fetch(config.API_BASE_URL + '/resources', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({
-                        clubId, title: file.name, filename: file.name, objectKey, etag,
-                        bucket: uploadData.bucket, region: uploadData.region,
-                        fileSize: file.size, mimeType: file.type
-                    })
-                });
-                const saveResult = await saveResponse.json();
-
-                if (saveResult && saveResult.code === 0) {
-                    uploadedPdfId = saveResult.data?.resourceId;
-                    showUploadComplete('pdf');
-                    Utils.showNotification('PDF上传成功！', 'success');
-                    sendFileAnalytics('file_upload_pdf', 'pdf', uploadedPdfId, null);
-                } else {
-                    throw new Error(saveResult?.msg || '保存资源信息失败');
-                }
-
-            } catch (error) {
-                console.error('PDF上传失败:', error);
-                showFileError('pdf', '上传失败: ' + error.message);
-                throw error;
-            }
-        }
-
-        // ================ 编辑弹窗内的动态上传（用于编辑任务时上传新视频/PDF） ================
-        let editUploadedVideoId = null;
-        let editUploadedPdfId = null;
-
-        async function handleEditFileSelect(event, fileType) {
-            const file = event.target.files[0];
-            if (!file) return;
-            if (!validateFile(file, fileType)) return;
-
-            const progressContainer = document.getElementById(`edit-${fileType}-progress-container`);
-            const placeholderEl = document.getElementById(`edit-${fileType}-placeholder`);
-            if (placeholderEl) placeholderEl.style.display = 'none';
-            if (progressContainer) progressContainer.style.display = 'block';
-
-            try {
-                if (fileType === 'video') {
-                    const duration = await getVideoDuration(file);
-                    await uploadEditFile(file, 'video', duration);
-                } else {
-                    await uploadEditFile(file, 'pdf');
-                }
-            } catch (error) {
-                console.error(`编辑弹窗 ${fileType} 上传失败:`, error);
-                Utils.showNotification(`${fileType === 'video' ? '视频' : 'PDF'} 上传失败: ` + error.message, 'error');
-                if (placeholderEl) placeholderEl.style.display = 'block';
-                if (progressContainer) progressContainer.style.display = 'none';
-            }
-        }
-
-        async function uploadEditFile(file, fileType, duration) {
-            const clubId = currentClub ? parseInt(currentClub.id || currentClub.clubId) : null;
-            const etag = await calculateETag(file);
-
-            // 秒传检测
-            const apiPath = fileType === 'video' ? '/videos/fast-upload' : '/resources/fast-upload';
-            const config = window.AppConfig;
-            const token = Utils.getFromStorage(config.STORAGE_KEYS.USER_TOKEN);
-            let fastResult = null;
-            try {
-                const requestBody = fileType === 'video'
-                    ? { clubId, title: file.name, etag }
-                    : { clubId, title: file.name, filename: file.name, etag };
-                const resp = await fetch(config.API_BASE_URL + apiPath, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify(requestBody)
-                });
-                if (resp.ok) fastResult = await resp.json();
-            } catch (e) { }
-
-            const idKey = fileType === 'video' ? 'videoId' : 'resourceId';
-            if (fastResult && fastResult.code === 0 && fastResult.data?.[idKey]) {
-                if (fileType === 'video') editUploadedVideoId = fastResult.data.videoId;
-                else editUploadedPdfId = fastResult.data.resourceId;
-                showEditUploadComplete(fileType, file.name);
-                Utils.showNotification('秒传成功！', 'success');
-                const uploadedId = fileType === 'video' ? editUploadedVideoId : editUploadedPdfId;
-                sendFileAnalytics(fileType === 'video' ? 'file_upload_video' : 'file_upload_pdf', fileType, uploadedId, currentEditTaskId);
-                return;
-            }
-
-            // 上传
-            if (fileType === 'video') {
-                const tokenResult = await API.getUploadToken();
-                if (!tokenResult || tokenResult.code !== 0) throw new Error(tokenResult?.msg || '获取上传凭证失败');
-                const vodToken = tokenResult.data;
-
-                // 使用内联对象
-                await window.AliyunVodUploader.ensureLoaded();
-                const vodResp = await window.AliyunVodUploader.uploadVideo(file, vodToken, (pct) => {
-                    const bar = document.getElementById(`edit-${fileType}-progress-bar`);
-                    const txt = document.getElementById(`edit-${fileType}-progress-text`);
-                    if (bar) bar.style.width = `${pct}%`;
-                    if (txt) txt.textContent = `${Math.round(pct)}%`;
-                });
-                editUploadedVideoId = vodResp.videoId;
-
-                // 保存视频信息
-                const saveResp = await fetch(config.API_BASE_URL + '/videos', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({
-                        clubId, title: file.name, objectKey: vodResp.videoId, // Key即ID
-                        etag, fileSize: file.size, mimeType: file.type, duration
-                    })
-                });
-                const saveResult = await saveResp.json();
-                if (saveResult && saveResult.code === 0) {
-                    editUploadedVideoId = saveResult.data.videoId;
-                }
-
-            } else {
-                // PDF 依然走七牛
-                const tokenResp = await fetch(config.API_BASE_URL + '/resources/token', {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
-                });
-                const tokenResult = await tokenResp.json();
-                const uploadData = tokenResult.data;
-                const objectKey = `resource/${etag}/${file.name}`;
-
-                await uploadToQiniu(file, uploadData, objectKey, 'pdf', (progress) => {
-                    const bar = document.getElementById(`edit-${fileType}-progress-bar`);
-                    const txt = document.getElementById(`edit-${fileType}-progress-text`);
-                    if (bar) bar.style.width = `${progress}%`;
-                    if (txt) txt.textContent = `${Math.round(progress)}%`;
-                });
-
-                // 保存资源
-                const saveResp = await fetch(config.API_BASE_URL + '/resources', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({
-                        clubId, title: file.name, filename: file.name, objectKey, etag,
-                        bucket: uploadData.bucket, region: uploadData.region, fileSize: file.size, mimeType: file.type
-                    })
-                });
-                const saveResult = await saveResp.json();
-                if (saveResult && saveResult.code === 0) {
-                    editUploadedPdfId = saveResult.data.resourceId;
-                }
-            }
-
-            showEditUploadComplete(fileType, file.name);
-            Utils.showNotification(`${fileType === 'video' ? '视频' : 'PDF'}上传成功！`, 'success');
-        }
-
-        function showEditUploadComplete(fileType, fileName) {
-            const container = document.getElementById(`edit-${fileType}-progress-container`);
-            if (container) {
-                container.innerHTML = `
-            <div style="text-align:center; color:#52c41a; padding:10px; background:#f6ffed; border-radius:8px; border:1px solid #b7eb8f;">
-                <i class="fas fa-check-circle" style="font-size:20px;"></i>
-                <div style="font-size:13px; margin-top:4px;">${fileType === 'video' ? '视频' : 'PDF'} "${fileName}" 上传成功</div>
-            </div>
-        `;
-            }
-        }
-
-        function validateFile(file, fileType) {
-            if (fileType === 'video') {
-                const maxSize = 20 * 1024 * 1024 * 1024; // 20GB
-                const allowedTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'];
-                if (file.size > maxSize) {
-                    showFileError(fileType, '文件太大，视频最大支持 20GB');
-                    return false;
-                }
-                if (!allowedTypes.includes(file.type)) {
-                    showFileError(fileType, '请上传视频格式文件');
-                    return false;
-                }
-            }
-
-            if (fileType === 'pdf') {
-                const maxSize = 50 * 1024 * 1024; // 50MB
-                if (file.size > maxSize) {
-                    showFileError(fileType, 'PDF文件太大，最大支持 50MB');
-                    return false;
-                }
-                if (file.type !== 'application/pdf') {
-                    showFileError(fileType, '请上传 PDF 格式文件');
-                    return false;
-                }
-            }
-
-            hideFileError(fileType);
-            return true;
-        }
-
-        // 显示文件信息
-        function showFileInfo(file, fileType) {
-            const area = document.getElementById(`${fileType}-upload-area`);
-            const placeholder = area.querySelector('.upload-placeholder');
-            const progress = document.getElementById(`${fileType}-progress`);
-            const preview = document.getElementById(`${fileType}-preview`);
-
-            // 隐藏占位符，显示进度
-            if (placeholder) placeholder.style.display = 'none';
-            if (progress) progress.style.display = 'block';
-
-            // 更新文件信息
-            const fileInfo = document.getElementById(`${fileType}-file-info`);
-            if (fileInfo) {
-                fileInfo.innerHTML = `
-            <span><i class="fas fa-file"></i> ${file.name}</span>
-            <span><i class="fas fa-hdd"></i> ${formatFileSize(file.size)}</span>
-        `;
-            }
-
-            // 更新预览
-            if (preview) {
-                preview.style.display = 'flex';
-                const title = document.getElementById(`${fileType}-preview-title`);
-                const size = document.getElementById(`${fileType}-preview-size`);
-
-                if (title) title.textContent = file.name;
-                if (size) size.textContent = formatFileSize(file.size);
-            }
-
-            // 显示预览容器
-            const previewContainer = document.getElementById('upload-preview');
-            if (previewContainer) {
-                previewContainer.style.display = 'block';
-            }
-        }
-
-        // 显示上传完成
-        function showUploadComplete(fileType) {
-            const progress = document.getElementById(`${fileType}-progress`);
-            if (progress) {
-                progress.innerHTML = `
-            <div style="text-align: center; color: #52c41a; padding: 12px;">
-                <i class="fas fa-check-circle" style="font-size: 24px; margin-bottom: 8px;"></i>
-                <h4 style="margin-bottom: 4px; font-size: 14px;">上传成功！</h4>
-            </div>
-        `;
-            }
-
-            // 更新预览状态
-            const preview = document.getElementById(`${fileType}-preview`);
-            if (preview) {
-                preview.style.background = '#f6ffed';
-                preview.style.borderColor = '#b7eb8f';
-                preview.style.borderLeft = '3px solid #52c41a';
-            }
-        }
-
-        // 显示文件错误
-        function showFileError(fileType, message) {
-            const errorElement = document.getElementById(`${fileType}-error`);
-            const errorText = document.getElementById(`${fileType}-error-text`);
-
-            if (errorElement) errorElement.style.display = 'flex';
-            if (errorText) errorText.textContent = message;
-
-            // 重置文件输入
-            const fileInput = document.getElementById(`${fileType}-file`);
-            if (fileInput) fileInput.value = '';
-        }
-
-        // 隐藏文件错误
-        function hideFileError(fileType) {
-            const errorElement = document.getElementById(`${fileType}-error`);
-            if (errorElement) errorElement.style.display = 'none';
-        }
-
-        function formatSpeed(bytesPerSecond) {
-            if (!bytesPerSecond || bytesPerSecond < 0) return '0 KB/s';
-
-            if (bytesPerSecond >= 1024 * 1024) {
-                return (bytesPerSecond / (1024 * 1024)).toFixed(1) + ' MB/s';
-            } else if (bytesPerSecond >= 1024) {
-                return (bytesPerSecond / 1024).toFixed(0) + ' KB/s';
-            } else {
-                return bytesPerSecond.toFixed(0) + ' B/s';
-            }
-        }
-
-        function getVideoDuration(file) {
-            return new Promise((resolve, reject) => {
-                const video = document.createElement('video');
-                video.preload = 'metadata';
-
-                video.onloadedmetadata = function () {
-                    URL.revokeObjectURL(video.src);
-                    resolve(Math.round(video.duration));
-                };
-
-                video.onerror = function () {
-                    reject(new Error("无法解析视频文件"));
-                };
-
-                video.src = URL.createObjectURL(file);
-            });
-        }
-
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        // 检查权限并更新UI
-        async function checkAndUpdatePermissions() {
-            if (!currentClub || !currentClub.id) {
-                console.warn('无法获取俱乐部信息，无法检查权限');
-                isClubCreator = false;
-                updatePermissionBasedUI();
-                return false;
-            }
-
-            try {
-                // 检查用户是否是俱乐部创建者（manager）
-                const hasPermission = await Clubs.isClubCreator(currentClub.id);
-                isClubCreator = hasPermission;
-                console.log('权限检查结果 - 是否是创建者:', isClubCreator);
-
-                const createTaskBtn = document.querySelector('button[onclick="openCreateTaskModal()"]');
-                if (createTaskBtn) {
-                    if (!hasPermission) {
-                        createTaskBtn.style.display = 'none';
-                    } else {
-                        createTaskBtn.style.display = 'inline-flex';
-                        createTaskBtn.disabled = false;
-                    }
-                }
-                updatePermissionBasedUI();
-
-                return hasPermission;
-            } catch (error) {
-                console.error('检查权限失败:', error);
-                isClubCreator = false;
-                updatePermissionBasedUI();
-                return false;
-            }
-        }
-
-        // 根据权限更新UI显示
-        function updatePermissionBasedUI() {
-            const welcomeSubtitle = document.getElementById('welcome-subtitle');
-            const usageTips = document.querySelector('.usage-tips');
-
-            if (welcomeSubtitle && currentClub) {
-                if (isClubCreator) {
-                    welcomeSubtitle.textContent = `为${currentClub.name}俱乐部创建和管理教学视频`;
-                    welcomeSubtitle.style.display = 'block';
-                } else {
-                    welcomeSubtitle.textContent = `参与${currentClub.name}俱乐部的教学视频研讨活动`;
-                    welcomeSubtitle.style.display = 'block';
-                }
-            }
-
-            if (usageTips) {
-                if (isClubCreator) {
-                    usageTips.innerHTML = `
-                        <h4><i class="fas fa-lightbulb"></i> 使用提示</h4>
-                        <ul>
-                            <li>点击"创建视频"按钮创建新的教学视频，需要上传教学视频和教学设计PDF文档</li>
-                            <li>编辑视频时，可以直接上传新的教学视频或教学设计PDF文档，会自动覆盖原有的视频或文档</li>
-                            <li>创建视频后，可手动锁定/解锁供成员参与</li>
-                        </ul>
-                    `;
-                    usageTips.style.display = 'block';
-                } else {
-                    usageTips.innerHTML = `
-                        <h4><i class="fas fa-lightbulb"></i> 使用提示</h4>
-                        <ul>
-                            <li>点击已解锁的活动卡片查看和完成活动</li>
-                            <li>已解锁的活动都可以直接参与</li>
-                        </ul>
-                    `;
-                    usageTips.style.display = 'block';
-                }
-            }
-        }
-
-        async function openCreateTaskModal() {
-            if (!currentClub || !currentClub.id) {
-                Utils.showNotification('无法获取俱乐部信息', 'error');
-                return;
-            }
-
-            try {
-                const hasPermission = await checkAndUpdatePermissions();
-                if (!hasPermission) {
-                    Utils.showNotification('只有俱乐部创建者可以创建视频', 'error');
-                    return;
-                }
-
-                const modal = document.getElementById('create-task-modal');
-                if (modal) {
-                    modal.style.display = 'flex';
-
-                    if (window.Utils && Utils.sendAnalyticsEvent) {
-                        Utils.sendAnalyticsEvent('task_open_create_modal', {
-                            category: 'teaching',
-                            club_id: currentClub ? (currentClub.id || currentClub.clubId) : null
-                        });
-                    }
-
-                    const nameInput = document.getElementById('new-task-name');
-                    const descInput = document.getElementById('new-task-description');
-                    const errorElement = document.getElementById('task-name-error');
-
-                    if (nameInput) nameInput.value = '';
-                    if (descInput) descInput.value = '';
-                    if (errorElement) errorElement.style.display = 'none';
-
-                    if (!uploadedVideoId) {
-                        uploadedVideoId = null;
-                    }
-                    const videoFileInput = document.getElementById('video-file');
-                    if (videoFileInput) videoFileInput.value = '';
-
-                    uploadedPdfId = null;
-                    const pdfFileInput = document.getElementById('pdf-file');
-                    if (pdfFileInput) pdfFileInput.value = '';
-
-                    const videoPlaceholder = document.querySelector('#video-upload-area .upload-placeholder');
-                    const videoProgress = document.getElementById('video-progress');
-                    const videoPreview = document.getElementById('video-preview');
-                    const uploadPreview = document.getElementById('upload-preview');
-
-                    if (videoPlaceholder) videoPlaceholder.style.display = 'block';
-                    if (videoProgress) {
-                        videoProgress.style.display = 'none';
-                        videoProgress.innerHTML = `
-                            <div class="progress-container">
-                                <div class="progress-bar" id="video-progress-bar" style="width: 0%"></div>
-                            </div>
-                            <div class="progress-text" id="video-progress-text">0%</div>
-                            <div class="file-info" id="video-file-info">
-                                <span id="video-duration-info" style="display: none;">
-                                    <i class="fas fa-clock"></i> 时长: <span id="video-duration">0</span>秒
-                                </span>
-                            </div>
-                        `;
-                    }
-                    if (videoPreview) videoPreview.style.display = 'none';
-                    if (uploadPreview) uploadPreview.style.display = 'none';
-
-                    const pdfPlaceholder = document.querySelector('#pdf-upload-area .upload-placeholder');
-                    const pdfProgress = document.getElementById('pdf-progress');
-                    const pdfPreview = document.getElementById('pdf-preview');
-                    const pdfUploadPreview = document.getElementById('pdf-upload-preview');
-                    if (pdfPlaceholder) pdfPlaceholder.style.display = 'block';
-                    if (pdfProgress) {
-                        pdfProgress.style.display = 'none';
-                        pdfProgress.innerHTML = `
-                            <div class="progress-container">
-                                <div class="progress-bar" id="pdf-progress-bar" style="width: 0%; background: linear-gradient(90deg, #722ed1, #a855f7);"></div>
-                            </div>
-                            <div class="progress-text" id="pdf-progress-text">0%</div>
-                            <div class="file-info" id="pdf-file-info"></div>
-                        `;
-                    }
-                    if (pdfPreview) pdfPreview.style.display = 'none';
-                    if (pdfUploadPreview) pdfUploadPreview.style.display = 'none';
-
-                    setTimeout(() => {
-                        if (nameInput) nameInput.focus();
-                    }, 100);
-                }
-            } catch (error) {
-                console.error('打开创建视频模态框失败:', error);
-                Utils.showNotification('检查权限失败', 'error');
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', initVideoPage);
 
         // 更新用户显示
         function updateUserDisplay() {
             if (window.Auth && window.Auth.getUser()) {
                 const user = window.Auth.getUser();
-                const avatarElements = document.querySelectorAll('#video-user-avatar');
-                const nameElements = document.querySelectorAll('#video-user-name');
-
-                avatarElements.forEach(element => {
-                    if (element) element.textContent = user.name.charAt(0);
-                });
-                nameElements.forEach(element => {
-                    if (element) element.textContent = user.name;
-                });
+                document.querySelectorAll('#video-user-avatar').forEach(el => el.textContent = user.name.charAt(0));
+                document.querySelectorAll('#video-user-name').forEach(el => el.textContent = user.name);
             }
         }
 
@@ -1846,6 +473,7 @@
                 clubName = params.get('clubName') || '视频管理';
             }
 
+            // 尝试从各种来源获取 clubId
             if (!clubId && window.Clubs && window.Clubs.getCurrentClub) {
                 const clubFromModule = window.Clubs.getCurrentClub();
                 if (clubFromModule) {
@@ -1864,10 +492,6 @@
                 }
             }
 
-            if (!clubId && window.App && window.App.state && window.App.state.currentClubId) {
-                clubId = window.App.state.currentClubId;
-            }
-
             if (clubId) {
                 if (!currentClub) {
                     currentClub = {
@@ -1880,14 +504,6 @@
                     currentClub.clubId = parseInt(clubId);
                     currentClub.name = decodeURIComponent(clubName);
                 }
-
-                if (window.Clubs && window.Clubs.setCurrentClub) {
-                    window.Clubs.setCurrentClub(currentClub);
-                }
-
-                if (window.Utils) {
-                    Utils.saveToStorage('current_club', currentClub);
-                }
             }
 
             const clubNameElement = document.getElementById('club-name-display');
@@ -1898,21 +514,80 @@
                 clubNameElement.textContent = `${currentClub.name}俱乐部`;
             }
             if (welcomeTitle && currentClub) {
-                welcomeTitle.textContent = `${currentClub.name} - 视频主题`;
-            }
-            if (welcomeSubtitle && currentClub) {
-                welcomeSubtitle.textContent = `为${currentClub.name}俱乐部创建和管理教学视频主题`;
+                welcomeTitle.textContent = `${currentClub.name} - 教学主题`;
             }
 
             if (!currentClub || !currentClub.id) {
-                Utils.showNotification('无法获取俱乐部信息，请返回重新选择俱乐部', 'warning');
+                if(window.Utils && Utils.showNotification) Utils.showNotification('无法获取俱乐部信息', 'warning');
+            } else {
+                console.log('当前俱乐部:', currentClub);
             }
         }
 
-        // 加载视频任务
+        // 检查权限并更新UI
+        async function checkAndUpdatePermissions() {
+            if (!currentClub || !currentClub.id) {
+                isClubCreator = false;
+                updatePermissionBasedUI();
+                return false;
+            }
+
+            try {
+                // 确保 Clubs 模块存在
+                if (window.Clubs && window.Clubs.isClubCreator) {
+                    isClubCreator = await Clubs.isClubCreator(currentClub.id);
+                } else {
+                    // 降级策略
+                    console.warn('Clubs module missing, fallback check');
+                    isClubCreator = true; // 调试时默认 true，或者 false
+                }
+                
+                const createTaskBtn = document.querySelector('button[onclick="openCreateTaskModal()"]');
+                if (createTaskBtn) {
+                    createTaskBtn.style.display = isClubCreator ? 'inline-flex' : 'none';
+                }
+                updatePermissionBasedUI();
+                return isClubCreator;
+            } catch (error) {
+                console.error('检查权限失败:', error);
+                isClubCreator = false;
+                updatePermissionBasedUI();
+                return false;
+            }
+        }
+
+        // 根据权限更新UI显示
+        function updatePermissionBasedUI() {
+            const welcomeSubtitle = document.getElementById('welcome-subtitle');
+            const usageTips = document.querySelector('.usage-tips');
+
+            if (welcomeSubtitle && currentClub) {
+                welcomeSubtitle.textContent = isClubCreator ? 
+                    `为${currentClub.name}俱乐部创建和管理教学主题` : 
+                    `参与${currentClub.name}俱乐部的教学研讨活动`;
+            }
+
+            if (usageTips) {
+                usageTips.innerHTML = isClubCreator ? `
+                    <h4><i class="fas fa-lightbulb"></i> 使用提示</h4>
+                    <ul>
+                        <li>点击"创建主题"按钮创建一个新的教学单元或活动主题</li>
+                        <li>创建主题后，进入详情页添加视频、文档和研讨活动</li>
+                        <li>您可以随时修改主题名称或描述，或锁定主题暂停访问</li>
+                    </ul>
+                ` : `
+                    <h4><i class="fas fa-lightbulb"></i> 使用提示</h4>
+                    <ul>
+                        <li>点击已解锁的主题卡片进入学习页面</li>
+                        <li>在主题内您可以观看视频、阅读文档并参与研讨</li>
+                    </ul>
+                `;
+            }
+        }
+
+        // 加载任务列表
         async function loadVideoTasks() {
             const container = document.getElementById('videoTaskList');
-
             if (!container) return;
 
             try {
@@ -1921,42 +596,31 @@
                 if (!clubId) return;
 
                 container.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-spinner fa-spin"></i>
-                <h3>加载中...</h3>
-            </div>
-        `;
+                    <div class="empty-state">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <h3>加载中...</h3>
+                    </div>`;
 
                 const response = await API.getTasks(clubId);
 
                 if (response && response.code === 0) {
                     let tasksData = [];
-
                     if (Array.isArray(response.data)) {
                         tasksData = response.data;
                     } else if (response.data && Array.isArray(response.data.list)) {
                         tasksData = response.data.list;
-                    } else if (response.data && response.data.taskId) {
-                        tasksData = [response.data];
-                    } else {
-                        tasksData = [];
                     }
 
-                    videoTasks = tasksData.map(task => {
-                        const processedTask = {
-                            taskId: task.taskId || task.id,
-                            id: task.taskId || task.id,
-                            title: task.title || '未命名任务',
-                            description: task.description || '',
-                            type: task.type || 'all',
-                            clubId: task.clubId || clubId,
-                            videoId: task.videoId || null,
-                            pdfId: task.pdfId || null,
-                            isUnlocked: task.isUnlocked === true,
-                            createdAt: task.createdAt || new Date().toISOString(),
-                        };
-                        return processedTask;
-                    });
+                    videoTasks = tasksData.map(task => ({
+                        taskId: task.taskId || task.id,
+                        id: task.taskId || task.id,
+                        title: task.title || '未命名主题',
+                        description: task.description || '',
+                        type: task.type || 'all',
+                        clubId: task.clubId || clubId,
+                        isUnlocked: task.isUnlocked === true,
+                        createdAt: task.createdAt || new Date().toISOString(),
+                    }));
 
                     await renderVideoTasks();
                 } else {
@@ -1965,45 +629,27 @@
                 }
             } catch (error) {
                 console.error('加载任务失败:', error);
-                videoTasks = [];
-                await renderVideoTasks();
-            } finally {
-                updatePermissionBasedUI();
+                container.innerHTML = `<div class="empty-state"><p style="color:red">加载失败: ${error.message}</p></div>`;
             }
         }
 
-        // 渲染视频任务列表
+        // 渲染列表
         async function renderVideoTasks() {
             const container = document.getElementById('videoTaskList');
             if (!container) return;
 
-            await checkAndUpdatePermissions();
-
             if (!videoTasks || videoTasks.length === 0) {
-                if (isClubCreator) {
-                    container.innerHTML = `
+                container.innerHTML = `
                 <div class="empty-state">
-                    <i class="fas fa-tasks"></i>
-                    <h3>暂无活动</h3>
-                    <p>点击右上角"创建视频"按钮开始</p>
-                </div>
-            `;
-                } else {
-                    container.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-tasks"></i>
-                    <h3>暂无活动</h3>
-                    <p>等待俱乐部创建者发布活动</p>
-                </div>
-            `;
-                }
+                    <i class="fas fa-layer-group"></i>
+                    <h3>暂无教学主题</h3>
+                    <p>${isClubCreator ? '点击右上角"创建主题"按钮开始' : '等待管理员发布'}</p>
+                </div>`;
                 return;
             }
 
             const sortedTasks = [...videoTasks].sort((a, b) => {
-                const timeA = new Date(a.createdAt || 0).getTime();
-                const timeB = new Date(b.createdAt || 0).getTime();
-                return timeA - timeB;
+                return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
             });
 
             let tasksHTML = '';
@@ -2011,298 +657,137 @@
             for (let i = 0; i < sortedTasks.length; i++) {
                 const task = sortedTasks[i];
                 const taskId = task.taskId || task.id;
-                const createdTime = task.createdAt ? formatDate(task.createdAt) : '刚刚';
-                const taskTypeLabel = getTaskTypeLabel(task.type);
+                const createdTime = formatDate(task.createdAt);
 
-                let isAccessible = false;
-                let lockReason = '';
-
-                if (isClubCreator) {
-                    isAccessible = true;
-                } else {
-                    isAccessible = task.isUnlocked === true;
-                    if (!isAccessible) {
-                        lockReason = '等待俱乐部创建者解锁此活动';
-                    }
-                }
-
+                let isAccessible = isClubCreator || task.isUnlocked === true;
+                
+                // 获取进度 (仅作参考)
                 let progressData = { percentage: 0, completed: 0, total: 0 };
-                if (isAccessible) {
-                    progressData = await getTaskProgressData(taskId);
+                if (isAccessible && window.Tasks) {
+                     progressData = await getTaskProgressData(taskId);
                 }
 
                 const cardClass = isAccessible ? 'video-task-card' : 'video-task-card locked';
-                const cardStyle = isAccessible ? '' : 'opacity: 0.7; cursor: not-allowed;';
-                const unlockStatusDisplay = '';
+                const cardStyle = isAccessible ? '' : 'opacity: 0.8; cursor: not-allowed;';
 
                 const managementButtonsHTML = isClubCreator ? `
-    <div class="task-management-buttons" data-task-id="${taskId}" style="margin-top: 16px; margin-bottom: 12px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
-        <button class="btn-icon ${task.isUnlocked ? 'btn-icon-lock' : 'btn-icon-unlock'}" 
-                onclick="event.stopPropagation(); toggleTaskLock(${taskId}, ${!task.isUnlocked})" 
-                title="${task.isUnlocked ? '锁定活动' : '解锁活动'}">
-            <i class="fas ${task.isUnlocked ? 'fa-lock' : 'fa-lock-open'}"></i>
-        </button>
-        <button class="btn-icon btn-warning" onclick="event.stopPropagation(); openEditTaskModal(${taskId})" title="修改任务">
-            <i class="fas fa-edit"></i>
-        </button>
-        <button class="btn-icon btn-danger" onclick="event.stopPropagation(); confirmDeleteTask(${taskId})" title="删除任务">
-            <i class="fas fa-trash"></i>
-        </button>
-    </div>
-` : '';
+                    <div class="task-management-buttons" style="margin-top: auto; display: flex; gap: 8px; justify-content: flex-end;">
+                        <button class="btn-icon ${task.isUnlocked ? 'btn-icon-lock' : 'btn-icon-unlock'}" 
+                                onclick="event.stopPropagation(); toggleTaskLock(${taskId}, ${!task.isUnlocked})" 
+                                title="${task.isUnlocked ? '锁定主题' : '解锁主题'}">
+                            <i class="fas ${task.isUnlocked ? 'fa-lock' : 'fa-lock-open'}"></i>
+                        </button>
+                        <button class="btn-icon btn-warning" onclick="event.stopPropagation(); openEditTaskModal(${taskId})" title="修改主题">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-icon btn-danger" onclick="event.stopPropagation(); confirmDeleteTask(${taskId})" title="删除主题">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                ` : '';
 
                 const progressBarHTML = !isClubCreator && isAccessible ? `
-            <div class="progress-container">
-                <div class="progress-bar" style="width: ${progressData.percentage}%"></div>
-            </div>
-            <div class="progress-text">完成度: ${progressData.completed}/${progressData.total}</div>
-        ` : '';
-
-                const lockReasonHTML = !isClubCreator && !isAccessible && lockReason ? `
-            <div style="font-size: 12px; color: #ff4d4f; margin-top: 8px; padding: 8px; background: rgba(255,77,79,0.1); border-radius: 4px;">
-                <i class="fas fa-lock"></i> ${lockReason}
-            </div>
-        ` : '';
-
-                const creatorHintHTML = isClubCreator ? `
-            <div style="font-size: 12px; color: ${task.isUnlocked ? '#389e0d' : '#d46b08'}; margin-top: 8px; padding: 8px; background: rgba(${task.isUnlocked ? '82,196,26,0.1' : '255,122,69,0.1'}); border-radius: 4px;">
-                <i class="fas fa-info-circle"></i> 此活动目前${task.isUnlocked ? '已解锁，成员可以参与' : '已锁定，成员无法访问'}
-            </div>
-        ` : '';
+                    <div class="progress-container">
+                        <div class="progress-bar" style="width: ${progressData.percentage}%"></div>
+                    </div>
+                    <div class="progress-text">完成度: ${progressData.completed}/${progressData.total}</div>
+                ` : '';
+                
+                const statusTagHTML = !isAccessible && !isClubCreator ? 
+                    `<span class="tag" style="background: #fff1f0; color: #cf1322;"><i class="fas fa-lock"></i> 已锁定</span>` : 
+                    `<span class="tag" style="background: #e6f7ff; color: #096dd9;">${createdTime}</span>`;
 
                 tasksHTML += `
-            <div class="${cardClass}" style="${cardStyle}" onclick="handleTaskCardClick(${taskId}, ${isAccessible})">
-                ${!isAccessible && !isClubCreator ? `
-                    <div class="task-lock-overlay">
-                        <i class="fas fa-lock lock-icon"></i>
+                    <div class="${cardClass}" style="${cardStyle}" onclick="handleTaskCardClick(${taskId}, ${isAccessible})">
+                        ${!isAccessible && !isClubCreator ? `<div class="task-lock-overlay"><i class="fas fa-lock lock-icon"></i></div>` : ''}
+                        
+                        <div class="video-task-header">
+                            <div class="video-task-title">
+                                <i class="fas fa-book-open" style="color: #722ed1; margin-right: 10px; font-size: 1.2em;"></i>
+                                ${task.title || '未命名主题'}
+                            </div>
+                            <div class="video-task-status">${statusTagHTML}</div>
+                        </div>
+                        
+                        <div class="video-task-description">
+                            ${task.description || '<span style="color:#999; font-style:italic;">暂无描述</span>'}
+                        </div>
+                        
+                        ${progressBarHTML}
+                        ${managementButtonsHTML}
+                        
+                        <div class="video-task-footer">
+                            <div class="video-task-meta" style="color: #999; font-size: 13px;">
+                                <i class="fas fa-layer-group"></i> 教学单元
+                            </div>
+                            <div class="video-task-action">
+                                ${isAccessible ? `
+                                <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); enterTaskPage(${taskId})">
+                                    进入学习 <i class="fas fa-arrow-right"></i>
+                                </button>
+                                ` : ''}
+                            </div>
+                        </div>
                     </div>
-                ` : ''}
-                
-                <div class="video-task-header">
-                    <div class="video-task-title">
-                        <i class="fas fa-video" style="color: #1890ff; margin-right: 8px;"></i>
-                        ${task.title || '未命名任务'}
-                        ${unlockStatusDisplay}
-                        ${!isAccessible && !isClubCreator ? '<i class="fas fa-lock" style="margin-left: 8px; color: #ff4d4f;"></i>' : ''}
-                    </div>
-                    <div class="video-task-status">
-                        <span class="tag" style="background: #e6f7ff; color: #096dd9;">
-                            <i class="fas fa-calendar-alt"></i> ${createdTime}
-                        </span>
-                    </div>
-                </div>
-                
-                ${task.description ? `
-                <div class="video-task-description">
-                    ${task.description}
-                </div>
-                ` : ''}
-                
-                ${lockReasonHTML}
-                ${creatorHintHTML}
-                
-                ${progressBarHTML}
-                
-                ${managementButtonsHTML}
-                
-                <div class="video-task-footer">
-                    <div class="video-task-meta" style="color: var(--text-sub); font-size: 13px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                        <i class="fas fa-layer-group" style="color: #1890ff;"></i>
-                        ${taskTypeLabel}
-                        ${task.videoId ? `<span style="background:#e6f7ff; color:#096dd9; padding:2px 8px; border-radius:10px; font-size:12px;"><i class="fas fa-video"></i> 有视频</span>` : ''}
-                        ${task.pdfId ? `<span style="background:#f0e6ff; color:#722ed1; padding:2px 8px; border-radius:10px; font-size:12px;"><i class="fas fa-file-pdf"></i> 有PDF</span>` : ''}
-                        ${!isAccessible && !isClubCreator ? '<i class="fas fa-lock" style="color: #ff4d4f; margin-left: auto;"></i>' : ''}
-                    </div>
-                    <div class="video-task-action">
-                        ${isAccessible ? `
-                        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); enterTaskPage(${taskId})">
-                            <i class="fas fa-arrow-right"></i> 进入活动
-                        </button>
-                        ` : `
-                        <button class="btn btn-outline btn-sm" disabled style="cursor: not-allowed;">
-                            <i class="fas fa-lock"></i> ${isClubCreator ? '成员不可访问' : '活动锁定'}
-                        </button>
-                        `}
-                    </div>
-                </div>
-            </div>
-        `;
+                `;
             }
             container.innerHTML = tasksHTML;
         }
 
-        async function toggleTaskLock(taskId, unlockStatus) {
-            try {
-                const hasPermission = await checkAndUpdatePermissions();
-                if (!hasPermission) {
-                    Utils.showNotification('只有俱乐部创建者可以解锁/锁定任务', 'error');
-                    return;
-                }
-
-                const taskIndex = videoTasks.findIndex(t => t.taskId === taskId || t.id === taskId);
-                if (taskIndex === -1) {
-                    Utils.showNotification('找不到该任务', 'error');
-                    return;
-                }
-
-                const task = videoTasks[taskIndex];
-                const action = unlockStatus ? '解锁' : '锁定';
-                Utils.showNotification(`正在${action}任务...`, 'info');
-
-                const result = await API.updateTask(taskId, {
-                    isUnlocked: unlockStatus
-                });
-
-                if (result && result.code === 0) {
-                    Utils.showNotification(`任务"${task.title}"已${action}！`, 'success');
-                    if (window.Utils && Utils.sendAnalyticsEvent) {
-                        Utils.sendAnalyticsEvent(unlockStatus ? 'task_unlock' : 'task_lock', {
-                            category: 'teaching',
-                            target_type: 'task',
-                            target_id: taskId
-                        });
-                    }
-
-                    videoTasks[taskIndex].isUnlocked = unlockStatus;
-                    await renderVideoTasks();
-                } else {
-                    Utils.showNotification(result?.msg || `${action}任务失败`, 'error');
-                }
-            } catch (error) {
-                console.error('切换任务锁定状态失败:', error);
-                Utils.showNotification('操作失败: ' + error.message, 'error');
-            }
-        }
-
         async function getTaskProgressData(taskId) {
             try {
+                if(!window.Tasks || !Tasks.getTaskDetail) return { percentage: 0, completed: 0, total: 0 };
                 const taskDetail = await Tasks.getTaskDetail(taskId);
-
                 if (!taskDetail || !taskDetail.taskInfo || !Array.isArray(taskDetail.taskInfo.subTasks)) {
                     return { percentage: 0, completed: 0, total: 0 };
                 }
-
                 const subTasks = taskDetail.taskInfo.subTasks;
-                let completedCount = 0;
-
-                subTasks.forEach(subTask => {
-                    if (subTask.status === 'completed') {
-                        completedCount++;
-                    }
-                });
-
+                let completedCount = subTasks.filter(st => st.status === 'completed').length;
                 const totalSubTasks = subTasks.length;
                 const percentage = totalSubTasks > 0 ? Math.round((completedCount / totalSubTasks) * 100) : 0;
-                return {
-                    percentage: percentage,
-                    completed: completedCount,
-                    total: totalSubTasks
-                };
+                return { percentage, completed: completedCount, total: totalSubTasks };
             } catch (error) {
-                console.error('获取任务进度失败:', error);
                 return { percentage: 0, completed: 0, total: 0 };
             }
         }
 
-        function handleTaskCardClick(taskId, isAccessible) {
-            if (!isAccessible) {
-                if (isClubCreator) {
-                    Utils.showNotification('此活动已锁定，成员无法访问。您可以点击"解锁"按钮解锁。', 'warning');
-                } else {
-                    Utils.showNotification('活动尚未解锁，请等待俱乐部创建者解锁', 'warning');
-                }
-                return;
-            }
-            enterTaskPage(taskId);
-        }
+        // ==========================================
+        // 暴露给 window 的全局函数 (供 HTML 调用)
+        // ==========================================
 
-        function formatDate(dateString) {
-            try {
-                const date = new Date(dateString);
-                return date.toLocaleDateString('zh-CN', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit'
-                });
-            } catch (error) {
-                return '日期错误';
-            }
-        }
-
-        async function createNewTask() {
+        window.openCreateTaskModal = function() {
             if (!currentClub || !currentClub.id) {
                 Utils.showNotification('无法获取俱乐部信息', 'error');
                 return;
             }
+            const modal = document.getElementById('create-task-modal');
+            if (modal) {
+                modal.style.display = 'flex';
+                document.getElementById('new-task-name').value = '';
+                document.getElementById('new-task-description').value = '';
+                document.getElementById('task-name-error').style.display = 'none';
+                setTimeout(() => document.getElementById('new-task-name').focus(), 100);
+            }
+        };
+
+        window.closeCreateTaskModal = function() {
+            const modal = document.getElementById('create-task-modal');
+            if (modal) modal.style.display = 'none';
+        };
+
+        window.createNewTask = async function() {
+            const nameInput = document.getElementById('new-task-name');
+            const descInput = document.getElementById('new-task-description');
+            const taskName = nameInput.value.trim();
+            const taskDescription = descInput.value.trim();
+
+            if (!taskName) {
+                document.getElementById('task-name-error').style.display = 'block';
+                return;
+            }
 
             try {
-                const hasPermission = await Clubs.isClubCreator(currentClub.id);
-                if (!hasPermission) {
-                    Utils.showNotification('只有俱乐部创建者可以创建任务', 'error');
-                    return;
-                }
-
-                const nameInput = document.getElementById('new-task-name');
-                const descInput = document.getElementById('new-task-description');
-
-                if (!nameInput) return;
-
-                const taskName = nameInput.value.trim();
-                const taskDescription = descInput ? descInput.value.trim() : '';
-
-                if (!taskName) {
-                    Utils.showNotification('请输入任务名称', 'error');
-                    return;
-                }
-
-                const videoFile = document.getElementById('video-file').files[0];
-                if (videoFile) {
-                    const videoProgress = parseInt(document.getElementById('video-progress-text')?.textContent || '0');
-                    if (videoProgress < 100 && videoProgress > 0) {
-                        Utils.showNotification('请等待视频上传完成', 'warning');
-                        return;
-                    }
-                }
-
-                if (!uploadedVideoId && !videoFile) {
-                    Utils.showNotification('请上传教学视频（必填）', 'error');
-                    const videoUploadArea = document.getElementById('video-upload-area');
-                    const videoError = document.getElementById('video-error');
-                    if (videoUploadArea) {
-                        videoUploadArea.style.borderColor = '#ff4d4f';
-                        videoUploadArea.style.background = 'rgba(255, 77, 79, 0.05)';
-                    }
-                    if (videoError) {
-                        videoError.style.display = 'flex';
-                        document.getElementById('video-error-text').textContent = '请上传视频文件（必填）';
-                    }
-                    return;
-                }
-
-                const pdfFile = document.getElementById('pdf-file').files[0];
-                if (pdfFile) {
-                    const pdfProgress = parseInt(document.getElementById('pdf-progress-text')?.textContent || '0');
-                    if (pdfProgress < 100 && pdfProgress > 0) {
-                        Utils.showNotification('请等待PDF上传完成', 'warning');
-                        return;
-                    }
-                }
-
-                if (!uploadedPdfId && !pdfFile) {
-                    Utils.showNotification('请上传教学设计案例PDF文件（必填）', 'error');
-                    const pdfUploadArea = document.getElementById('pdf-upload-area');
-                    const pdfError = document.getElementById('pdf-error');
-                    if (pdfUploadArea) {
-                        pdfUploadArea.style.borderColor = '#ff4d4f';
-                        pdfUploadArea.style.background = 'rgba(255, 77, 79, 0.05)';
-                    }
-                    if (pdfError) {
-                        pdfError.style.display = 'flex';
-                        document.getElementById('pdf-error-text').textContent = '请上传PDF文件（必填）';
-                    }
-                    return;
-                }
-
+                Utils.showNotification('正在创建主题...', 'info');
                 const clubId = parseInt(currentClub.id || currentClub.clubId);
 
                 const requestParams = {
@@ -2310,385 +795,43 @@
                     title: taskName,
                     description: taskDescription,
                     type: 'all',
-                    isUnlocked: false
+                    isUnlocked: false // 默认锁定
                 };
-
-                if (uploadedVideoId) {
-                    requestParams.videoId = uploadedVideoId;
-                }
-
-                if (uploadedPdfId) {
-                    requestParams.pdfId = uploadedPdfId;
-                }
-
-                Utils.showNotification('正在创建任务...', 'info');
 
                 const result = await API.createTask(requestParams);
 
                 if (result && result.code === 0) {
-                    const successMsg = `任务"${taskName}"创建成功！（默认锁定状态）`;
-                    Utils.showNotification(successMsg, 'success');
-                    closeCreateTaskModal(false);
-
-                    if (window.Utils && Utils.sendAnalyticsEvent) {
-                        Utils.sendAnalyticsEvent('task_create', {
-                            category: 'teaching',
-                            target_type: 'task',
-                            target_id: result.data?.taskId,
-                            club_id: clubId
-                        });
-                    }
-
-                    if (result.data && result.data.taskId) {
-                        const newTask = {
-                            taskId: result.data.taskId,
-                            id: result.data.taskId,
-                            title: taskName,
-                            description: taskDescription,
-                            type: 'all',
-                            clubId: clubId,
-                            videoId: uploadedVideoId || null,
-                            pdfId: uploadedPdfId || null,
-                            isUnlocked: false,
-                            createdAt: new Date().toISOString(),
-                        };
-
-                        videoTasks.push(newTask);
-                        await renderVideoTasks();
-
-                        setTimeout(async () => {
-                            try {
-                                const refreshResponse = await API.getTasks(clubId);
-                                if (refreshResponse && refreshResponse.code === 0) {
-                                    let refreshedTasks = [];
-                                    if (Array.isArray(refreshResponse.data)) {
-                                        refreshedTasks = refreshResponse.data;
-                                    } else if (refreshResponse.data && Array.isArray(refreshResponse.data.list)) {
-                                        refreshedTasks = refreshResponse.data.list;
-                                    }
-
-                                    videoTasks = refreshedTasks.map(task => ({
-                                        taskId: task.taskId || task.id,
-                                        id: task.taskId || task.id,
-                                        title: task.title || '未命名任务',
-                                        description: task.description || '',
-                                        type: task.type || 'all',
-                                        clubId: task.clubId || clubId,
-                                        videoId: task.videoId || null,
-                                        pdfId: task.pdfId || null,
-                                        isUnlocked: task.isUnlocked === true,
-                                        createdAt: task.createdAt || new Date().toISOString(),
-                                    }));
-                                    await renderVideoTasks();
-                                }
-                            } catch (error) {
-                                console.error('刷新任务列表失败:', error);
-                            }
-                        }, 2000);
-
-                    } else {
-                        setTimeout(async () => {
-                            await loadVideoTasks();
-                        }, 500);
-                    }
-
+                    Utils.showNotification('主题创建成功！请进入详情页添加子任务。', 'success');
+                    window.closeCreateTaskModal();
+                    await loadVideoTasks();
                 } else {
-                    Utils.showNotification(result?.msg || '创建任务失败', 'error');
+                    Utils.showNotification(result?.msg || '创建失败', 'error');
                 }
             } catch (error) {
-                console.error('创建任务失败:', error);
-                Utils.showNotification('创建任务失败: ' + error.message, 'error');
+                console.error(error);
+                Utils.showNotification('创建失败: ' + error.message, 'error');
             }
-        }
+        };
 
-        async function removeFile(fileType) {
-            const fileLabel = fileType === 'video' ? '视频文件' : fileType === 'pdf' ? 'PDF文件' : '文件';
-            if (!confirm(`确定要移除已上传的${fileLabel}吗？`)) {
-                return;
-            }
+        window.openEditTaskModal = function(taskId) {
+            const task = videoTasks.find(t => t.taskId === taskId || t.id === taskId);
+            if (!task) return;
 
-            if (fileType === 'video' && currentVideoSubscription) {
-                try {
-                    currentVideoSubscription.unsubscribe();
-                } catch (error) { }
-                currentVideoSubscription = null;
-            }
-
-            if (fileType === 'pdf' && currentPdfSubscription) {
-                try {
-                    currentPdfSubscription.unsubscribe();
-                } catch (error) { }
-                currentPdfSubscription = null;
-            }
-
-            if (fileType === 'video' && uploadedVideoId) {
-                try {
-                    await API.deleteVideo(uploadedVideoId);
-                } catch (error) { }
-            }
-
-            if (fileType === 'pdf' && uploadedPdfId) {
-                const removedId = uploadedPdfId;
-                try {
-                    const result = await API.deleteResource(removedId);
-                    if (result && result.code === 0) {
-                        sendFileAnalytics('file_remove_pdf', 'pdf', removedId, null);
-                    }
-                } catch (error) { }
-            }
-
-            const fileInput = document.getElementById(`${fileType}-file`);
-            if (fileInput) fileInput.value = '';
-
-            const placeholder = document.querySelector(`#${fileType}-upload-area .upload-placeholder`);
-            const progress = document.getElementById(`${fileType}-progress`);
-            const preview = document.getElementById(`${fileType}-preview`);
-
-            if (placeholder) placeholder.style.display = 'block';
-            if (progress) {
-                progress.style.display = 'none';
-                if (fileType === 'video') {
-                    progress.innerHTML = `
-                <div class="progress-container">
-                    <div class="progress-bar" id="video-progress-bar" style="width: 0%"></div>
-                </div>
-                <div class="progress-text" id="video-progress-text">0%</div>
-                <div class="file-info" id="video-file-info">
-                    <span id="video-duration-info" style="display: none;">
-                        <i class="fas fa-clock"></i> 时长: <span id="video-duration">0</span>秒
-                    </span>
-                </div>
-            `;
-                } else {
-                    progress.innerHTML = `
-                <div class="progress-container">
-                    <div class="progress-bar" id="${fileType}-progress-bar" style="width: 0%"></div>
-                </div>
-                <div class="progress-text" id="${fileType}-progress-text">0%</div>
-                <div class="file-info" id="${fileType}-file-info"></div>
-            `;
-                }
-            }
-            if (preview) preview.style.display = 'none';
-
-            if (fileType === 'video') {
-                uploadedVideoId = null;
-                const previewContainer = document.getElementById('upload-preview');
-                if (previewContainer) previewContainer.style.display = 'none';
-            }
-            if (fileType === 'pdf') {
-                uploadedPdfId = null;
-                const previewContainer = document.getElementById('pdf-upload-preview');
-                if (previewContainer) previewContainer.style.display = 'none';
-            }
-
-            alert(`${fileLabel}已移除`);
-        }
-
-        document.addEventListener('DOMContentLoaded', function () {
-            const previewModal = document.getElementById('preview-modal');
-            if (previewModal) {
-                previewModal.addEventListener('click', function (event) {
-                    if (event.target === previewModal) {
-                        closePreview();
-                    }
-                });
-            }
-
-            document.addEventListener('keydown', function (event) {
-                if (event.key === 'Escape') {
-                    const previewModal = document.getElementById('preview-modal');
-                    if (previewModal && previewModal.style.display === 'flex') {
-                        closePreview();
-                    }
-                }
-            });
-        });
-
-        async function closeCreateTaskModal(shouldCleanup = true) {
-            const modal = document.getElementById('create-task-modal');
-            if (modal) {
-                modal.style.display = 'none';
-            }
-
-            if (shouldCleanup) {
-                if (uploadedVideoId) {
-                    const removedId = uploadedVideoId;
-                    try {
-                        const result = await API.deleteVideo(removedId);
-                        if (result && result.code === 0) {
-                            sendFileAnalytics('file_remove_video', 'video', removedId, null);
-                        }
-                    } catch (error) { }
-                }
-
-                if (uploadedPdfId) {
-                    const removedId = uploadedPdfId;
-                    try {
-                        const result = await API.deleteResource(removedId);
-                        if (result && result.code === 0) {
-                            sendFileAnalytics('file_remove_pdf', 'pdf', removedId, null);
-                        }
-                    } catch (error) { }
-                }
-            }
-
-            const videoFileInput = document.getElementById('video-file');
-            if (videoFileInput) videoFileInput.value = '';
-            const pdfFileInput = document.getElementById('pdf-file');
-            if (pdfFileInput) pdfFileInput.value = '';
-
-            uploadedVideoId = null;
-            uploadedPdfId = null;
-        }
-
-        async function enterTaskPage(taskId) {
-            try {
-                const taskDetail = await Tasks.getTaskDetail(taskId);
-
-                if (!taskDetail) {
-                    Utils.showNotification('获取任务信息失败', 'error');
-                    return;
-                }
-
-                await Tasks.setCurrentTask(taskId);
-
-                if (window.App && window.App.navigateTo) {
-                    window.App.navigateTo('tasks');
-                } else {
-                    window.location.hash = 'tasks';
-                }
-            } catch (error) {
-                console.error('进入任务页面失败:', error);
-                Utils.showNotification('加载任务失败: ' + error.message, 'error');
-            }
-        }
-
-        async function openEditTaskModal(taskId) {
-            try {
-                const hasPermission = await checkAndUpdatePermissions();
-                if (!hasPermission) {
-                    Utils.showNotification('只有俱乐部创建者可以修改任务', 'error');
-                    return;
-                }
-
-                const task = videoTasks.find(t => t.taskId === taskId || t.id === taskId);
-                if (!task) {
-                    Utils.showNotification('找不到该任务', 'error');
-                    return;
-                }
-
-                if (window.Utils && Utils.sendAnalyticsEvent) {
-                    Utils.sendAnalyticsEvent('task_open_edit_modal', {
-                        category: 'teaching',
-                        target_type: 'task',
-                        target_id: taskId
-                    });
-                }
-
-                createEditTaskModal(task);
-
-            } catch (error) {
-                console.error('打开编辑模态框失败:', error);
-                Utils.showNotification('加载任务失败', 'error');
-            }
-        }
-
-        async function createEditTaskModal(task) {
-            const existingModal = document.getElementById('edit-task-modal');
-            if (existingModal) {
-                existingModal.remove();
-            }
-
-            editUploadedVideoId = null;
-            editUploadedPdfId = null;
-            currentEditTaskId = task.taskId || task.id;
-            currentEditVideoId = task.videoId || null;
-            currentEditPdfId = task.pdfId || null;
-
-            window._editRemoveVideo = false;
-            window._editRemovePdf = false;
-
-            let existingVideoHTML = '';
-            if (task.videoId) {
-                existingVideoHTML = `
-                    <div class="existing-file-card video-card" id="edit-existing-video">
-                        <i class="fas fa-video efc-icon video-icon"></i>
-                        <div class="efc-meta">
-                            <div class="efc-name">已关联视频 (ID: ${task.videoId})</div>
-                            <div class="efc-label video-label">点击下方上传区域可替换</div>
-                        </div>
-                        <button class="btn-remove-efc" onclick="editRemoveExisting('video')">移除</button>
-                    </div>
-                `;
-            }
-
-            let existingPdfHTML = '';
-            if (task.pdfId) {
-                existingPdfHTML = `
-                    <div class="existing-file-card" id="edit-existing-pdf">
-                        <i class="fas fa-file-pdf efc-icon"></i>
-                        <div class="efc-meta">
-                            <div class="efc-name">已关联PDF (ID: ${task.pdfId})</div>
-                            <div class="efc-label">点击下方上传区域可替换</div>
-                        </div>
-                        <button class="btn-remove-efc" onclick="editRemoveExisting('pdf')">移除</button>
-                    </div>
-                `;
-            }
+            const existing = document.getElementById('edit-task-modal');
+            if (existing) existing.remove();
 
             const modalHTML = `
                 <div id="edit-task-modal" class="modal-overlay" style="display: flex;">
-                    <div class="modal" style="max-width: 560px; width: 90%; max-height: 90vh; overflow-y: auto;">
-                        <h3 style="margin-bottom: 20px;"><i class="fas fa-edit"></i> 修改任务</h3>
-
+                    <div class="modal" style="max-width: 500px; width: 90%;">
+                        <h3 style="margin-bottom: 20px;"><i class="fas fa-edit"></i> 修改主题信息</h3>
                         <div class="form-item">
-                            <label class="required">任务名称</label>
-                            <input type="text" id="edit-task-name" placeholder="请输入任务名称" value="${task.title || ''}">
+                            <label class="required">主题名称</label>
+                            <input type="text" id="edit-task-name" value="${task.title || ''}">
                         </div>
                         <div class="form-item">
-                            <label>任务描述（可选）</label>
-                            <textarea id="edit-task-description" placeholder="请简要描述这个任务..." rows="3">${task.description || ''}</textarea>
+                            <label>主题描述</label>
+                            <textarea id="edit-task-description" rows="4">${task.description || ''}</textarea>
                         </div>
-
-                        <div class="edit-section-title"><i class="fas fa-video" style="color:#1890ff;"></i> 关联视频</div>
-                        ${existingVideoHTML}
-                        <div id="edit-video-new-upload" style="margin-top:${task.videoId ? '10px' : '0'};">
-                            <div id="edit-video-placeholder" class="file-upload-area" style="padding:20px; cursor:pointer;"
-                                 onclick="document.getElementById('edit-video-file').click()">
-                                <input type="file" id="edit-video-file" accept="video/*" style="display:none;"
-                                       onchange="handleEditFileSelect(event, 'video')">
-                                <i class="fas fa-video" style="font-size:24px; color:#1890ff;"></i>
-                                <p style="color:#999; font-size:13px; margin-top:8px;">${task.videoId ? '点击替换视频' : '点击上传视频（可选）'}</p>
-                                <p style="color:#bbb; font-size:12px;">支持MP4、MOV等，最大20GB</p>
-                            </div>
-                            <div id="edit-video-progress-container" style="display:none; margin-top:8px;">
-                                <div class="progress-container">
-                                    <div class="progress-bar" id="edit-video-progress-bar" style="width:0%;"></div>
-                                </div>
-                                <div class="progress-text" id="edit-video-progress-text">0%</div>
-                            </div>
-                        </div>
-
-                        <div class="edit-section-title" style="margin-top:20px;"><i class="fas fa-file-pdf" style="color:#722ed1;"></i> 教学设计案例PDF</div>
-                        ${existingPdfHTML}
-                        <div id="edit-pdf-new-upload" style="margin-top:${task.pdfId ? '10px' : '0'};">
-                            <div id="edit-pdf-placeholder" class="file-upload-area" style="padding:20px; cursor:pointer;"
-                                 onclick="document.getElementById('edit-pdf-file').click()">
-                                <input type="file" id="edit-pdf-file" accept=".pdf" style="display:none;"
-                                       onchange="handleEditFileSelect(event, 'pdf')">
-                                <i class="fas fa-file-pdf" style="font-size:24px; color:#722ed1;"></i>
-                                <p style="color:#999; font-size:13px; margin-top:8px;">${task.pdfId ? '点击替换PDF' : '点击上传PDF（可选）'}</p>
-                                <p style="color:#bbb; font-size:12px;">仅支持PDF格式</p>
-                            </div>
-                            <div id="edit-pdf-progress-container" style="display:none; margin-top:8px;">
-                                <div class="progress-container">
-                                    <div class="progress-bar" id="edit-pdf-progress-bar" style="width:0%; background:linear-gradient(90deg,#722ed1,#a855f7);"></div>
-                                </div>
-                                <div class="progress-text" id="edit-pdf-progress-text">0%</div>
-                            </div>
-                        </div>
-
                         <div style="text-align:right; margin-top: 24px;">
                             <button class="btn btn-outline" onclick="closeEditTaskModal()">取消</button>
                             <button class="btn btn-primary" onclick="saveTaskChanges(${task.taskId || task.id})">保存修改</button>
@@ -2696,273 +839,115 @@
                     </div>
                 </div>
             `;
-
             document.body.insertAdjacentHTML('beforeend', modalHTML);
+        };
 
+        window.closeEditTaskModal = function() {
             const modal = document.getElementById('edit-task-modal');
-            if (modal) {
-                modal.addEventListener('click', function (event) {
-                    if (event.target === modal) {
-                        closeEditTaskModal();
-                    }
-                });
+            if (modal) modal.remove();
+        };
+
+        window.saveTaskChanges = async function(taskId) {
+            const title = document.getElementById('edit-task-name').value.trim();
+            const description = document.getElementById('edit-task-description').value.trim();
+
+            if (!title) {
+                Utils.showNotification('名称不能为空', 'warning');
+                return;
             }
 
-            setTimeout(() => {
-                const nameInput = document.getElementById('edit-task-name');
-                if (nameInput) nameInput.focus();
-            }, 100);
-        }
-
-        function editRemoveExisting(fileType) {
-            if (fileType === 'video') {
-                window._editRemoveVideo = true;
-                const card = document.getElementById('edit-existing-video');
-                if (card) card.style.display = 'none';
-                const ph = document.getElementById('edit-video-placeholder');
-                if (ph) {
-                    const ps = ph.querySelectorAll('p');
-                    if (ps[0]) ps[0].textContent = '点击上传视频（可选）';
-                }
-            }
-            if (fileType === 'pdf') {
-                window._editRemovePdf = true;
-                const card = document.getElementById('edit-existing-pdf');
-                if (card) card.style.display = 'none';
-                const ph = document.getElementById('edit-pdf-placeholder');
-                if (ph) {
-                    const ps = ph.querySelectorAll('p');
-                    if (ps[0]) ps[0].textContent = '点击上传PDF（可选）';
-                }
-            }
-            Utils.showNotification(`已标记移除${fileType === 'video' ? '视频' : 'PDF'}，保存时将生效`, 'info');
-        }
-
-        function closeEditTaskModal() {
-            const modal = document.getElementById('edit-task-modal');
-            if (modal) {
-                modal.remove();
-            }
-            currentEditTaskId = null;
-            currentEditVideoId = null;
-            currentEditPdfId = null;
-            window._editRemoveVideo = false;
-            window._editRemovePdf = false;
-        }
-
-        async function saveTaskChanges(taskId) {
             try {
-                const hasPermission = await checkAndUpdatePermissions();
-                if (!hasPermission) {
-                    Utils.showNotification('只有俱乐部创建者可以修改任务', 'error');
-                    return;
-                }
-
-                const nameInput = document.getElementById('edit-task-name');
-                const descInput = document.getElementById('edit-task-description');
-
-                if (!nameInput) return;
-
-                const taskName = nameInput.value.trim();
-                const taskDescription = descInput ? descInput.value.trim() : '';
-
-                if (!taskName) {
-                    Utils.showNotification('请输入任务名称', 'error');
-                    return;
-                }
-
-                const videoProgressText = document.getElementById('edit-video-progress-text');
-                const pdfProgressText = document.getElementById('edit-pdf-progress-text');
-                if (videoProgressText && videoProgressText.textContent && videoProgressText.textContent !== '0%') {
-                    const vp = parseInt(videoProgressText.textContent);
-                    if (vp > 0 && vp < 100) {
-                        Utils.showNotification('请等待视频上传完成', 'warning');
-                        return;
-                    }
-                }
-                if (pdfProgressText && pdfProgressText.textContent && pdfProgressText.textContent !== '0%') {
-                    const pp = parseInt(pdfProgressText.textContent);
-                    if (pp > 0 && pp < 100) {
-                        Utils.showNotification('请等待PDF上传完成', 'warning');
-                        return;
-                    }
-                }
-
-                Utils.showNotification('正在保存修改...', 'info');
-
-                const updateParams = {
-                    title: taskName,
-                    description: taskDescription
-                };
-
-                if (editUploadedVideoId) {
-                    updateParams.videoId = editUploadedVideoId;
-                } else if (window._editRemoveVideo) {
-                    updateParams.videoId = null;
-                }
-
-                if (editUploadedPdfId) {
-                    updateParams.pdfId = editUploadedPdfId;
-                } else if (window._editRemovePdf) {
-                    updateParams.pdfId = null;
-                }
-
-                const result = await API.updateTask(taskId, updateParams);
-
+                Utils.showNotification('正在保存...', 'info');
+                const result = await API.updateTask(taskId, { title, description });
                 if (result && result.code === 0) {
-                    Utils.showNotification(`任务"${taskName}"修改成功！`, 'success');
-                    if (window.Utils && Utils.sendAnalyticsEvent) {
-                        Utils.sendAnalyticsEvent('task_save_edit', {
-                            category: 'teaching',
-                            target_type: 'task',
-                            target_id: taskId
-                        });
-                    }
-                    if (window._editRemoveVideo && currentEditVideoId) {
-                        sendFileAnalytics('file_remove_video', 'video', currentEditVideoId, taskId);
-                    }
-                    if (window._editRemovePdf && currentEditPdfId) {
-                        sendFileAnalytics('file_remove_pdf', 'pdf', currentEditPdfId, taskId);
-                    }
-                    closeEditTaskModal();
-
+                    Utils.showNotification('修改成功', 'success');
+                    window.closeEditTaskModal();
                     await loadVideoTasks();
                 } else {
-                    Utils.showNotification(result?.msg || '修改任务失败', 'error');
+                    throw new Error(result?.msg || '未知错误');
                 }
-            } catch (error) {
-                console.error('修改任务失败:', error);
-                Utils.showNotification('修改任务失败: ' + error.message, 'error');
+            } catch (e) {
+                Utils.showNotification('修改失败: ' + e.message, 'error');
             }
-        }
+        };
 
-        async function confirmDeleteTask(taskId) {
+        window.confirmDeleteTask = async function(taskId) {
+            if (confirm('确定要删除这个主题吗？删除后将不可恢复，包含的所有子任务也会被删除。')) {
+                try {
+                    Utils.showNotification('正在删除...', 'info');
+                    const result = await API.deleteTask(taskId);
+                    if (result && result.code === 0) {
+                        Utils.showNotification('删除成功', 'success');
+                        await loadVideoTasks();
+                    } else {
+                        throw new Error(result?.msg);
+                    }
+                } catch (e) {
+                    Utils.showNotification('删除失败: ' + e.message, 'error');
+                }
+            }
+        };
+
+        window.toggleTaskLock = async function(taskId, unlockStatus) {
             try {
-                const hasPermission = await checkAndUpdatePermissions();
-                if (!hasPermission) {
-                    Utils.showNotification('只有俱乐部创建者可以删除任务', 'error');
-                    return;
+                Utils.showNotification(unlockStatus ? '正在解锁...' : '正在锁定...', 'info');
+                const result = await API.updateTask(taskId, { isUnlocked: unlockStatus });
+                if (result && result.code === 0) {
+                    Utils.showNotification('操作成功', 'success');
+                    const task = videoTasks.find(t => t.taskId === taskId || t.id === taskId);
+                    if(task) task.isUnlocked = unlockStatus;
+                    renderVideoTasks();
                 }
-
-                const task = videoTasks.find(t => t.taskId === taskId || t.id === taskId);
-                if (!task) {
-                    Utils.showNotification('找不到该任务', 'error');
-                    return;
-                }
-
-                const confirmed = confirm(`确定要删除任务"${task.title}"吗？\n\n此操作将删除所有子任务和完成记录，不可撤销`);
-
-                if (confirmed) {
-                    await deleteTask(taskId);
-                }
-            } catch (error) {
-                console.error('确认删除任务失败:', error);
+            } catch (e) {
                 Utils.showNotification('操作失败', 'error');
             }
-        }
+        };
 
-        async function deleteTask(taskId) {
-            try {
-                const hasPermission = await checkAndUpdatePermissions();
-                if (!hasPermission) {
-                    Utils.showNotification('只有俱乐部创建者可以删除任务', 'error');
-                    return;
-                }
-
-                const task = videoTasks.find(t => t.taskId === taskId || t.id === taskId);
-                if (!task) {
-                    Utils.showNotification('找不到该任务', 'error');
-                    return;
-                }
-
-                const videoId = task.videoId;
-                const pdfId = task.pdfId;
-
-                Utils.showNotification('正在删除任务...', 'info');
-
-                if (videoId) {
-                    try {
-                        await API.deleteVideo(videoId);
-                    } catch (error) { }
-                }
-
-                if (pdfId) {
-                    try {
-                        await API.deleteResource(pdfId);
-                    } catch (error) { }
-                }
-
-                const result = await API.deleteTask(taskId);
-
-                if (result && result.code === 0) {
-                    Utils.showNotification('任务删除成功！', 'success');
-
-                    if (window.Utils && Utils.sendAnalyticsEvent) {
-                        Utils.sendAnalyticsEvent('task_delete', {
-                            category: 'teaching',
-                            target_type: 'task',
-                            target_id: taskId
-                        });
-                    }
-
-                    await loadVideoTasks();
+        window.handleTaskCardClick = function(taskId, isAccessible) {
+            if (!isAccessible) {
+                if (isClubCreator) {
+                    Utils.showNotification('该主题已锁定。您可以点击锁形图标解锁。', 'info');
                 } else {
-                    Utils.showNotification(result?.msg || '删除任务失败', 'error');
+                    Utils.showNotification('主题尚未解锁，请等待管理员开放', 'warning');
                 }
-            } catch (error) {
-                console.error('删除任务失败:', error);
-                Utils.showNotification('删除任务失败: ' + error.message, 'error');
+                return;
             }
-        }
+            window.enterTaskPage(taskId);
+        };
 
-        function getTaskTypeLabel(taskType) {
-            if (!taskType) return '视频+研讨活动';
-
-            const typeMap = {
-                'all': '视频+研讨活动',
-                'watch': '看视频任务',
-                'research': '研视频任务',
-            };
-
-            return typeMap[taskType] || '视频+研讨活动';
-        }
-
-        function goBackToHome() {
+        window.enterTaskPage = async function(taskId) {
+            if(window.Tasks && Tasks.setCurrentTask) await Tasks.setCurrentTask(taskId);
             if (window.App && window.App.navigateTo) {
-                window.App.navigateTo('home');
+                window.App.navigateTo('tasks');
             } else {
-                window.location.hash = 'home';
+                window.location.hash = 'tasks';
             }
+        };
+
+        window.goBackToHome = function() {
+            window.location.hash = 'home';
+        };
+
+        function formatDate(dateString) {
+            try {
+                return new Date(dateString).toLocaleDateString('zh-CN', {month:'2-digit', day:'2-digit'});
+            } catch(e) { return ''; }
         }
 
-        window.openCreateTaskModal = openCreateTaskModal;
-        window.closeCreateTaskModal = closeCreateTaskModal;
-        window.createNewTask = createNewTask;
-        window.enterTaskPage = enterTaskPage;
-        window.goBackToHome = goBackToHome;
-        window.initVideoPage = initVideoPage;
-        window.openEditTaskModal = openEditTaskModal;
-        window.closeEditTaskModal = closeEditTaskModal;
-        window.saveTaskChanges = saveTaskChanges;
-        window.confirmDeleteTask = confirmDeleteTask;
-        window.deleteTask = deleteTask;
-        window.handleTaskCardClick = handleTaskCardClick;
-        window.toggleTaskLock = toggleTaskLock;
-        window.removeFile = removeFile;
-        window.editRemoveExisting = editRemoveExisting;
-        window.handleEditFileSelect = handleEditFileSelect;
-
+        // 绑定模态框点击事件
         const modalCreate = document.getElementById('create-task-modal');
         if (modalCreate) {
             modalCreate.addEventListener('click', function (event) {
                 if (event.target === modalCreate) {
-                    closeCreateTaskModal();
+                    window.closeCreateTaskModal();
                 }
             });
         }
 
+        // 启动初始化
         initVideoPage();
+
+    })(); // 立即执行 IIFE
     </script>
 </body>
-
 </html>
