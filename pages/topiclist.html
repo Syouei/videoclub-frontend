@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>话题列表 - 教师视频俱乐部</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* 重置和基础样式 */
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f8fafc;
+            min-height: 100vh;
+        }
+
+        /* 页面容器 - 修改为100%宽度 */
+        .topic-page-container {
+            width: 100%;
+            max-width: none;
+            margin: 0;
+            padding: 0;
+            min-height: calc(100vh - 60px); /* 减去header高度 */
+        }
+
+        /* 主要内容区域 */
+        .topic-main-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        /* 页面标题区域 - 扩大 */
+        .page-title-section {
+            margin-bottom: 32px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 16px;
+            padding: 40px 48px;
+            text-align: left;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .page-title-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 200px;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3));
+        }
+
+        .page-title-section h2 {
+            font-size: 36px;
+            color: #1a1a1a;
+            margin: 0 0 16px 0;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        .page-title-section p {
+            font-size: 18px;
+            color: #4a5568;
+            margin: 0;
+            font-weight: 500;
+            max-width: 800px;
+        }
+
+        /* 话题提示样式 */
+        .topic-notice {
+            display: inline;
+            margin-left: 12px;
+            padding: 4px 12px;
+            background: #f7f7f7;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #8c8c8c;
+            line-height: 1.5;
+        }
+
+        .topic-notice strong {
+            color: #d4380d;
+            font-weight: 600;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 16px;
+            color: #4a5568;
+            padding: 12px 20px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            flex-wrap: wrap; /* 允许换行 */
+        }
+
+        /* 操作栏 - 扩大 */
+        .topic-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            padding: 24px 32px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e2e8f0;
+        }
+
+        .topic-stats {
+            display: flex;
+            gap: 32px;
+            align-items: center;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 16px;
+            color: #4a5568;
+            padding: 12px 20px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            flex-wrap: wrap; /* 允许换行 */
+        }
+
+        .stat-item i {
+            color: #1890ff;
+            font-size: 20px;
+        }
+
+        .stat-number {
+            font-weight: 700;
+            color: #1a1a1a;
+            font-size: 20px;
+            margin-left: 4px;
+        }
+
+        /* 创建话题按钮（header版本） */
+        .btn-create-topic-header {
+            background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 16px rgba(24, 144, 255, 0.25);
+        }
+
+        .btn-create-topic-header:hover {
+            background: linear-gradient(135deg, #40a9ff 0%, #1890ff 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(24, 144, 255, 0.35);
+        }
+
+        .btn-create-topic-header i {
+            font-size: 16px;
+        }
+
+        /* 话题列表 */
+        .topic-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(600px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        /* 话题卡片 - 扩大 */
+        .topic-card {
+            background: white;
+            border-radius: 20px;
+            padding: 32px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            border: 1px solid #e2e8f0;
+            position: relative;
+            overflow: hidden;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 置顶话题卡片 */
+        .topic-card.pinned {
+            background: linear-gradient(135deg, #fefefe 0%, #fafafa 100%);
+            border: 2px solid #ffd591;
+            box-shadow: 0 4px 20px rgba(255, 213, 145, 0.15);
+        }
+
+        .topic-card.pinned::before {
+            background: linear-gradient(180deg, #ffd591, #ffc069);
+        }
+
+        /* 必答标签 */
+        .topic-badge.required {
+            background: linear-gradient(135deg, #ff7875, #ffa39e);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(255, 120, 117, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 0 6px rgba(255, 120, 117, 0);
+            }
+        }
+
+        /* 置顶图标 */
+        .pin-icon {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            color: #ffc069;
+            font-size: 18px;
+            transform: rotate(45deg);
+            opacity: 0.6;
+        }
+
+        .topic-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 6px;
+            background: linear-gradient(180deg, #1890ff, #096dd9);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .topic-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+            border-color: #ffc069;
+        }
+
+        .topic-card:hover::before {
+            opacity: 1;
+        }
+
+        .topic-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            flex: 1;
+        }
+
+        .topic-main-info {
+            flex: 1;
+            cursor: pointer;
+            min-width: 0; /* 防止内容溢出 */
+        }
+
+        .topic-title-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .topic-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin: 0;
+            line-height: 1.3;
+            word-break: break-word;
+        }
+
+        .topic-badge {
+            background: linear-gradient(135deg, #52c41a, #73d13d);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .topic-badge.hot {
+            background: linear-gradient(135deg, #ff4d4f, #ff7875);
+        }
+
+        .topic-badge.new {
+            background: linear-gradient(135deg, #1890ff, #40a9ff);
+        }
+
+        .topic-description {
+            color: #4a5568;
+            font-size: 16px;
+            line-height: 1.6;
+            margin: 12px 0 0 0;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            word-break: break-word;
+        }
+
+        .topic-description.empty {
+            color: #94a3b8;
+            font-style: italic;
+        }
+
+        /* 话题元信息 */
+        .topic-meta {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 2px solid #f1f5f9;
+            flex-wrap: wrap;
+        }
+
+        .topic-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            color: #64748b;
+            background: #f8fafc;
+            padding: 8px 16px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .topic-meta-item i {
+            color: #1890ff;
+            font-size: 16px;
+        }
+
+        .topic-meta-item strong {
+            color: #1a1a1a;
+            font-weight: 600;
+            margin-left: 4px;
+        }
+
+        /* 话题操作按钮 */
+        .topic-actions {
+            display: flex;
+            gap: 12px;
+            flex-shrink: 0;
+            margin-left: 20px;
+        }
+
+        .btn-topic-action {
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-edit {
+            background: linear-gradient(135deg, #e6f4ff, #bae0ff);
+            color: #1890ff;
+            border: 1px solid #91caff;
+        }
+
+        .btn-edit:hover {
+            background: linear-gradient(135deg, #bae0ff, #91caff);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(24, 144, 255, 0.2);
+        }
+
+        .btn-delete {
+            background: linear-gradient(135deg, #fff1f0, #ffccc7);
+            color: #ff4d4f;
+            border: 1px solid #ffa39e;
+        }
+
+        .btn-delete:hover {
+            background: linear-gradient(135deg, #ffccc7, #ffa39e);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 77, 79, 0.2);
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 100px 40px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 2px dashed #e2e8f0;
+            margin: 40px 0;
+        }
+
+        .empty-state-icon {
+            font-size: 100px;
+            color: #cbd5e1;
+            margin-bottom: 32px;
+            opacity: 0.7;
+        }
+
+        .empty-state h3 {
+            font-size: 28px;
+            color: #475569;
+            margin: 0 0 16px 0;
+            font-weight: 700;
+        }
+
+        .empty-state p {
+            font-size: 18px;
+            color: #94a3b8;
+            margin: 0 0 32px 0;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* 模态框 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(8px);
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease;
+            border: 1px solid #e2e8f0;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: #1a1a1a;
+            font-size: 28px;
+            font-weight: 800;
+        }
+
+        .btn-close {
+            background: #f1f5f9;
+            border: none;
+            font-size: 20px;
+            color: #64748b;
+            cursor: pointer;
+            padding: 8px;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-close:hover {
+            background: #e2e8f0;
+            color: #334155;
+            transform: rotate(90deg);
+        }
+
+        /* 表单 */
+        .form-group {
+            margin-bottom: 32px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 12px;
+            color: #334155;
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .form-group label .required {
+            color: #ff4d4f;
+            margin-left: 4px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            background: #f8fafc;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #1890ff;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(24, 144, 255, 0.1);
+        }
+
+        .form-group textarea {
+            min-height: 160px;
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        .form-hint {
+            font-size: 14px;
+            color: #94a3b8;
+            margin-top: 8px;
+        }
+
+        /* 表单操作按钮 */
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 16px;
+            margin-top: 40px;
+        }
+
+        .btn {
+            padding: 14px 36px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+            color: #334155;
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #1890ff, #096dd9);
+            color: white;
+            box-shadow: 0 6px 20px rgba(24, 144, 255, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #40a9ff, #1890ff);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(24, 144, 255, 0.4);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .topic-list {
+                grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+            }
+            
+            .topic-main-content {
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .page-title-section {
+                padding: 32px 40px;
+            }
+            
+            .page-title-section h2 {
+                font-size: 32px;
+            }
+            
+            .topic-toolbar {
+                padding: 20px 28px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .topic-main-content {
+                padding: 16px;
+            }
+            
+            .page-title-section {
+                padding: 24px;
+                text-align: center;
+            }
+            
+            .page-title-section h2 {
+                font-size: 28px;
+                margin-bottom: 12px;
+            }
+            
+            .page-title-section p {
+                font-size: 16px;
+            }
+            
+            .topic-toolbar {
+                flex-direction: column;
+                gap: 20px;
+                align-items: stretch;
+                padding: 20px;
+            }
+            
+            .topic-stats {
+                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 16px;
+            }
+            
+            .stat-item {
+                padding: 10px 16px;
+                font-size: 15px;
+            }
+            
+            .btn-create-topic-header {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .topic-list {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .topic-card {
+                padding: 24px;
+            }
+            
+            .topic-card-header {
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .topic-actions {
+                margin-left: 0;
+                width: 100%;
+                justify-content: flex-end;
+            }
+            
+            .topic-title {
+                font-size: 22px;
+            }
+            
+            .topic-description {
+                font-size: 15px;
+            }
+            
+            .topic-meta {
+                gap: 12px;
+            }
+            
+            .topic-meta-item {
+                padding: 6px 12px;
+                font-size: 14px;
+            }
+            
+            .modal-content {
+                padding: 24px;
+                border-radius: 20px;
+            }
+            
+            .modal-header h3 {
+                font-size: 24px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .page-title-section {
+                padding: 20px;
+            }
+            
+            .page-title-section h2 {
+                font-size: 24px;
+            }
+            
+            .topic-card {
+                padding: 20px;
+            }
+            
+            .topic-title {
+                font-size: 20px;
+            }
+            
+            .btn-topic-action {
+                padding: 8px 16px;
+                font-size: 13px;
+            }
+            
+            .topic-meta {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .topic-meta-item {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .empty-state {
+                padding: 60px 20px;
+            }
+            
+            .empty-state-icon {
+                font-size: 80px;
+            }
+            
+            .empty-state h3 {
+                font-size: 24px;
+            }
+            
+            .empty-state p {
+                font-size: 16px;
+            }
+        }
+
+        /* 加载动画 */
+        .loading-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 80px 20px;
+        }
+
+        .loading-spinner {
+            width: 56px;
+            height: 56px;
+            border: 4px solid #f1f5f9;
+            border-top-color: #1890ff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 头部样式调整 */
+        .header {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .platform-name {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .user-info {
+            padding: 8px 16px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div id="page-topic-list" class="page active">
+        <div class="header">
+            <div class="header-left">
+                <button class="btn btn-text" onclick="goBackToTasks()" style="margin-right:10px;">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <span class="platform-name">教师视频俱乐部</span>
+                <span style="color: #999; font-weight: normal;"> | 话题列表</span>
+            </div>
+            <div class="header-right">
+                <button class="btn-create-topic-header" id="btnCreateTopic" style="display: none; margin-right: 20px;">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>发起新话题</span>
+                </button>
+                <div class="user-info">
+                    <div class="avatar" id="topic-user-avatar">王</div>
+                    <span id="topic-user-name">王老师</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="topic-page-container">
+            <div class="topic-main-content">
+                <!-- 页面标题区域 -->
+                <div class="page-title-section">
+                    <h2 id="task-title">📋 话题列表</h2>
+                    <p>分享观点、深度交流、共同成长</p>
+                </div>
+
+                <!-- 操作工具栏 -->
+<div class="topic-toolbar">
+    <div class="topic-stats">
+        <div class="stat-item">
+            <i class="fas fa-comments"></i>
+            <span>共 <span class="stat-number" id="topicCount">0</span> 个话题</span>
+            <span class="topic-notice">
+                <strong>提示：</strong>俱乐部创建者发布的话题为必答，其他成员发布的主题可自由讨论
+            </span>
+        </div>
+    </div>
+</div>
+                
+                <!-- 话题列表 -->
+                <div class="topic-list" id="topicList">
+                    <!-- 话题将动态加载 -->
+                </div>
+
+                <!-- 空状态 -->
+                <div class="empty-state" id="emptyState" style="display: none;">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h3>还没有话题</h3>
+                    <p id="emptyStateText">快来创建第一个话题，开启讨论吧！</p>
+                </div>
+
+                <!-- 加载状态 -->
+                <div class="loading-container" id="loadingState" style="display: none;">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 创建/编辑话题模态框 -->
+    <div class="modal-overlay" id="topicModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">发起新话题</h3>
+                <button class="btn-close" onclick="closeTopicModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="topicForm">
+                <input type="hidden" id="editTopicId" value="">
+                <div class="form-group">
+                    <label for="topicTitle">
+                        话题标题
+                        <span class="required">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="topicTitle" 
+                        placeholder="用一句话概括你想讨论的主题" 
+                        required 
+                        maxlength="100">
+                    <div class="form-hint">简洁明了地描述话题，限100字</div>
+                </div>
+                <div class="form-group">
+                    <label for="topicDescription">话题说明（选填）</label>
+                    <textarea 
+                        id="topicDescription" 
+                        placeholder="详细说明这个话题的讨论方向、要求或背景信息（选填）"
+                        maxlength="500"></textarea>
+                    <div class="form-hint">为参与者提供更多讨论背景，限500字</div>
+                </div>
+                <div class="form-group">
+                    <label for="topicScaffold">
+                        回答支架（选填）
+                        <span style="color: #8c8c8c; font-weight: 400; font-size: 14px; margin-left: 8px;">为讨论者提供回答支架</span>
+                    </label>
+                    <textarea 
+    id="topicScaffold" 
+    placeholder="例如：&#10;1. 聚焦观察...&#10;&#10;2. 对比分析...&#10;&#10;3. 从反思到行动..."
+    maxlength="2000"
+    rows="8"></textarea>
+                    <div class="form-hint">可选填。如果填写，参与者可以使用您提供的支架进行回答，无需重复输入。限2000字</div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeTopicModal()">
+                        取消
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        发布话题
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+<script>
+    // ========== 页面状态 ==========
+    let currentTaskId = null;
+    let currentClubId = null;
+    let currentUserId = null;
+    let isClubAdmin = false;
+    let clubCreatorId = null; // 新增：保存俱乐部创建者ID
+    let topicList = [];
+
+    // ========== 页面初始化 ==========
+    async function initTopicListPage() {
+        console.log('话题列表页面初始化');
+        
+        // 更新用户显示
+        updateUserDisplay();
+        
+        // 获取任务ID
+        currentTaskId = getTaskIdFromURL();
+        currentClubId = getClubIdFromURL();
+        
+        if (!currentTaskId) {
+            showMessage('无法获取任务信息', 'error');
+            goBackToTasks();
+            return;
+        }
+
+        if (window.Utils && Utils.sendAnalyticsEvent) {
+            Utils.sendAnalyticsEvent('topic_open_list', {
+                category: 'interaction',
+                target_type: 'task',
+                target_id: currentTaskId,
+                club_id: currentClubId
+            });
+        }
+
+        // 获取当前用户信息
+        if (window.Auth && window.Auth.getUser()) {
+            const user = window.Auth.getUser();
+            currentUserId = user.id || user.userId;
+        }
+
+        // 检查是否是俱乐部管理员
+        await checkAdminStatus();
+        
+        // 加载话题列表
+        await loadTopics();
+    }
+
+    document.addEventListener('DOMContentLoaded', initTopicListPage);
+
+    // ========== 更新用户显示 ==========
+    function updateUserDisplay() {
+        if (window.Auth && window.Auth.getUser()) {
+            const user = window.Auth.getUser();
+            document.getElementById('topic-user-avatar').textContent = user.name.charAt(0);
+            document.getElementById('topic-user-name').textContent = user.name;
+        }
+    }
+
+    // ========== 获取任务ID ==========
+    function getTaskIdFromURL() {
+        const hash = window.location.hash;
+        const params = new URLSearchParams(hash.split('?')[1]);
+        return params.get('taskId') ? parseInt(params.get('taskId')) : null;
+    }
+
+    // ========== 获取俱乐部ID ==========
+    function getClubIdFromURL() {
+        const hash = window.location.hash;
+        const params = new URLSearchParams(hash.split('?')[1]);
+        return params.get('clubId') ? parseInt(params.get('clubId')) : null;
+    }
+
+    // ========== 检查管理员权限 ==========
+    async function checkAdminStatus() {
+        try {
+            console.log('开始检查管理员权限');
+            console.log('currentClubId:', currentClubId);
+            console.log('currentUserId:', currentUserId);
+            
+            if (!currentClubId) {
+                console.warn('缺少俱乐部ID，无法检查权限');
+                isClubAdmin = false;
+                // 所有人都可以创建话题
+                document.getElementById('btnCreateTopic').style.display = 'flex';
+                return;
+            }
+
+            // 使用Clubs.isClubCreator()方法检查权限（与video.html一致）
+            if (!window.Clubs || !Clubs.isClubCreator) {
+                console.warn('Clubs模块未加载');
+                isClubAdmin = false;
+                // 所有人都可以创建话题
+                document.getElementById('btnCreateTopic').style.display = 'flex';
+                return;
+            }
+
+            // 检查用户是否是俱乐部创建者（角色为manager）
+            isClubAdmin = await Clubs.isClubCreator(currentClubId);
+            console.log('权限检查结果 - 是否是创建者:', isClubAdmin);
+            
+            // 获取俱乐部详情以获取创建者ID
+            try {
+                const clubDetail = await Clubs.getClubDetail(currentClubId);
+                if (clubDetail && clubDetail.creator) {
+                    clubCreatorId = clubDetail.creator.userId || clubDetail.creatorId;
+                    console.log('俱乐部创建者ID:', clubCreatorId);
+                }
+            } catch (error) {
+                console.error('获取俱乐部创建者ID失败:', error);
+            }
+            
+            // 所有人都可以创建话题
+            document.getElementById('btnCreateTopic').style.display = 'flex';
+            document.getElementById('emptyStateText').textContent = '还没有话题，点击右上角按钮创建第一个话题吧！';
+        } catch (error) {
+            console.error('检查管理员权限失败:', error);
+            isClubAdmin = false;
+            // 即使出错，也允许所有人创建话题
+            document.getElementById('btnCreateTopic').style.display = 'flex';
+        }
+    }
+
+    // ========== 加载话题列表 ==========
+    // ========== 加载话题列表 ==========
+async function loadTopics() {
+    try {
+        console.log('[DEBUG] 📋 开始加载话题列表');
+        console.log('[DEBUG] 📋 当前任务ID:', currentTaskId);
+        
+        const loadingState = document.getElementById('loadingState');
+        const topicListEl = document.getElementById('topicList');
+        const emptyState = document.getElementById('emptyState');
+        
+        loadingState.style.display = 'flex';
+        topicListEl.style.display = 'none';
+        emptyState.style.display = 'none';
+
+        if (!window.Topics || !Topics.getTopics) {
+            throw new Error('话题模块未加载');
+        }
+
+        console.log('[DEBUG] 📤 调用 Topics.getTopics()');
+        
+        // ⭐⭐⭐ 关键修复：确保更新全局变量
+        const newTopics = await Topics.getTopics(currentTaskId);
+        
+        console.log('[DEBUG] 📥 API返回话题数量:', newTopics.length);
+        console.log('[DEBUG] 📥 新话题列表:', newTopics.map(t => ({
+            id: t.topicId,
+            title: t.title,
+            deleted: t.deleted
+        })));
+        
+        // ⭐⭐⭐ 更新全局变量
+        topicList = newTopics;
+        
+        console.log('[DEBUG] 📋 全局 topicList 已更新，数量:', topicList.length);
+        
+        loadingState.style.display = 'none';
+        displayTopics(topicList);  // 传入正确的数据
+        
+        console.log('[DEBUG] ✅ 话题列表加载完成');
+        
+    } catch (error) {
+        console.error('[DEBUG] ❌ 加载话题列表失败:', error);
+        console.error('[DEBUG] ❌ 错误堆栈:', error.stack);
+        document.getElementById('loadingState').style.display = 'none';
+        showMessage('加载话题失败: ' + error.message, 'error');
+    }
+}
+    // ========== 显示话题列表 ==========
+    function displayTopics(topics) {
+        const topicListEl = document.getElementById('topicList');
+        const emptyState = document.getElementById('emptyState');
+        const topicCount = document.getElementById('topicCount');
+        const hotTopicCount = document.getElementById('hotTopicCount');
+
+        topicCount.textContent = topics.length;
+        
+
+        if (!topics || topics.length === 0) {
+            topicListEl.innerHTML = '';
+            topicListEl.style.display = 'none';
+            emptyState.style.display = 'block';
+            return;
+        }
+
+        emptyState.style.display = 'none';
+        topicListEl.style.display = 'grid';
+        
+        // 对话题进行排序：俱乐部创建者的话题置顶
+        const sortedTopics = [...topics].sort((a, b) => {
+            const aIsCreator = clubCreatorId && a.creatorId === clubCreatorId;
+            const bIsCreator = clubCreatorId && b.creatorId === clubCreatorId;
+            
+            // 俱乐部创建者的话题排在前面
+            if (aIsCreator && !bIsCreator) return -1;
+            if (!aIsCreator && bIsCreator) return 1;
+            
+            // 其他话题按创建时间排序（新的在前）
+            return new Date(b.createdAt) - new Date(a.createdAt);
+        });
+        
+        topicListEl.innerHTML = sortedTopics.map((topic, index) => {
+            const isHot = (topic.commentCount || 0) > 10;
+            const isMyTopic = topic.creatorId === currentUserId;
+            const canManage = isClubAdmin || isMyTopic;
+            const isCreatorTopic = clubCreatorId && topic.creatorId === clubCreatorId; // 是否是俱乐部创建者发布的话题
+            const isFirstNonCreatorTopic = !isCreatorTopic && sortedTopics.slice(0, index).every(t => clubCreatorId && t.creatorId === clubCreatorId);
+            
+            return `
+                <div class="topic-card ${isCreatorTopic ? 'pinned' : ''}">
+                    ${isCreatorTopic ? '<i class="fas fa-thumbtack pin-icon"></i>' : ''}
+                    <div class="topic-card-header">
+                        <div class="topic-main-info" onclick="goToTopicForum(${topic.topicId})">
+                            <div class="topic-title-row">
+                                <h3 class="topic-title">${escapeHtml(topic.title)}</h3>
+                                ${isCreatorTopic ? '<span class="topic-badge required">📌 必答</span>' : ''}
+                                ${isHot ? '<span class="topic-badge hot">🔥 热门</span>' : ''}
+                                ${isFirstNonCreatorTopic ? '<span class="topic-badge new">✨ 最新</span>' : ''}
+                            </div>
+                            <p class="topic-description ${topic.description ? '' : 'empty'}">
+                                ${topic.description ? escapeHtml(topic.description) : '暂无说明，点击进入查看详情'}
+                            </p>
+                        </div>
+                        ${canManage ? `
+                            <div class="topic-actions">
+                                <button class="btn-topic-action btn-edit" onclick="event.stopPropagation(); editTopic(${topic.topicId})">
+                                    <i class="fas fa-edit"></i>
+                                    <span>编辑</span>
+                                </button>
+                                <button class="btn-topic-action btn-delete" onclick="event.stopPropagation(); deleteTopic(${topic.topicId})">
+                                    <i class="fas fa-trash-alt"></i>
+                                    <span>删除</span>
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="topic-meta">
+    <div class="topic-meta-item">
+        <i class="fas fa-user-circle"></i>
+        <span>发起人：<strong>${escapeHtml(topic.creatorName || '未知')}</strong></span>
+    </div>
+    <div class="topic-meta-item">
+        <i class="fas fa-comment-dots"></i>
+        <span><strong>${topic.commentCount || 0}</strong> 条讨论</span>
+    </div>
+    <div class="topic-meta-item">
+        <i class="fas fa-clock"></i>
+        <span>${formatDate(topic.createdAt)}</span>
+    </div>
+</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // ========== 打开创建话题模态框 ==========
+    document.getElementById('btnCreateTopic').addEventListener('click', openCreateTopicModal);
+
+    function openCreateTopicModal() {
+        document.getElementById('modalTitle').textContent = '发起新话题';
+        document.getElementById('topicForm').reset();
+        document.getElementById('editTopicId').value = '';
+        document.getElementById('topicModal').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    // ========== 关闭模态框 ==========
+    function closeTopicModal() {
+        document.getElementById('topicModal').classList.remove('active');
+        document.body.style.overflow = 'auto';
+    }
+
+    // ========== 提交话题表单 ==========
+    document.getElementById('topicForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const topicId = document.getElementById('editTopicId').value;
+        const title = document.getElementById('topicTitle').value.trim();
+        const description = document.getElementById('topicDescription').value.trim();
+        const scaffold = document.getElementById('topicScaffold').value.trim();
+
+        if (!title) {
+            showMessage('请输入话题标题', 'warning');
+            return;
+        }
+
+        try {
+            showMessage('正在保存...', 'info');
+
+            const topicData = {
+    taskId: currentTaskId,
+    title: title,
+    content: description,      // ✅ 修改为 content（后端API要求的字段名）
+    scaffold: scaffold
+};
+
+            let result;
+            if (topicId) {
+                // 编辑话题
+                result = await Topics.updateTopic(parseInt(topicId), topicData);
+            } else {
+                // 创建话题
+                result = await Topics.createTopic(topicData);
+            }
+
+            if (result.success) {
+                if (window.Utils && Utils.sendAnalyticsEvent) {
+                    if (topicId) {
+                        Utils.sendAnalyticsEvent('topic_edit', {
+                            category: 'interaction',
+                            target_type: 'topic',
+                            target_id: parseInt(topicId),
+                            club_id: currentClubId,
+                            target_object: {
+                                title: title,
+                                content: description,
+                                content_length: description.length
+                            }
+                        });
+                    } else {
+                        Utils.sendAnalyticsEvent('topic_create', {
+                            category: 'interaction',
+                            target_type: 'topic',
+                            target_id: result.data?.topicId,
+                            club_id: currentClubId,
+                            target_object: {
+                                title: title,
+                                content: description,
+                                content_length: description.length
+                            }
+                        });
+                    }
+                }
+                showMessage(topicId ? '话题更新成功' : '话题发布成功！', 'success');
+                closeTopicModal();
+                await loadTopics();
+            } else {
+                showMessage(result.message || '操作失败', 'error');
+            }
+        } catch (error) {
+            console.error('保存话题失败:', error);
+            showMessage('操作失败: ' + error.message, 'error');
+        }
+    });
+
+    // ========== 编辑话题 ==========
+    async function editTopic(topicId) {
+        try {
+            const topic = topicList.find(t => t.topicId === topicId);
+            if (!topic) {
+                showMessage('找不到该话题', 'error');
+                return;
+            }
+
+            document.getElementById('modalTitle').textContent = '编辑话题';
+            document.getElementById('editTopicId').value = topicId;
+            document.getElementById('topicTitle').value = topic.title;
+            document.getElementById('topicDescription').value = topic.content || topic.description || '';
+            document.getElementById('topicScaffold').value = topic.scaffold || '';
+            document.getElementById('topicModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        } catch (error) {
+            console.error('编辑话题失败:', error);
+            showMessage('操作失败', 'error');
+        }
+    }
+
+    // ========== 删除话题 ==========
+    async function deleteTopic(topicId) {
+    console.log('[DEBUG] 🗑️ 开始删除话题，ID:', topicId);
+    console.log('[DEBUG] 📋 当前全局 topicList 数量:', topicList.length);
+    
+    if (!confirm('确定要删除这个话题吗？删除后将无法恢复，所有相关讨论也会被删除。')) {
+        console.log('[DEBUG] ❌ 用户取消删除');
+        return;
+    }
+
+    try {
+        console.log('[DEBUG] 📤 发送删除请求，话题ID:', topicId);
+        showMessage('正在删除...', 'info');
+
+        const result = await Topics.deleteTopic(topicId);
+        
+        console.log('[DEBUG] 📥 删除请求返回结果:', result);
+        
+        if (result.success) {
+            showMessage('话题删除成功', 'success');
+            
+            console.log('[DEBUG] ✅ 删除成功，开始重新加载话题列表');
+            console.log('[DEBUG] 📋 删除前全局 topicList:', topicList.map(t => t.topicId));
+            
+            // ⭐ 清空当前列表，立即反馈
+            const oldTopicList = [...topicList]; // 保存旧数据用于对比
+            topicList = [];
+            displayTopics([]); // 立即清空显示
+            
+            // 重新加载
+            await loadTopics();
+            
+            console.log('[DEBUG] 📋 重新加载后全局 topicList:', topicList.map(t => t.topicId));
+            
+            // 对比检查
+            const stillExists = topicList.find(t => t.topicId === topicId);
+            if (stillExists) {
+                console.error('[DEBUG] ❌ 话题仍然存在于全局变量中');
+                console.error('[DEBUG] ❌ 完整对比:');
+                console.error('[DEBUG] ❌ 旧列表:', oldTopicList.map(t => t.topicId));
+                console.error('[DEBUG] ❌ 新列表:', topicList.map(t => t.topicId));
+            } else {
+                console.log('[DEBUG] ✅ 确认话题已从全局变量中移除');
+            }
+        } else {
+            console.log('[DEBUG] ❌ 删除失败:', result.message);
+            showMessage(result.message || '删除失败', 'error');
+        }
+    } catch (error) {
+        console.error('[DEBUG] ❌ 删除话题异常:', error);
+        showMessage('删除失败: ' + error.message, 'error');
+    }
+}
+
+    // ========== 跳转到话题论坛 ==========
+    function goToTopicForum(topicId) {
+        if (window.Utils && Utils.sendAnalyticsEvent) {
+            Utils.sendAnalyticsEvent('topic_open_detail', {
+                category: 'interaction',
+                target_type: 'topic',
+                target_id: topicId
+            });
+        }
+        window.location.hash = `topicforum?taskId=${currentTaskId}&topicId=${topicId}&clubId=${currentClubId}`;
+    }
+
+    // ========== 返回任务页 ==========
+    function goBackToTasks() {
+        const hash = `tasks?taskId=${currentTaskId}&clubId=${currentClubId}`;
+        window.location.hash = hash;
+    }
+
+    // ========== 工具函数 ==========
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function formatDate(dateString) {
+        if (!dateString) return '刚刚';
+        const date = new Date(dateString);
+        const now = new Date();
+        const diff = now - date;
+        
+        if (diff < 60000) return '刚刚';
+        if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前';
+        if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前';
+        if (diff < 2592000000) return Math.floor(diff / 86400000) + '天前';
+        
+        return date.toLocaleDateString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+    }
+
+    function showMessage(message, type = 'info') {
+        if (window.Utils && window.Utils.showNotification) {
+            window.Utils.showNotification(message, type);
+            return;
+        }
+        
+        const notification = document.createElement('div');
+        notification.textContent = message;
+        notification.style.cssText = `
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            background: ${type === 'error' ? '#ff4d4f' : type === 'success' ? '#52c41a' : type === 'warning' ? '#faad14' : '#1890ff'};
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            z-index: 1000;
+            font-size: 15px;
+            font-weight: 500;
+            max-width: 400px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            animation: slideIn 0.3s ease;
+            border-left: 4px solid ${type === 'error' ? '#d9363e' : type === 'success' ? '#389e0d' : type === 'warning' ? '#d48806' : '#096dd9'};
+        `;
+        
+        document.body.appendChild(notification);
+        setTimeout(() => {
+            notification.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+
+    // ========== 全局函数 ==========
+    window.closeTopicModal = closeTopicModal;
+    window.editTopic = editTopic;
+    window.deleteTopic = deleteTopic;
+    window.goToTopicForum = goToTopicForum;
+    window.goBackToTasks = goBackToTasks;
+    window.initTopicListPage = initTopicListPage;
+
+    // 立即初始化
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initTopicListPage);
+    } else {
+        initTopicListPage();
+    }
+</script>
+
+</body>
+</html>

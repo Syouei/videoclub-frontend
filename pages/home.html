@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的俱乐部 - 教师视频俱乐部</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+    /* ========== 改进的俱乐部卡片样式 ========== */
+.club-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* 确保卡片充满容器高度 */
+    min-height: 280px; /* 设置最小高度，避免内容太少时变形 */
+    position: relative;
+}
+
+/* 卡片内容区域 - 可伸缩 */
+.club-card > *:not(.club-actions) {
+    flex: 0 1 auto; /* 可伸缩但不强制 */
+}
+
+/* 俱乐部描述区域 - 可伸缩 */
+.club-description {
+    flex: 1;
+    min-height: 60px;
+    overflow: hidden;
+}
+
+/* 操作按钮区域 - 固定在底部 */
+.club-actions {
+    flex-shrink: 0;
+    margin-top: auto; /* 关键：自动上外边距，推到最下面 */
+    padding-top: 16px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* 归档俱乐部的操作按钮样式 */
+.club-card.archived .club-actions {
+    border-top-color: #f0f0f0;
+}
+
+/* 小屏幕适配 */
+@media (max-width: 768px) {
+    .club-actions {
+        flex-direction: column;
+    }
+    
+    .club-actions .btn {
+        width: 100%;
+    }
+}
+        /* 归档俱乐部卡片样式 */
+.club-card.archived {
+    background: #fafafa;
+    border-color: #e0e0e0;
+    opacity: 0.9;
+}
+
+.club-card.archived h3 {
+    color: #666 !important;
+}
+
+.club-card.archived .club-tags .tag {
+    opacity: 0.8;
+}
+
+.club-card.archived .club-actions .btn {
+    opacity: 0.9;
+    border-width: 1px;
+}
+
+.club-card.archived .club-actions .btn:hover {
+    opacity: 1;
+}
+
+/* 归档卡片的查看任务按钮特殊样式 */
+.club-card.archived .club-actions .btn-outline {
+    border-color: #999;
+    color: #666;
+}
+
+.club-card.archived .club-actions .btn-outline:hover {
+    border-color: #1890ff;
+    color: #1890ff;
+    background-color: rgba(24, 144, 255, 0.05);
+}
+
+.club-card.archived .club-actions .btn-primary {
+    background: linear-gradient(135deg, #52c41a, #73d13d);
+    border-color: #52c41a;
+}
+
+.club-card.archived .club-actions .btn-primary:hover {
+    background: linear-gradient(135deg, #389e0d, #52c41a);
+    border-color: #389e0d;
+}
+        
+        /* 归档模态框样式 */
+        .archive-consequence {
+            background: rgba(0, 0, 0, 0.02);
+            border-left: 4px solid #999;
+            padding: 12px;
+            border-radius: 4px;
+        }
+        
+        .delete-consequence {
+            background: rgba(255, 77, 79, 0.05);
+            border-left: 4px solid #ff4d4f;
+            padding: 12px;
+            border-radius: 4px;
+        }
+        
+        .action-option {
+            padding: 16px;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .action-option:hover {
+            border-color: #1890ff;
+            background: rgba(24, 144, 255, 0.03);
+        }
+        
+        .action-option.selected {
+            border-color: #1890ff;
+            background: rgba(24, 144, 255, 0.05);
+        }
+        
+        .action-radio {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ddd;
+            border-radius: 50%;
+            position: relative;
+        }
+        
+        .action-radio.selected::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 12px;
+            height: 12px;
+            background: #1890ff;
+            border-radius: 50%;
+        }
+        
+        /* ========== 新增：用户下拉菜单样式 ========== */
+        .user-info {
+            position: relative;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .user-info:hover {
+            background-color: rgba(0, 0, 0, 0.03);
+        }
+        
+        .user-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            min-width: 200px;
+            z-index: 1000;
+            margin-top: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            animation: fadeIn 0.2s ease;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .dropdown-item {
+            padding: 12px 16px;
+            font-size: 14px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background-color 0.2s ease;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
+        
+        .dropdown-item:hover {
+            background-color: rgba(24, 144, 255, 0.08);
+            color: var(--primary-color);
+        }
+        
+        /* 注销账户选项的特殊样式 */
+        .dropdown-item[onclick*="deleteAccount"]:hover {
+            background-color: rgba(255, 77, 79, 0.1);
+            color: #ff4d4f;
+        }
+        
+        .dropdown-item i {
+            width: 16px;
+            text-align: center;
+        }
+        
+        .profile-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff4d4f, #ff7a45);
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 8px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+        
+        .user-avatar-wrapper {
+            position: relative;
+        }
+        
+        .user-dropdown-header {
+            padding: 16px;
+            background: linear-gradient(135deg, rgba(24, 144, 255, 0.1), rgba(114, 46, 209, 0.1));
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .user-dropdown-header .avatar {
+            width: 40px;
+            height: 40px;
+            font-size: 18px;
+        }
+        
+        .user-dropdown-header .user-info-text {
+            flex: 1;
+        }
+        
+        .user-dropdown-header .user-name {
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 2px;
+        }
+        
+        .user-dropdown-header .user-email {
+            font-size: 12px;
+            color: var(--text-sub);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 160px;
+        }
+
+        /* ========== 新增：通知徽章样式 ========== */
+        .notification-badge {
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .notification-icon {
+            font-size: 18px;
+            color: #666;
+            transition: color 0.3s ease;
+            padding: 8px;
+            border-radius: 8px;
+        }
+        
+        .notification-icon:hover {
+            color: #1890ff;
+            background: rgba(24, 144, 255, 0.1);
+        }
+        
+        .notification-count {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ff4d4f;
+            color: white;
+            font-size: 10px;
+            min-width: 16px;
+            height: 16px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+            font-weight: bold;
+            display: none; /* 默认隐藏，有通知时显示 */
+        }
+        
+        .notification-count.high {
+            background: #ff4d4f;
+        }
+        
+        .notification-count.medium {
+            background: #faad14;
+        }
+        
+        .notification-count.low {
+            background: #52c41a;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .user-info span {
+                display: none;
+            }
+            
+            .user-dropdown {
+                right: -10px;
+            }
+        }
+        
+        /* ========== 修复：模态框中的文本输入框样式 ========== */
+        .modal .form-item input[type="text"],
+        .modal .form-item textarea,
+        .modal .form-item select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+        
+        .modal .form-item input[type="text"]:focus,
+        .modal .form-item textarea:focus,
+        .modal .form-item select:focus {
+            border-color: #1890ff;
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+            outline: none;
+        }
+        
+        .modal .form-item textarea {
+            resize: vertical;
+            min-height: 80px;
+            line-height: 1.5;
+        }
+        
+        /* 确保所有输入框对齐 */
+        .modal .form-item {
+            margin-bottom: 20px;
+        }
+        
+        .modal .form-item label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .modal .form-item label.required::after {
+            content: '*';
+            color: #ff4d4f;
+            margin-left: 4px;
+        }
+    </style>
+</head>
+<body>
+     <div id="page-home" class="page active">
+        <div class="header">
+            <div class="header-left">
+                <span class="platform-name">教师视频俱乐部</span>
+                <span style="color: #999; font-weight: normal;"> | 我的俱乐部</span>
+            </div>
+            <div class="header-right">
+                <!-- ========== 新增：通知图标 ========== -->
+                <div class="notification-badge" onclick="openNotifications()" style="margin-right: 15px; position: relative;">
+                    <i class="fas fa-bell notification-icon"></i>
+                    <div id="notification-badge" class="notification-count" style="display: none;">0</div>
+                </div>
+                
+                <!-- 搜索和创建俱乐部按钮 -->
+                <div style="display: flex; gap: 10px; margin-right: 15px;">
+                    <button class="btn btn-outline btn-sm" onclick="window.App.openJoinClubModal()">
+                        <i class="fas fa-search"></i> 搜索俱乐部
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="window.App.openCreateClubModal()">
+                        <i class="fas fa-plus"></i> 创建俱乐部
+                    </button>
+                </div>
+                
+                <!-- 用户信息区域 -->
+                <div class="user-info" id="user-info-dropdown" onclick="toggleUserDropdown(event)">
+                    <div class="user-avatar-wrapper">
+                        <div class="avatar" id="user-avatar">王</div>
+                    </div>
+                    <span id="user-name-display">王老师</span>
+                    <i class="fas fa-chevron-down" style="font-size: 12px; color: #999;"></i>
+                    
+                    <!-- 下拉菜单 -->
+                    <div class="user-dropdown" id="user-dropdown" style="display: none;">
+                        <!-- 用户信息头部 -->
+                        <div class="user-dropdown-header">
+                            <div class="avatar" id="dropdown-user-avatar">王</div>
+                            <div class="user-info-text">
+                                <div class="user-name" id="dropdown-user-name">王老师</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 通知中心 -->
+                        <div class="dropdown-item" onclick="openNotifications()">
+                            <i class="fas fa-bell"></i> 通知中心
+                            <span id="dropdown-notification-count" class="profile-badge" style="display: none;">0</span>
+                        </div>
+                        
+                        <!-- 完善个人信息 -->
+                        <div class="dropdown-item" onclick="navigateToProfile()">
+                            <i class="fas fa-user-edit"></i> 完善个人信息
+                            <span class="profile-badge" id="profile-badge" style="display: none;">!</span>
+                        </div>
+                        
+                        <!-- 注销账户 -->
+                        <div class="dropdown-item" onclick="deleteAccount()" style="color: #ff4d4f;">
+                            <i class="fas fa-user-times"></i> 注销账户
+                        </div>
+                        
+                        <!-- 退出登录 -->
+                        <div class="dropdown-item" onclick="window.App.logout()" style="color: #ff4d4f;">
+                            <i class="fas fa-sign-out-alt"></i> 退出登录
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="club-grid" id="club-list">
+            <!-- 俱乐部卡片将由JS动态生成 -->
+            <div class="empty-state">
+                <i class="fas fa-users"></i>
+                <h3>加载中...</h3>
+                <p>正在加载俱乐部列表</p>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 搜索俱乐部模态框 -->
+    <div id="join-club-modal" class="modal-overlay" style="display: none;">
+        <div class="modal">
+            <h3 style="margin-bottom: 24px;">搜索并加入俱乐部</h3>
+            <div class="form-item">
+                <label>搜索俱乐部</label>
+                <input type="text" id="search-club-input" placeholder="输入俱乐部名称或ID...">
+            </div>
+            <div style="text-align:right; margin-bottom: 20px;">
+                <button class="btn btn-primary" onclick="searchClubsAction()">搜索</button>
+            </div>
+            <div id="search-results" style="max-height: 300px; overflow-y: auto;">
+                <div style="text-align: center; color: #999; padding: 40px 20px;">
+                    <i class="fas fa-search" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                    <p>输入关键词搜索俱乐部</p>
+                </div>
+            </div>
+            <div style="text-align:right; margin-top: 20px;">
+                <button class="btn btn-outline" onclick="window.App.closeJoinClubModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 创建俱乐部模态框（修改：添加加入政策选项） -->
+    <div id="create-club-modal" class="modal-overlay" style="display: none;">
+        <div class="modal">
+            <h3 style="margin-bottom: 24px;">创建新俱乐部</h3>
+            <div class="form-item">
+                <label class="required">俱乐部名称</label>
+                <input type="text" id="new-club-name" placeholder="请输入俱乐部名称">
+            </div>
+            <div class="form-item">
+                <label>标签</label>
+                <input type="text" id="new-club-tag" placeholder="教研组" value="教研组">
+            </div>
+            <div class="form-item">
+                <label>简介</label>
+                <textarea id="new-club-description" placeholder="请输入俱乐部简介" rows="4"></textarea>
+            </div>
+            <div class="form-item">
+                <label>加入方式</label>
+                <select id="new-club-join-policy">
+                    <option value="free">自由加入</option>
+                    <option value="approval">需要审核</option>
+                </select>
+            </div>
+            <div class="form-item" id="join-conditions-container" style="display: none;">
+                <label>加入条件说明</label>
+                <textarea id="new-club-join-conditions" placeholder="请输入加入条件说明（例如：仅限在职教师）" rows="3"></textarea>
+            </div>
+            <div style="text-align:right; margin-top: 24px;">
+                <button class="btn btn-outline" onclick="window.App.closeCreateClubModal()">取消</button>
+                <button class="btn btn-primary" onclick="window.App.createNewClub()">创建俱乐部</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // ========== 通知相关功能 ==========
+    
+    // 打开通知页面
+function openNotifications() {
+    console.log('打开通知中心');
+    closeUserDropdown();
+    
+    if (window.App && window.App.navigateToNotifications) {
+        window.App.navigateToNotifications();
+    } else {
+        window.location.hash = 'notifications';
+    }
+}
+
+// 更新通知徽章 - 修改：根据未读数量更新铃铛颜色
+function updateNotificationBadge() {
+    console.log('更新通知徽章');
+    
+    const notificationBadge = document.getElementById('notification-badge');
+    const notificationIcon = document.querySelector('.notification-icon');
+    const dropdownBadge = document.getElementById('dropdown-notification-count');
+    
+    if (window.App && window.App.state) {
+        const count = window.App.state.unreadNotificationCount || 0;
+        
+        // 更新顶部铃铛图标和徽章
+        if (notificationBadge && notificationIcon) {
+            if (count > 0) {
+                notificationBadge.textContent = count > 99 ? '99+' : count.toString();
+                notificationBadge.style.display = 'flex';
+                notificationBadge.style.backgroundColor = '#ff4d4f'; // 红色
+                
+                // 铃铛图标变为红色
+                notificationIcon.style.color = '#ff4d4f';
+            } else {
+                notificationBadge.style.display = 'none';
+                notificationIcon.style.color = '#666'; // 恢复默认颜色
+            }
+        }
+        
+        // 更新下拉菜单中的徽章
+        if (dropdownBadge) {
+            if (count > 0) {
+                dropdownBadge.textContent = count > 99 ? '99+' : count.toString();
+                dropdownBadge.style.display = 'inline-block';
+                dropdownBadge.style.backgroundColor = '#ff4d4f'; // 红色
+            } else {
+                dropdownBadge.style.display = 'none';
+            }
+        }
+    }
+}
+
+// ========== 首页初始化 ==========
+
+function initHomePage() {
+    console.log('首页初始化');
+    
+    // 更新用户信息
+    if (window.Auth && window.Auth.getUser()) {
+        const user = window.Auth.getUser();
+        console.log('当前用户:', user);
+        
+        const nameElements = document.querySelectorAll('#user-name-display');
+        const avatarElements = document.querySelectorAll('#user-avatar');
+        
+        nameElements.forEach(element => {
+            if (element) element.textContent = user.name || user.username || '用户';
+        });
+        
+        avatarElements.forEach(element => {
+            if (element) {
+                const firstName = user.name ? user.name.charAt(0) : user.username ? user.username.charAt(0) : '?';
+                element.textContent = firstName;
+            }
+        });
+    }
+
+    // 优先从API刷新用户资料，保证与Profile页面一致
+    refreshUserProfileFromApi();
+    
+    // 检查个人资料完成度
+    setTimeout(() => {
+        checkProfileCompletion();
+    }, 500);
+    
+    // 页面加载后立即更新通知徽章
+    setTimeout(() => {
+        // 先初始化通知徽章
+        updateNotificationBadge();
+        
+        // 获取未读通知数量并更新徽章
+        if (window.Notifications && window.Notifications.getUnreadCount) {
+            window.Notifications.getUnreadCount().then(count => {
+                console.log('获取到的未读通知数量:', count);
+                if (window.App && window.App.state) {
+                    window.App.state.unreadNotificationCount = count;
+                    updateNotificationBadge();
+                }
+            }).catch(error => {
+                console.error('获取未读数量失败:', error);
+            });
+        }
+        
+        // 同时尝试通过App更新
+        if (window.App && window.App.updateUnreadCount) {
+            window.App.updateUnreadCount();
+        }
+    }, 300);
+}
+
+// 从API刷新用户资料并同步到本地缓存
+async function refreshUserProfileFromApi() {
+    if (!window.API || !window.Auth || !window.Auth.isLoggedIn || !window.Auth.isLoggedIn()) {
+        return;
+    }
+    
+    try {
+        const result = await API.getMyInfo();
+        if (result && result.code === 0 && result.data) {
+            const apiUser = result.data;
+            
+            // 同步到Auth
+            if (window.Auth.currentUser) {
+                const currentUser = window.Auth.currentUser;
+                currentUser.userId = apiUser.userId ?? currentUser.userId;
+                currentUser.username = apiUser.username ?? currentUser.username;
+                currentUser.role = apiUser.role ?? currentUser.role;
+                currentUser.avatarUrl = apiUser.avatarUrl ?? currentUser.avatarUrl;
+                currentUser.name = apiUser.username ?? currentUser.name;
+                currentUser.profile = { ...(currentUser.profile || {}), ...apiUser };
+                
+                Utils.saveToStorage(AppConfig.STORAGE_KEYS.USER_INFO, currentUser);
+            }
+            
+            // 同步到Profile模块与本地存储
+            if (window.Profile) {
+                const mergedProfile = { ...(window.Profile.currentProfile || {}), ...apiUser };
+                window.Profile.currentProfile = mergedProfile;
+                Utils.saveToStorage('user_profile', mergedProfile);
+            }
+            
+            // 更新显示和完成度
+            if (window.Auth && window.Auth.updateUserDisplay) {
+                window.Auth.updateUserDisplay();
+            }
+            checkProfileCompletion();
+        }
+    } catch (error) {
+        console.warn('首页刷新用户资料失败，使用本地缓存:', error);
+    }
+}
+    // ========== 用户下拉菜单功能 ==========
+    
+    let userDropdownOpen = false;
+    let userProfileCompletion = 0;
+    
+    // 切换用户下拉菜单
+    function toggleUserDropdown(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        console.log('切换用户下拉菜单');
+        const dropdown = document.getElementById('user-dropdown');
+        if (!dropdown) return;
+        
+        if (userDropdownOpen) {
+            dropdown.style.display = 'none';
+            userDropdownOpen = false;
+        } else {
+            dropdown.style.display = 'block';
+            userDropdownOpen = true;
+            
+            // 更新下拉菜单中的用户信息
+            updateDropdownUserInfo();
+            
+            // 检查个人资料完成度
+            checkProfileCompletion();
+        }
+    }
+    
+    // 关闭用户下拉菜单（点击外部）
+    function closeUserDropdown() {
+        const dropdown = document.getElementById('user-dropdown');
+        if (dropdown) {
+            dropdown.style.display = 'none';
+            userDropdownOpen = false;
+        }
+    }
+    
+    // 点击页面其他地方关闭下拉菜单
+    document.addEventListener('click', function(event) {
+        const userInfo = document.getElementById('user-info-dropdown');
+        const dropdown = document.getElementById('user-dropdown');
+        
+        if (userInfo && !userInfo.contains(event.target) && 
+            dropdown && dropdown.style.display === 'block') {
+            closeUserDropdown();
+        }
+    });
+    
+    // 更新下拉菜单中的用户信息
+    function updateDropdownUserInfo() {
+        console.log('更新下拉菜单用户信息');
+        if (!window.Auth || !window.Auth.getUser()) return;
+        
+        const user = window.Auth.getUser();
+        console.log('当前用户:', user);
+        
+        // 更新下拉菜单中的头像
+        const dropdownAvatar = document.getElementById('dropdown-user-avatar');
+        if (dropdownAvatar) {
+            const firstName = user.name ? user.name.charAt(0) : '?';
+            dropdownAvatar.textContent = firstName;
+        }
+        
+        // 更新下拉菜单中的用户名
+        const dropdownName = document.getElementById('dropdown-user-name');
+        if (dropdownName) {
+            dropdownName.textContent = user.name || user.username || '用户';
+        }
+        
+    }
+    
+    // 检查个人资料完成度
+    function checkProfileCompletion() {
+        console.log('检查个人资料完成度');
+        if (!window.Profile) {
+            console.warn('Profile模块未加载');
+            return;
+        }
+        
+        try {
+            // 获取个人资料
+            const profileData = window.Profile.getUserProfile();
+            console.log('个人资料数据:', profileData);
+            
+            if (!profileData || Object.keys(profileData).length === 0) {
+                // 没有个人资料，显示提醒
+                showProfileReminder();
+                userProfileCompletion = 0;
+            } else {
+                // 计算完成度
+                userProfileCompletion = calculateProfileCompletion(profileData);
+                console.log('个人资料完成度:', userProfileCompletion + '%');
+                
+                // 根据完成度显示不同状态
+                updateCompletionBadge(userProfileCompletion);
+                
+                // 如果完成度低，显示提醒
+                if (userProfileCompletion < 80) {
+                    showProfileReminder();
+                } else {
+                    hideProfileReminder();
+                }
+            }
+            
+            // 更新完成度徽章
+            updateCompletionIndicator();
+            
+        } catch (error) {
+            console.error('检查个人资料完成度失败:', error);
+        }
+    }
+    
+    // 计算个人资料完成度
+    function calculateProfileCompletion(profileData) {
+        if (!profileData) return 0;
+        
+        const requiredFields = (window.AppConfig &&
+            Array.isArray(AppConfig.USER_INFO_FIELDS?.required) &&
+            AppConfig.USER_INFO_FIELDS.required.length > 0)
+            ? AppConfig.USER_INFO_FIELDS.required
+            : ['realname', 'gender', 'age', 'school', 'phone', 'email'];
+        let completedCount = 0;
+        
+        requiredFields.forEach(field => {
+            if (profileData[field] && profileData[field].toString().trim() !== '') {
+                // 特殊验证
+                if (field === 'age') {
+                    const age = Number(profileData[field]);
+                    if (Number.isFinite(age) && age >= 0 && age <= 50) {
+                        completedCount++;
+                    }
+                } else if (field === 'phone') {
+                    if (validatePhoneFormat(profileData[field])) {
+                        completedCount++;
+                    }
+                } else if (field === 'gender') {
+                    if (validateGenderFormat(profileData[field])) {
+                        completedCount++;
+                    }
+                } else if (field === 'email') {
+                    if (validateEmailFormat(profileData[field])) {
+                        completedCount++;
+                    }
+                } else {
+                    completedCount++;
+                }
+            }
+        });
+        
+        return Math.round((completedCount / requiredFields.length) * 100);
+    }
+    
+    // 验证手机号格式
+    function validatePhoneFormat(phone) {
+        const phoneRegex = /^1[3-9]\d{9}$/;
+        return phoneRegex.test(phone);
+    }
+    
+    // 验证邮箱格式
+    function validateEmailFormat(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+    
+    // 验证性别格式
+    function validateGenderFormat(gender) {
+        if (!gender) return false;
+        
+        const allowed = AppConfig?.USER_INFO_FIELDS?.genders?.map(item => item.value);
+        if (Array.isArray(allowed) && allowed.length > 0) {
+            return allowed.includes(gender);
+        }
+        
+        return true;
+    }
+    
+    // 显示个人资料提醒
+    function showProfileReminder() {
+        const badge = document.getElementById('profile-badge');
+        if (badge) {
+            badge.style.display = 'inline-block';
+            badge.textContent = userProfileCompletion === 0 ? '!' : '!';
+        }
+    }
+    
+    // 隐藏个人资料提醒
+    function hideProfileReminder() {
+        const badge = document.getElementById('profile-badge');
+        if (badge) {
+            badge.style.display = 'none';
+        }
+    }
+    
+    // 更新完成度徽章显示
+    function updateCompletionBadge(completion) {
+        const badge = document.getElementById('profile-badge');
+        if (!badge) return;
+        
+        if (completion >= 80) {
+            badge.style.display = 'none';
+            return;
+        }
+        
+        badge.style.display = 'inline-block';
+        badge.textContent = completion === 0 ? '!' : `${completion}%`;
+    }
+    
+    
+    // 更新完成度指示器
+    function updateCompletionIndicator() {
+        // 这里仅负责更新指示器本身，避免递归调用导致卡顿
+        // 当前页面无额外指示器逻辑，保留为空以供后续扩展
+    }
+    
+    // 导航到个人资料页面
+    function navigateToProfile() {
+        console.log('导航到个人资料页面');
+        closeUserDropdown();
+        
+        if (window.App && window.App.navigateTo) {
+            window.App.navigateTo('profile');
+        } else if (window.App && window.App.navigateToProfile) {
+            window.App.navigateToProfile();
+        } else {
+            window.location.hash = 'profile';
+        }
+    }
+    
+    // 注销账户（永久删除用户）
+    async function deleteAccount() {
+        console.log('用户请求注销账户');
+        closeUserDropdown();
+        
+        // 获取当前用户信息
+        const currentUser = window.Auth && window.Auth.getUser ? window.Auth.getUser() : null;
+        const username = currentUser ? (currentUser.username || currentUser.name || '当前账户') : '当前账户';
+        
+        // 第一次确认
+        const firstConfirm = confirm(
+            `⚠️ 警告：注销账户操作\n\n` +
+            `您确定要永久注销账户 "${username}" 吗？\n\n` +
+            `注销后将会：\n` +
+            `• 永久删除您的账户和所有个人信息\n` +
+            `• 退出所有已加入的俱乐部\n` +
+            `• 删除所有任务记录和评论\n` +
+            `• 此操作不可恢复！\n\n` +
+            `是否继续？`
+        );
+        
+        if (!firstConfirm) {
+            console.log('用户取消了第一次确认');
+            return;
+        }
+        
+        // 第二次确认
+        const secondConfirm = confirm(
+            `⚠️ 最后确认\n\n` +
+            `请再次确认：您真的要永久删除账户 "${username}" 吗？\n\n` +
+            `这是最后一次确认，点击"确定"后账户将被立即删除且无法恢复！`
+        );
+        
+        if (!secondConfirm) {
+            console.log('用户取消了第二次确认');
+            return;
+        }
+        
+        // 显示加载提示
+        if (window.Utils && window.Utils.showNotification) {
+            window.Utils.showNotification('正在注销账户...', 'info');
+        }
+        
+        try {
+            // 检查API是否存在
+            if (!window.API) {
+                throw new Error('API模块未加载');
+            }
+            
+            // 调用API删除账户
+            // 注意：需要后端提供 DELETE /users/me 接口
+            const config = window.AppConfig || {};
+            const apiBaseUrl = config.API_BASE_URL || '/api/v1';
+            const storageKeys = config.STORAGE_KEYS || { USER_TOKEN: 'user_token' };
+            
+            // 获取token
+            const token = localStorage.getItem(storageKeys.USER_TOKEN) || 
+                         sessionStorage.getItem(storageKeys.USER_TOKEN);
+            
+            if (!token) {
+                throw new Error('未找到认证令牌');
+            }
+            
+            // 发送删除请求
+            const response = await fetch(`${apiBaseUrl}/users/me`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok && result.code === 0) {
+                // 删除成功
+                console.log('账户注销成功');
+                
+                // 显示成功消息
+                alert('✓ 账户已成功注销\n\n您的账户和所有数据已被永久删除。\n即将返回登录页面...');
+                
+                // 清除所有本地数据
+                localStorage.clear();
+                sessionStorage.clear();
+                
+                // 清除所有cookies
+                document.cookie.split(";").forEach(function(c) { 
+                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+                });
+                
+                // 跳转到登录页面
+                setTimeout(() => {
+                    window.location.href = '/pages/login.html';
+                }, 1000);
+                
+            } else {
+                // 删除失败
+                throw new Error(result.msg || '注销账户失败');
+            }
+            
+        } catch (error) {
+            console.error('注销账户失败:', error);
+            
+            // 显示错误信息
+            alert(
+                `❌ 注销账户失败\n\n` +
+                `错误信息：${error.message}\n\n` +
+                `可能的原因：\n` +
+                `• 网络连接问题\n` +
+                `• 认证令牌已过期\n` +
+                `• 后端接口未实现\n\n` +
+                `请稍后重试或联系管理员。`
+            );
+            
+            if (window.Utils && window.Utils.showNotification) {
+                window.Utils.showNotification('注销账户失败: ' + error.message, 'error');
+            }
+        }
+    }
+    
+    // 查看我的资料
+    function viewMyProfile() {
+        closeUserDropdown();
+        // 这里可以跳转到只读的个人资料查看页面
+        Utils.showNotification('个人资料查看功能开发中', 'info');
+    }
+    
+    // 打开设置
+    function openSettings() {
+        closeUserDropdown();
+        Utils.showNotification('设置功能开发中', 'info');
+    }
+    
+    // 打开帮助
+    function openHelp() {
+        closeUserDropdown();
+        Utils.showNotification('帮助与反馈功能开发中', 'info');
+    }
+    
+    // ========== 搜索俱乐部功能 ==========
+    
+    function searchClubsAction() {
+        const searchInput = document.getElementById('search-club-input');
+        if (!searchInput) return;
+        
+        const keyword = searchInput.value.trim();
+        if (!keyword) {
+            Utils.showNotification('请输入搜索关键词', 'info');
+            return;
+        }
+        
+        console.log('搜索俱乐部，关键词:', keyword);
+        
+        // 显示加载状态
+        const searchResults = document.getElementById('search-results');
+        if (searchResults) {
+            searchResults.innerHTML = `
+                <div style="text-align: center; color: #999; padding: 40px 20px;">
+                    <div class="loading-spinner" style="display: inline-block; width: 40px; height: 40px; border: 3px solid #f3f3f3; border-top: 3px solid #1890ff; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                    <p style="margin-top: 16px;">正在搜索...</p>
+                </div>
+            `;
+        }
+        
+        // 调用搜索功能
+        window.Clubs.searchClubs(keyword).then(clubs => {
+            console.log('搜索到的俱乐部:', clubs);
+            renderSearchResults(clubs);
+        }).catch(error => {
+            console.error('搜索俱乐部失败:', error);
+            if (searchResults) {
+                searchResults.innerHTML = `
+                    <div style="text-align: center; color: #999; padding: 40px 20px;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                        <p>搜索失败: ${error.message}</p>
+                    </div>
+                `;
+            }
+        });
+    }
+    
+    function renderSearchResults(clubs) {
+        const searchResults = document.getElementById('search-results');
+        if (!searchResults) return;
+        
+        if (!clubs || clubs.length === 0) {
+            searchResults.innerHTML = `
+                <div style="text-align: center; color: #999; padding: 40px 20px;">
+                    <i class="fas fa-search" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                    <p>未找到相关俱乐部</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        
+        clubs.forEach(club => {
+            // 根据加入政策显示不同的按钮
+            let joinButton = '';
+            if (club.joinPolicy === 'free') {
+                joinButton = `<button class="btn btn-primary btn-sm" onclick="window.App.joinClub(${club.id})">
+                    <i class="fas fa-plus"></i> 立即加入
+                </button>`;
+            } else {
+                joinButton = `<button class="btn btn-primary btn-sm" onclick="window.App.showJoinClubDialog(${club.id})">
+                    <i class="fas fa-user-plus"></i> 申请加入
+                </button>`;
+            }
+            
+            // 入会条件说明
+            const joinConditions = club.joinConditions ? 
+                `<div style="font-size: 12px; color: #666; margin-top: 4px; padding: 4px 8px; background: #f5f5f5; border-radius: 4px;">
+                    <i class="fas fa-info-circle"></i> 入会条件：${club.joinConditions}
+                </div>` : '';
+            
+            html += `
+                <div class="search-result-item" style="border: 1px solid #eee; border-radius: 8px; padding: 16px; margin-bottom: 12px; background: white;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <h4 style="margin: 0; font-size: 16px; color: #333;">${club.name}</h4>
+                                <span class="tag" style="background: linear-gradient(135deg, #e6f7ff, #bae7ff); color: #096dd9; font-size: 12px;">${club.tag}</span>
+                                ${club.joinPolicy === 'approval' ? '<span class="tag" style="background: linear-gradient(135deg, #f0f0ff, #d6e4ff); color: #597ef7; font-size: 12px;"><i class="fas fa-user-check"></i> 需审核</span>' : ''}
+                            </div>
+                            <div style="font-size: 13px; color: #666; margin-bottom: 8px;">
+                                <span><i class="fas fa-hashtag"></i> ID：${club.id}</span>
+    <span style="margin-left: 16px;"><i class="fas fa-user"></i> 创建者：${club.creator}</span>
+    <span style="margin-left: 16px;"><i class="fas fa-users"></i> 成员：${club.members}人</span>
+                            </div>
+                            ${club.description ? `<div style="font-size: 13px; color: #777; margin-bottom: 8px; line-height: 1.4;">${club.description}</div>` : ''}
+                            ${joinConditions}
+                        </div>
+                        <div style="margin-left: 16px;">
+                            ${joinButton}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        searchResults.innerHTML = html;
+    }
+    
+    // ========== 创建俱乐部功能 ==========
+    
+    function toggleJoinConditions(policyValue) {
+        const conditionsContainer = document.getElementById('join-conditions-container');
+        if (conditionsContainer) {
+            conditionsContainer.style.display = policyValue === 'approval' ? 'block' : 'none';
+        }
+    }
+
+    
+    // ========== 事件监听 ==========
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('首页DOM加载完成');
+        initHomePage();
+        
+        // 点击模态框外部关闭
+        const joinModal = document.getElementById('join-club-modal');
+        const createModal = document.getElementById('create-club-modal');
+        
+        if (joinModal) {
+            joinModal.addEventListener('click', function(event) {
+                if (event.target === joinModal) {
+                    window.App.closeJoinClubModal();
+                }
+            });
+        }
+        
+        if (createModal) {
+            createModal.addEventListener('click', function(event) {
+                if (event.target === createModal) {
+                    window.App.closeCreateClubModal();
+                }
+            });
+        }
+        
+        // 绑定搜索输入框回车事件
+        const searchInput = document.getElementById('search-club-input');
+        if (searchInput) {
+            searchInput.addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    searchClubsAction();
+                }
+            });
+        }
+    });
+    
+    // 确保全局函数可用
+    window.toggleUserDropdown = toggleUserDropdown;
+    window.navigateToProfile = navigateToProfile;
+    window.viewMyProfile = viewMyProfile;
+    window.openSettings = openSettings;
+    window.openHelp = openHelp;
+    window.searchClubsAction = searchClubsAction;
+    window.toggleJoinConditions = toggleJoinConditions;
+    window.openNotifications = openNotifications;
+    window.updateNotificationBadge = updateNotificationBadge;
+    
+    // ========== 原有的全局函数（保持不变） ==========
+    
+    window.goToVideoPage = function(clubId) {
+        console.log('跳转到视频页面，俱乐部ID:', clubId);
+        
+        const parsedClubId = parseInt(clubId);
+        
+        if (window.Clubs && window.Clubs.setCurrentClub) {
+            const club = window.Clubs.myClubs.find(c => c.id === parsedClubId);
+            if (club) {
+                window.Clubs.setCurrentClub(club);
+            } else {
+                window.Clubs.setCurrentClub(parsedClubId);
+            }
+        }
+        
+        console.log('跳转到视频页面');
+        
+        if (window.Clubs && window.Clubs.myClubs) {
+            const club = window.Clubs.myClubs.find(c => c.id === parsedClubId);
+            if (club) {
+                window.location.hash = `video?clubId=${parsedClubId}&clubName=${encodeURIComponent(club.name)}`;
+            } else {
+                window.location.hash = `video?clubId=${parsedClubId}`;
+            }
+        } else {
+            window.location.hash = `video?clubId=${parsedClubId}`;
+        }
+    };
+    
+    window.openEditClubModal = function(clubId) {
+        if (window.Clubs && window.Clubs.openEditClubModal) {
+            window.Clubs.openEditClubModal(clubId);
+        }
+    };
+    
+    window.confirmArchiveOrDelete = function(clubId) {
+        if (window.Clubs && window.Clubs.confirmArchiveOrDelete) {
+            window.Clubs.confirmArchiveOrDelete(clubId);
+        }
+    };
+    
+    window.quitClub = function(clubId) {
+        if (window.Clubs && window.Clubs.quitClub) {
+            window.Clubs.quitClub(clubId);
+        }
+    };
+    
+    window.selectAction = function(actionType) {
+        if (window.Clubs && window.Clubs.selectAction) {
+            window.Clubs.selectAction(actionType);
+        }
+    };
+    
+    window.restoreClub = function(clubId) {
+        if (window.Clubs && window.Clubs.restoreClub) {
+            window.Clubs.restoreClub(clubId);
+        }
+    };
+</script>
+</body>
+</html>

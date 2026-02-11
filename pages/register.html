@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册 - 教师视频俱乐部</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* 复用login.html的改进样式 */
+        .privacy-agreement {
+            margin: 12px 0;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .privacy-checkbox {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .privacy-checkbox input {
+            margin-top: 3px;
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+        }
+        
+        .privacy-checkbox label {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #666;
+            cursor: pointer;
+            user-select: none;
+            flex: 1;
+        }
+        
+        .agreement-text-container {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 5px;
+            margin-top: 5px;
+        }
+        
+        .agreement-text {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #666;
+        }
+        
+        /* 改进链接样式 - 更明显的可点击提示 */
+        .agreement-link-container {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            position: relative;
+        }
+        
+        .agreement-link {
+            color: #1890ff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 2px solid rgba(24, 144, 255, 0.3);
+            padding: 0 2px 2px 2px;
+            text-decoration: none;
+        }
+        
+        .agreement-link:hover {
+            color: #40a9ff;
+            border-bottom-color: #40a9ff;
+            text-decoration: none;
+            transform: translateY(-1px);
+        }
+        
+        .agreement-link:active {
+            transform: translateY(0);
+        }
+        
+        .agreement-link-icon {
+            color: #1890ff;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .agreement-highlight {
+            color: #1890ff;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 2px dashed rgba(24, 144, 255, 0.5);
+            padding: 0 2px 2px 2px;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .agreement-highlight:hover {
+            color: #40a9ff;
+            border-bottom-color: #40a9ff;
+            text-decoration: none;
+        }
+        
+        .agreement-highlight::after {
+            content: "🔗";
+            font-size: 10px;
+            margin-left: 4px;
+            opacity: 0.7;
+            transition: all 0.2s;
+        }
+        
+        .agreement-highlight:hover::after {
+            opacity: 1;
+            transform: translateX(2px);
+        }
+        
+        /* 添加脉冲动画效果 */
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(24, 144, 255, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(24, 144, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(24, 144, 255, 0); }
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s infinite;
+            border-radius: 4px;
+        }
+        
+        .error-message {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            color: #ff4d4f;
+            font-size: 13px;
+            margin-top: 4px;
+            padding: 6px 10px;
+            background: #fff2f0;
+            border-radius: 4px;
+            border: 1px solid #ffccc7;
+        }
+        
+        .agreement-date {
+            font-size: 12px;
+            color: #999;
+            text-align: center;
+            margin-top: 10px;
+            font-style: italic;
+        }
+        
+        /* 提示框样式 */
+        .hint-box {
+            background: #e6f7ff;
+            border: 1px solid #91d5ff;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #096dd9;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .hint-box i {
+            font-size: 14px;
+        }
+        
+        /* 模态框样式 */
+        .privacy-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .privacy-modal.active {
+            display: flex;
+        }
+        
+        .privacy-content {
+            background: white;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        }
+        
+        .privacy-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%);
+        }
+        
+        .privacy-header h3 {
+            margin: 0;
+            color: #389e0d;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .privacy-body {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .privacy-footer {
+            padding: 16px 24px;
+            border-top: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: #999;
+            cursor: pointer;
+            padding: 0;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+        
+        .close-btn:hover {
+            background: rgba(0, 0, 0, 0.05);
+            color: #666;
+        }
+        
+        .privacy-body h4 {
+            color: #333;
+            margin: 20px 0 10px 0;
+            font-size: 16px;
+        }
+        
+        .privacy-body p, .privacy-body ul {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .privacy-body ul {
+            padding-left: 20px;
+        }
+        
+        .privacy-body li {
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div id="page-register" class="page active">
+        <div class="register-container">
+            <div class="floating-shape shape-1"></div>
+            <div class="floating-shape shape-2"></div>
+            <div class="register-card">
+                <h2>创建新账户</h2>
+                <p>加入教师协作发展平台</p>
+                
+                <div class="form-item">
+                    <label class="required">用户名</label>
+                    <input type="text" id="register-name" placeholder="请输入用户名（3-20个字符）" oninput="App.hideRegisterError('register-name-error')">
+                </div>
+                
+                <div class="form-item">
+                    <label class="required">密码</label>
+                    <input type="password" id="register-password" placeholder="请输入密码（至少6个字符）" oninput="App.updatePasswordStrength(this.value); App.hideRegisterError('register-password-error')">
+                    <div class="password-strength">
+                        <div class="password-strength-bar" id="password-strength-bar"></div>
+                    </div>
+                </div>
+                
+                <div class="form-item">
+                    <label class="required">确认密码</label>
+                    <input type="password" id="register-password-confirm" placeholder="请再次输入密码" oninput="App.hideRegisterError('register-password-confirm-error')">
+                </div>
+                
+                <!-- 隐私协议同意 -->
+                <div class="privacy-agreement">
+                    <div class="privacy-checkbox">
+                        <input type="checkbox" id="privacy-agree">
+                        <label for="privacy-agree">
+                            我已阅读并同意
+                            <a href="javascript:void(0);" class="privacy-link" onclick="showPrivacyPolicy()">
+                                《隐私和数据使用说明》
+                            </a>
+                        </label>
+                    </div>
+                    <div class="error-message" id="privacy-error" style="display:none;">
+                        <i class="fas fa-exclamation-circle"></i> 请同意隐私和数据使用说明
+                    </div>
+                </div>
+                
+                <div style="margin-top: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                    <button class="btn btn-primary" onclick="App.register()" style="flex: 1; padding: 6px 10px; font-size: 12px;">
+                        <i class="fas fa-user-plus"></i> 注册
+                    </button>
+                    <span style="font-size: 11px; color: #666; white-space: nowrap;">已有账号？</span>
+                    <button class="btn btn-outline" onclick="App.navigateTo('login')" style="padding: 6px 12px; font-size: 12px; white-space: nowrap;">
+                        <i class="fas fa-sign-in-alt"></i> 立即登录
+                    </button>
+                </div>
+                
+                <!-- 版权和ICP备案 -->
+                <div class="icp-footer" style="margin-top: 12px; text-align: center; padding-top: 10px; border-top: 1px solid #f0f0f0;">
+                    <p style="font-size: 11px; color: #999; margin: 0 0 4px 0;">
+                        &copy; 2025-2026 首都师范大学教育学院 教师群体智慧课题组 版权所有
+                    </p>
+                    <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" style="font-size: 11px; color: #999; text-decoration: none;">
+                        京ICP备2024097217号-2
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 隐私政策模态框 -->
+    <div id="privacy-modal" class="privacy-modal">
+        <div class="privacy-content">
+            <div class="privacy-header">
+                <h3><i class="fas fa-shield-alt"></i> 隐私和数据使用说明</h3>
+                <button class="close-btn" onclick="closePrivacyPolicy()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="privacy-body">
+                <h4>1. 数据收集目的</h4>
+                <p>为了提供更好的教学协作体验，我们会收集以下数据：</p>
+                <ul>
+                    <li><strong>账户信息</strong>：用户名、邮箱（如有）等注册信息</li>
+                    <li><strong>教学行为数据</strong>：俱乐部创建与参与、任务完成情况、视频观看进度</li>
+                    <li><strong>互动数据</strong>：评论、点赞、分享等社交互动行为</li>
+                    <li><strong>设备信息</strong>：浏览器类型、设备型号、IP地址（用于安全防护）</li>
+                </ul>
+                
+                <h4>2. 数据使用方式</h4>
+                <p>我们承诺将您的数据用于：</p>
+                <ul>
+                    <li><strong>平台功能实现</strong>：提供俱乐部管理、任务发布、视频观看等核心功能</li>
+                    <li><strong>个性化推荐</strong>：根据您的教学兴趣推荐相关俱乐部和内容</li>
+                    <li><strong>平台优化</strong>：分析使用模式以改进产品体验</li>
+                    <li><strong>安全保护</strong>：检测和防止欺诈、滥用等非法行为</li>
+                </ul>
+                
+                <h4>3. 数据存储与保护</h4>
+                <ul>
+                    <li>所有数据均存储在加密的服务器中</li>
+                    <li>采用行业标准的SSL/TLS加密传输技术</li>
+                    <li>定期进行安全审计和漏洞扫描</li>
+                    <li>访问权限严格控制,仅限必要人员访问</li>
+                </ul>
+                
+                <h4>4. 数据共享政策</h4>
+                <p>我们<strong>不会</strong>：</p>
+                <ul>
+                    <li>出售您的个人信息给第三方</li>
+                    <li>未经您同意将数据用于商业广告</li>
+                    <li>与无关第三方共享您的教学数据</li>
+                </ul>
+                <p>仅在以下情况可能共享数据：</p>
+                <ul>
+                    <li>法律要求或政府机构合法请求</li>
+                    <li>保护平台、用户或公众的安全</li>
+                    <li>与受信任的服务提供商合作（需签订保密协议）</li>
+                </ul>
+                
+                <h4>5. 您的权利</h4>
+                <ul>
+                    <li><strong>访问权</strong>：查看我们收集的您的个人信息</li>
+                    <li><strong>更正权</strong>：更正不准确或不完整的个人信息</li>
+                    <li><strong>删除权</strong>：在特定条件下要求删除您的个人信息</li>
+                    <li><strong>撤回同意权</strong>：随时撤回对数据处理的同意</li>
+                    <li><strong>导出权</strong>：获取您的个人数据副本</li>
+                </ul>
+                
+                <h4>6. 数据保留期限</h4>
+                <ul>
+                    <li>账户数据：在您使用期间持续保留，注销后30天内删除</li>
+                    <li>行为数据：匿名化后用于分析，最长保留2年</li>
+                    <li>日志数据：安全日志保留6个月，访问日志保留1年</li>
+                </ul>
+                
+                <h4>7. 联系方式</h4>
+                <p>如果您对隐私政策有任何疑问，或想行使您的权利，请联系：</p>
+                <ul>
+                    <li>邮箱：privacy@teacherclub.edu.cn</li>
+                    <li>电话：400-xxx-xxxx</li>
+                    <li>办公时间：周一至周五 9:00-18:00</li>
+                </ul>
+                
+                <p style="color: #999; font-size: 12px; margin-top: 30px;">
+                    本政策可能会不时更新，我们会在平台上发布最新版本，并通知您重大变更。
+                </p>
+            </div>
+            <div class="privacy-footer">
+                <button class="btn btn-primary" onclick="agreeAndClose()">
+                    <i class="fas fa-check-circle"></i> 我已阅读并同意
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 页面特定的脚本可以放在这里
+        document.addEventListener('DOMContentLoaded', function() {
+            // 如果当前页面是注册页，自动聚焦到用户名输入框
+            const nameInput = document.getElementById('register-name');
+            if (nameInput) {
+                setTimeout(() => nameInput.focus(), 100);
+            }
+            
+            // 检查之前是否已同意隐私政策
+            checkPreviousAgreement();
+            
+            // 为整个标签添加点击事件（除了链接区域）
+            const privacyLabel = document.querySelector('label[for="privacy-agree"]');
+            if (privacyLabel) {
+                privacyLabel.addEventListener('click', function(e) {
+                    // 如果点击的是链接区域，不触发复选框
+                    if (e.target.closest('.clickable-area') || 
+                        e.target.closest('.agreement-link-container') ||
+                        e.target.closest('.agreement-highlight')) {
+                        return;
+                    }
+                    const checkbox = document.getElementById('privacy-agree');
+                    if (checkbox && e.target !== checkbox) {
+                        checkbox.checked = !checkbox.checked;
+                        
+                        // 触发change事件
+                        const event = new Event('change');
+                        checkbox.dispatchEvent(event);
+                        
+                        // 如果刚刚同意，停止脉冲动画
+                        if (checkbox.checked) {
+                            const privacyLink = document.getElementById('privacy-link');
+                            if (privacyLink) {
+                                privacyLink.classList.remove('pulse-animation');
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // 添加首次访问提示
+            setTimeout(() => {
+                const hasViewed = checkPrivacyViewed();
+                if (!hasViewed) {
+                    highlightPrivacyLink();
+                }
+            }, 1000);
+        });
+        
+        // 检查隐私政策查看记录
+        function checkPrivacyViewed() {
+            if (window.Utils) {
+                const viewData = Utils.getFromStorage('privacy_viewed');
+                return !!(viewData && viewData.lastViewed);
+            }
+            return false;
+        }
+        
+        // 高亮显示隐私链接
+        function highlightPrivacyLink() {
+            const privacyLink = document.getElementById('privacy-link');
+            const privacyTitle = document.getElementById('privacy-title-link');
+            
+            if (privacyLink) {
+                // 添加高亮动画
+                privacyLink.classList.add('highlight-animation');
+                privacyLink.classList.add('pulse-animation');
+                
+                // 添加悬停提示
+                privacyLink.title = "点击查看隐私政策";
+            }
+            
+            if (privacyTitle) {
+                privacyTitle.classList.add('highlight-animation');
+                privacyTitle.title = "点击查看隐私政策";
+            }
+        }
+        
+        // 显示隐私政策
+        function showPrivacyPolicy() {
+            const modal = document.getElementById('privacy-modal');
+            if (modal) {
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                
+                // 记录用户查看隐私政策的行为
+                recordPrivacyView();
+                
+                // 停止脉冲动画
+                const privacyLink = document.getElementById('privacy-link');
+                if (privacyLink) {
+                    privacyLink.classList.remove('pulse-animation');
+                }
+            }
+        }
+        
+        // 记录用户查看隐私政策
+        function recordPrivacyView() {
+            if (window.Utils) {
+                const viewData = Utils.getFromStorage('privacy_viewed') || {};
+                viewData.lastViewed = new Date().toISOString();
+                viewData.viewCount = (viewData.viewCount || 0) + 1;
+                Utils.saveToStorage('privacy_viewed', viewData);
+                
+                console.log('[隐私] 用户查看了隐私政策');
+            }
+        }
+        
+        // 关闭隐私政策
+        function closePrivacyPolicy() {
+            const modal = document.getElementById('privacy-modal');
+            if (modal) {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+        
+        // 同意并关闭
+        function agreeAndClose() {
+            const checkbox = document.getElementById('privacy-agree');
+            if (checkbox) {
+                checkbox.checked = true;
+                hidePrivacyError();
+                closePrivacyPolicy();
+                
+                // 保存同意状态到本地存储
+                if (window.Utils) {
+                    Utils.saveToStorage('privacy_agreed', {
+                        agreed: true,
+                        agreedAt: new Date().toISOString(),
+                        version: '2026-01-v1.0',
+                        source: 'modal_button'
+                    });
+                }
+                
+                // 停止所有动画
+                const privacyLink = document.getElementById('privacy-link');
+                if (privacyLink) {
+                    privacyLink.classList.remove('pulse-animation');
+                    privacyLink.classList.remove('highlight-animation');
+                }
+                
+                const privacyTitle = document.getElementById('privacy-title-link');
+                if (privacyTitle) {
+                    privacyTitle.classList.remove('highlight-animation');
+                }
+            }
+        }
+        
+        // 检查之前的同意状态
+        function checkPreviousAgreement() {
+            if (window.Utils) {
+                const privacyData = Utils.getFromStorage('privacy_agreed');
+                if (privacyData && privacyData.agreed) {
+                    const checkbox = document.getElementById('privacy-agree');
+                    if (checkbox) {
+                        checkbox.checked = true;
+                        
+                        // 停止动画
+                        const privacyLink = document.getElementById('privacy-link');
+                        if (privacyLink) {
+                            privacyLink.classList.remove('pulse-animation');
+                            privacyLink.classList.remove('highlight-animation');
+                        }
+                    }
+                }
+            }
+        }
+        
+        // 显示隐私错误
+        function showPrivacyError() {
+            const errorElement = document.getElementById('privacy-error');
+            if (errorElement) {
+                errorElement.style.display = 'block';
+                
+                // 高亮隐私链接
+                highlightPrivacyLink();
+            }
+        }
+        
+        // 隐藏隐私错误
+        function hidePrivacyError() {
+            const errorElement = document.getElementById('privacy-error');
+            if (errorElement) {
+                errorElement.style.display = 'none';
+            }
+        }
+        
+        // 点击隐私链接时也显示模态框
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.agreement-link') || 
+                e.target.closest('.agreement-highlight') ||
+                e.target.closest('.clickable-area')) {
+                // 检查是否已经是链接的一部分
+                if (!e.target.closest('a') && !e.target.closest('button')) {
+                    showPrivacyPolicy();
+                    e.preventDefault();
+                }
+            }
+        });
+        
+        // 监听复选框变化
+        const privacyCheckbox = document.getElementById('privacy-agree');
+        if (privacyCheckbox) {
+            privacyCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    hidePrivacyError();
+                    
+                    // 保存同意状态
+                    if (window.Utils) {
+                        Utils.saveToStorage('privacy_agreed', {
+                            agreed: true,
+                            agreedAt: new Date().toISOString(),
+                            version: '2026-01-v1.0',
+                            source: 'checkbox'
+                        });
+                    }
+                    
+                    // 停止动画
+                    const privacyLink = document.getElementById('privacy-link');
+                    if (privacyLink) {
+                        privacyLink.classList.remove('pulse-animation');
+                        privacyLink.classList.remove('highlight-animation');
+                    }
+                }
+            });
+        }
+        
+        // 点击模态框外部关闭
+        const privacyModal = document.getElementById('privacy-modal');
+        if (privacyModal) {
+            privacyModal.addEventListener('click', function(e) {
+                if (e.target === privacyModal) {
+                    closePrivacyPolicy();
+                }
+            });
+        }
+        
+        // ESC键关闭模态框
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closePrivacyPolicy();
+            }
+        });
+    </script>
+</body>
+</html>
