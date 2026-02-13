@@ -6,7 +6,8 @@ window.App = {
         isLoading: false,
         currentClubId: null,
         privacyAgreed: false,
-        unreadNotificationCount: 0  // 添加未读通知计数
+        unreadNotificationCount: 0,  // 添加未读通知计数
+        lastTrackedPageViewKey: null
     },
     
     // 初始化应用
@@ -226,6 +227,9 @@ window.App = {
             if (Auth.isLoggedIn()) {
                 Auth.updateUserDisplay();
             }
+
+            // 页面渲染完成后上报 view_* 事件
+            this.trackPageViewEvent(pageName);
             
         } catch (error) {
             console.error('加载页面失败:', error);
@@ -294,6 +298,86 @@ window.App = {
         if (pageTitles[this.state.currentPage]) {
             document.title = pageTitles[this.state.currentPage];
         }
+    },
+
+    // 获取当前 hash query 参数
+    getHashParams: function() {
+        const hash = window.location.hash || '';
+        const query = hash.includes('?') ? hash.split('?')[1] : '';
+        return new URLSearchParams(query || '');
+    },
+
+    toNumberOrUndefined: function(value) {
+        if (value === null || value === undefined || value === '') return undefined;
+        const n = Number(value);
+        return Number.isFinite(n) ? n : undefined;
+    },
+
+    buildPageViewEvent: function(pageName) {
+        const params = this.getHashParams();
+        const user = window.Auth && window.Auth.getUser ? window.Auth.getUser() : null;
+        const eventMap = {
+            login: 'view_login',
+            register: 'view_register',
+            home: 'view_home',
+            video: 'view_video_page',
+            topiclist: 'view_topic_list',
+            topicforum: 'view_topic_forum',
+            notifications: 'view_notifications',
+            profile: 'view_profile'
+        };
+        const eventName = eventMap[pageName];
+        if (!eventName) return null;
+
+        const payload = {
+            category: 'session',
+            page: pageName
+        };
+
+        if (pageName === 'video') {
+            const clubId = this.toNumberOrUndefined(params.get('clubId')) || this.toNumberOrUndefined(this.state.currentClubId);
+            payload.category = 'teaching';
+            payload.target_type = 'club';
+            payload.target_id = clubId;
+        }
+
+        if (pageName === 'topiclist') {
+            payload.category = 'interaction';
+            payload.target_type = 'task';
+            payload.target_id = this.toNumberOrUndefined(params.get('taskId'));
+            payload.club_id = this.toNumberOrUndefined(params.get('clubId'));
+        }
+
+        if (pageName === 'topicforum') {
+            payload.category = 'interaction';
+            payload.target_type = 'topic';
+            payload.target_id = this.toNumberOrUndefined(params.get('topicId'));
+        }
+
+        if (pageName === 'profile') {
+            payload.target_type = 'user';
+            payload.target_id = user ? (user.userId || user.id) : undefined;
+        }
+
+        return { eventName, payload };
+    },
+
+    trackPageViewEvent: function(pageName) {
+        // 防御性保护：动态页面脚本可能未完全加载，先检查埋点入口是否可用
+        if (!window.Utils || !Utils.sendAnalyticsEvent) return;
+        // 防御性保护：未同意隐私时不发送页面浏览埋点
+        if (Utils.isPrivacyAgreed && !Utils.isPrivacyAgreed()) return;
+
+        const built = this.buildPageViewEvent(pageName);
+        if (!built) return;
+
+        const route = (window.location.hash || '').replace(/^#/, '');
+        const key = `${built.eventName}|${route}`;
+        // 防御性保护：同一路由重复渲染时去重，避免重复上报
+        if (this.state.lastTrackedPageViewKey === key) return;
+        this.state.lastTrackedPageViewKey = key;
+
+        Utils.sendAnalyticsEvent(built.eventName, built.payload);
     },
     
     // ================ 登录注册功能 ================
@@ -434,38 +518,17 @@ window.App = {
     
     // 发送隐私分析数据（埋点）
     sendPrivacyAnalytics: function(userId, privacyData) {
-        // 模拟发送埋点数据
-        // 在实际应用中，这里应该发送到分析服务器
-        console.log('[埋点] 发送隐私协议同意事件:', {
-            event: 'privacy_agreement_accepted',
-            userId: userId,
-            timestamp: new Date().toISOString(),
-            data: {
-                agreedAt: privacyData.agreedAt,
+        if (!window.Utils || !Utils.sendAnalyticsEvent) return;
+        Utils.sendAnalyticsEvent('privacy_agreement_accepted', {
+            category: 'session',
+            user_id: userId,
+            page: this.state.currentPage || 'login',
+            target_object: {
+                agreed_at: privacyData.agreedAt,
                 version: privacyData.version,
-                deviceInfo: privacyData.analytics
+                device_info: privacyData.analytics
             }
         });
-        
-        // 在实际应用中，可以这样发送：
-        /*
-        if (window.AppConfig.ANALYTICS_ENABLED) {
-            fetch(AppConfig.ANALYTICS_ENDPOINT, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    event: 'privacy_agreement_accepted',
-                    userId: userId,
-                    timestamp: new Date().toISOString(),
-                    data: privacyData
-                })
-            }).catch(error => {
-                console.error('[埋点] 发送分析数据失败:', error);
-            });
-        }
-        */
     },
     
     // 验证注册表单
@@ -1352,41 +1415,16 @@ clearProfile: function() {
     
     // 发送用户行为埋点
     sendUserAction: function(action, data = {}) {
-        if (!this.state.privacyAgreed) {
-            console.log('[埋点] 隐私协议未同意，不发送埋点数据');
-            return;
-        }
-        
-        const user = Auth.getUser();
-        if (!user) return;
-        
-        const eventData = {
-            event: action,
-            userId: user.userId,
-            timestamp: new Date().toISOString(),
+        if (!window.Utils || !Utils.sendSystemEvent) return;
+        Utils.sendSystemEvent('generic_interaction', {
             page: this.state.currentPage,
-            data: data,
-            userAgent: navigator.userAgent,
-            screenResolution: `${window.screen.width}x${window.screen.height}`,
-            platform: 'web'
-        };
-        
-        console.log('[埋点] 用户行为:', eventData);
-        
-        // 在实际应用中，可以发送到分析服务器
-        /*
-        if (window.AppConfig.ANALYTICS_ENABLED) {
-            fetch(AppConfig.ANALYTICS_ENDPOINT, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(eventData)
-            }).catch(error => {
-                console.error('[埋点] 发送行为数据失败:', error);
-            });
-        }
-        */
+            sub_event: action,
+            target_object: {
+                ...data,
+                user_agent: navigator.userAgent,
+                screen_resolution: `${window.screen.width}x${window.screen.height}`,
+                platform: 'web'
+            }
+        });
     }
 };
-

@@ -74,6 +74,16 @@ window.Clubs = {
             return false;
         }
     },
+
+    sendClubAnalytics: function(eventName, options = {}) {
+        // 防御性保护：避免在埋点模块未就绪时抛异常影响俱乐部主流程
+        if (!window.Utils || !Utils.sendAnalyticsEvent) return;
+        Utils.sendAnalyticsEvent(eventName, {
+            category: 'teaching',
+            target_type: 'club',
+            ...options
+        });
+    },
     
     // 加载我的俱乐部（从API）
     loadMyClubs: async function() {
@@ -266,6 +276,10 @@ window.Clubs = {
                     // 添加到我的俱乐部列表
                     this.myClubs.push(newClub);
                     this.saveClubsToStorage();
+
+                    this.sendClubAnalytics('create_club', {
+                        target_id: newClub.id || newClub.clubId || response.data.clubId
+                    });
                     
                     console.log('俱乐部创建成功:', newClub);
                     return { 
@@ -363,6 +377,13 @@ window.Clubs = {
                     }
                 } else if (resultData.status === 'pending') {
                     // 申请已提交，等待审核
+                    this.sendClubAnalytics('club_submit_join_request', {
+                        target_id: clubId,
+                        target_object: {
+                            request_id: resultData.requestId,
+                            apply_message: applyMessage || ''
+                        }
+                    });
                     return {
                         success: true,
                         message: '已提交申请，等待管理员审核',
@@ -407,10 +428,17 @@ window.Clubs = {
     },
 
     // 批准入会申请（管理员用）
-    approveJoinRequest: async function(clubId, requestId) {
+    approveJoinRequest: async function(clubId, requestId, applicantId = null) {
         try {
             const response = await API.approveJoinRequest(clubId, requestId);
             if (response && response.code === 0) {
+                this.sendClubAnalytics('club_approve_join_request', {
+                    target_id: clubId,
+                    target_object: {
+                        request_id: requestId,
+                        applicant_id: applicantId
+                    }
+                });
                 return { success: true, message: '已通过申请' };
             }
             return { success: false, message: response ? response.msg : '操作失败' };
@@ -803,6 +831,9 @@ renderClubCard: function(club, container, isArchived) {
             console.log('退出俱乐部API响应:', response);
             
             if (response && response.code === 0) {
+                this.sendClubAnalytics('dissolve_club', {
+                    target_id: clubId
+                });
                 // 从我的俱乐部列表中移除
                 this.myClubs = this.myClubs.filter(club => {
                     const cid = club.id || club.clubId || club.clubID;
@@ -1290,6 +1321,9 @@ renderClubCard: function(club, container, isArchived) {
             console.log('归档俱乐部API响应:', response);
             
             if (response && response.code === 0) {
+                this.sendClubAnalytics('archive_club', {
+                    target_id: clubId
+                });
                 // 更新本地俱乐部状态
                 const clubIndex = this.myClubs.findIndex(c => {
                     const cid = c.id || c.clubId || c.clubID;

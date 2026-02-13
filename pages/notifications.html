@@ -592,6 +592,7 @@ function updateUserDisplay() {
 let currentRequestId = null;
 let currentClubId = null;
 let currentNotificationId = null;
+let currentApplicantId = null;
 let isApproving = true; // true:批准, false:驳回
 
 // 页面初始化 - 修改：等待 Notifications 模块初始化完成
@@ -776,6 +777,7 @@ async function handleApproveRequest(requestId, clubId, notificationId) {
     if (window.Notifications && window.Notifications.getApplicantName) {
         const notification = window.Notifications.notifications.find(n => n.id === notificationId);
         if (notification && notification.payload && notification.payload.applicantId) {
+            currentApplicantId = notification.payload.applicantId;
             applicantName = await window.Notifications.getApplicantName(notification.payload.applicantId);
         }
     }
@@ -819,6 +821,7 @@ async function handleRejectRequest(requestId, clubId, notificationId) {
     if (window.Notifications && window.Notifications.getApplicantName) {
         const notification = window.Notifications.notifications.find(n => n.id === notificationId);
         if (notification && notification.payload && notification.payload.applicantId) {
+            currentApplicantId = notification.payload.applicantId;
             applicantName = await window.Notifications.getApplicantName(notification.payload.applicantId);
         }
     }
@@ -859,7 +862,7 @@ async function approveRequest() {
         
         // 调用API批准请求
         if (window.Clubs && window.Clubs.approveJoinRequest) {
-            const result = await window.Clubs.approveJoinRequest(currentClubId, currentRequestId);
+            const result = await window.Clubs.approveJoinRequest(currentClubId, currentRequestId, currentApplicantId);
             
             if (result.success) {
                 Utils.showNotification('已批准入会申请', 'success');
@@ -951,6 +954,7 @@ function closeApprovalModal() {
     currentRequestId = null;
     currentClubId = null;
     currentNotificationId = null;
+    currentApplicantId = null;
 }
 
 // ========== 页面导航 ==========

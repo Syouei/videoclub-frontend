@@ -1444,6 +1444,8 @@
                 this.replyInProgress = null;
                 this.videoDuration = 0;
                 this.currentVideoTime = 0;
+                this.lastVideoTime = 0;
+                this.seekFrom = null;
                 this.autoScrollEnabled = true;
                 this.isMouseInComments = false;
                 this.sortBy = 'time';
@@ -1800,6 +1802,13 @@
                     console.log('[loadVideo] 视频元素配置完成，video.src:', this.video.src);
 
                     console.log('[loadVideo] 步骤7: 加载评论相关数据');
+                    if (window.Utils && Utils.sendAnalyticsEvent) {
+                        Utils.sendAnalyticsEvent('view_video', {
+                            category: 'learning',
+                            target_type: 'video',
+                            target_id: params.videoId
+                        });
+                    }
                     await this.loadCommentsFromAPI();
                     this.loadHotTimestamps();
 
@@ -1920,6 +1929,7 @@
                 });
 
                 this.video.addEventListener('timeupdate', () => {
+                    this.lastVideoTime = this.currentVideoTime;
                     this.currentVideoTime = this.video.currentTime;
                     this.updateCurrentTimestampDisplay();
                     this.highlightCommentsAtCurrentTime();
@@ -1941,6 +1951,63 @@
                 this.video.addEventListener('playing', () => {
                     console.log('[setupVideoEvents] playing 事件触发');
                     this.clearVideoLoadTimeout();
+                });
+
+                this.video.addEventListener('play', () => {
+                    if (window.Utils && Utils.sendAnalyticsEvent) {
+                        Utils.sendAnalyticsEvent('video_play_start', {
+                            category: 'learning',
+                            target_type: 'video',
+                            target_id: this.videoInfo.videoId,
+                            video_time: this.video.currentTime
+                        });
+                    }
+                });
+
+                this.video.addEventListener('pause', () => {
+                    if (this.video && !this.video.ended) {
+                        if (window.Utils && Utils.sendAnalyticsEvent) {
+                            Utils.sendAnalyticsEvent('video_play_pause', {
+                                category: 'learning',
+                                target_type: 'video',
+                                target_id: this.videoInfo.videoId,
+                                video_time: this.video.currentTime
+                            });
+                        }
+                    }
+                });
+
+                this.video.addEventListener('seeking', () => {
+                    this.seekFrom = this.currentVideoTime;
+                });
+
+                this.video.addEventListener('seeked', () => {
+                    const seekFrom = this.seekFrom ?? this.lastVideoTime ?? 0;
+                    const seekTo = this.video.currentTime;
+                    if (window.Utils && Utils.sendAnalyticsEvent) {
+                        Utils.sendAnalyticsEvent('video_play_seek', {
+                            category: 'learning',
+                            target_type: 'video',
+                            target_id: this.videoInfo.videoId,
+                            video_time: seekTo,
+                            target_object: {
+                                seek_from: seekFrom,
+                                seek_to: seekTo
+                            }
+                        });
+                    }
+                    this.seekFrom = null;
+                });
+
+                this.video.addEventListener('ended', () => {
+                    if (window.Utils && Utils.sendAnalyticsEvent) {
+                        Utils.sendAnalyticsEvent('video_play_finish', {
+                            category: 'learning',
+                            target_type: 'video',
+                            target_id: this.videoInfo.videoId,
+                            video_time: this.video.currentTime
+                        });
+                    }
                 });
 
                 this.eventsBound = true;
@@ -1999,6 +2066,18 @@
                     sortSelect.addEventListener('change', (e) => {
                         this.sortBy = e.target.value;
                         console.log('[Sort] 排序方式:', this.sortBy);
+                        if (window.Utils && Utils.sendAnalyticsEvent) {
+                            const sortMap = { time: 'timestamp', newest: 'newest', oldest: 'oldest' };
+                            const videoId = this.videoInfo ? this.videoInfo.videoId : undefined;
+                            Utils.sendAnalyticsEvent('comment_sort_change', {
+                                category: 'interaction',
+                                target_type: 'video',
+                                target_id: videoId,
+                                target_object: {
+                                    sort_by: sortMap[this.sortBy] || this.sortBy
+                                }
+                            });
+                        }
                         this.renderComments();
                     });
                 }
@@ -2434,6 +2513,20 @@
                         this.renderComments();
                         this.renderOverlayMarkers();
 
+                        if (window.Utils && Utils.sendAnalyticsEvent) {
+                            Utils.sendAnalyticsEvent('comment_submit', {
+                                category: 'interaction',
+                                target_type: 'video',
+                                target_id: this.videoInfo.videoId,
+                                target_object: {
+                                    content: text,
+                                    content_length: text.length,
+                                    timestamp: timestamp,
+                                    parent_id: null
+                                }
+                            });
+                        }
+
                         input.value = '';
                         this.showError('评论发表成功');
                     } else {
@@ -2478,6 +2571,19 @@
                         const form = document.querySelector('.reply-form.active');
                         if (form) form.remove();
                         this.replyInProgress = null;
+                        if (window.Utils && Utils.sendAnalyticsEvent) {
+                            Utils.sendAnalyticsEvent('comment_reply_submit', {
+                                category: 'interaction',
+                                target_type: 'comment',
+                                target_id: parentId,
+                                target_object: {
+                                    content: text,
+                                    content_length: text.length,
+                                    parent_id: parentId,
+                                    video_id: this.videoInfo.videoId
+                                }
+                            });
+                        }
                         this.showError('回复发表成功');
                     } else {
                         this.showError(result.msg || '回复发送失败');
@@ -2529,6 +2635,16 @@
                 // 如果是本地测试环境，直接删除本地评论
                 if (!window.API || !window.API.deleteComment) {
                     this.deleteLocalComment(commentId);
+                    if (window.Utils && Utils.sendAnalyticsEvent) {
+                        Utils.sendAnalyticsEvent('comment_delete', {
+                            category: 'interaction',
+                            target_type: 'comment',
+                            target_id: commentId,
+                            target_object: {
+                                video_id: this.videoInfo ? this.videoInfo.videoId : undefined
+                            }
+                        });
+                    }
                     this.showError('评论已删除（本地模式）');
                     return;
                 }
@@ -2537,6 +2653,16 @@
                     const result = await window.API.deleteComment(commentId);
                     if (result.code === 0) {
                         this.deleteLocalComment(commentId);
+                        if (window.Utils && Utils.sendAnalyticsEvent) {
+                            Utils.sendAnalyticsEvent('comment_delete', {
+                                category: 'interaction',
+                                target_type: 'comment',
+                                target_id: commentId,
+                                target_object: {
+                                    video_id: this.videoInfo ? this.videoInfo.videoId : undefined
+                                }
+                            });
+                        }
                         this.showError('评论已删除');
                     } else {
                         this.showError(result.msg || '删除失败');
@@ -2943,6 +3069,7 @@
 
                 // 当前正在显示的AI消息元素
                 this.currentAIBubble = null;
+                this.chatOpenedAt = null;
 
                 this.init();
             }
@@ -2971,6 +3098,90 @@
                 this.restoreChatHistory();
             }
 
+            toIntOrNull(value) {
+                if (value === null || value === undefined || value === '') return null;
+                const n = Number(value);
+                return Number.isFinite(n) ? Math.floor(n) : null;
+            }
+
+            getAnalyticsContext() {
+                const hash = window.location.hash || '';
+                const params = new URLSearchParams(hash.split('?')[1] || '');
+                return {
+                    page: 'video-player',
+                    taskId: this.toIntOrNull(params.get('taskId')),
+                    clubId: this.toIntOrNull(params.get('clubId')),
+                    videoId: this.toIntOrNull(params.get('videoId'))
+                };
+            }
+
+            getRoundIndex() {
+                const history = window.AIChat && window.AIChat.getChatHistory ? window.AIChat.getChatHistory() : [];
+                if (!Array.isArray(history)) return 1;
+                const assistantCount = history.filter(item => item && item.role === 'assistant').length;
+                return assistantCount + 1;
+            }
+
+            resolveConversationId(candidate, fallback = 'new') {
+                const current = window.AIChat ? window.AIChat.conversationId : null;
+                return candidate || current || fallback;
+            }
+
+            sendAIAnalytics(eventName, options = {}) {
+                // 防御性保护：AI UI 可能早于 utils.js 初始化，先确保上报函数存在
+                if (!window.Utils || !Utils.sendAnalyticsEvent) return;
+                const context = this.getAnalyticsContext();
+                const targetObject = {
+                    task_id: context.taskId,
+                    club_id: context.clubId,
+                    video_id: context.videoId,
+                    ...(options.target_object || {})
+                };
+                Utils.sendAnalyticsEvent(eventName, {
+                    category: 'interaction',
+                    target_type: options.target_type || 'ai_conversation',
+                    target_id: options.target_id,
+                    target_object: targetObject
+                });
+            }
+
+            inferAIError(error) {
+                const message = error instanceof Error ? error.message : String(error || 'unknown_error');
+                let stage = 'request';
+                if (/parse|解析/i.test(message)) {
+                    stage = 'parse';
+                } else if (/stream|sse/i.test(message)) {
+                    stage = 'stream';
+                }
+                const statusMatch = message.match(/\b(\d{3})\b/);
+                const httpStatus = statusMatch ? Number(statusMatch[1]) : undefined;
+                return { message, stage, httpStatus };
+            }
+
+            trackAIChatOpen() {
+                if (this.chatOpenedAt) return;
+                this.chatOpenedAt = Date.now();
+                const context = this.getAnalyticsContext();
+                this.sendAIAnalytics('ai_chat_open', {
+                    target_type: 'ai_panel',
+                    target_id: context.page
+                });
+            }
+
+            trackAIChatClose() {
+                if (!this.chatOpenedAt) return;
+                const context = this.getAnalyticsContext();
+                const durationSec = Math.max(0, Math.round((Date.now() - this.chatOpenedAt) / 1000));
+                this.sendAIAnalytics('ai_chat_close', {
+                    target_type: 'ai_panel',
+                    target_id: context.page,
+                    target_object: {
+                        session_duration_sec: durationSec
+                    }
+                });
+                this.chatOpenedAt = null;
+            }
+
             bindEvents() {
                 // 切换聊天窗口
                 this.toggleBtn.addEventListener('click', () => {
@@ -2984,7 +3195,7 @@
 
                 // 关闭
                 this.closeBtn.addEventListener('click', () => {
-                    this.chatWindow.classList.add('hidden');
+                    this.closeChatWindow();
                 });
 
                 // 发送消息
@@ -3012,13 +3223,27 @@
             }
 
             toggleChatWindow() {
+                const wasHidden = this.chatWindow.classList.contains('hidden');
                 this.chatWindow.classList.toggle('hidden');
-                if (!this.chatWindow.classList.contains('hidden')) {
+                const isHidden = this.chatWindow.classList.contains('hidden');
+
+                if (wasHidden && !isHidden) {
+                    this.trackAIChatOpen();
                     // 打开时自动聚焦输入框
                     this.inputArea.focus();
                     // 滚动到底部
                     this.scrollToBottom();
                 }
+
+                if (!wasHidden && isHidden) {
+                    this.trackAIChatClose();
+                }
+            }
+
+            closeChatWindow() {
+                if (this.chatWindow.classList.contains('hidden')) return;
+                this.chatWindow.classList.add('hidden');
+                this.trackAIChatClose();
             }
 
             async sendMessage() {
@@ -3041,22 +3266,43 @@
                 this.currentAIBubble = this.appendAIMessage('', true);
 
                 try {
-                    // 获取当前页面的上下文（videoId, taskId等）
-                    const hash = window.location.hash;
-                    const params = new URLSearchParams(hash.split('?')[1] || '');
-                    const taskId = params.get('taskId') ? parseInt(params.get('taskId')) : null;
-                    const clubId = params.get('clubId') ? parseInt(params.get('clubId')) : null;
+                    const context = this.getAnalyticsContext();
+                    const roundIndex = this.getRoundIndex();
+                    const requestStartedAt = Date.now();
+                    const requestConversationId = this.resolveConversationId(null, 'new');
+                    let firstTokenTracked = false;
 
                     // 设置上下文
-                    window.AIChat.setContext(taskId, clubId);
+                    window.AIChat.setContext(context.taskId, context.clubId);
 
                     let fullAnswer = '';
+
+                    this.sendAIAnalytics('ai_chat_send', {
+                        target_type: 'ai_conversation',
+                        target_id: requestConversationId,
+                        target_object: {
+                            user_message: message,
+                            message_length: message.length,
+                            round_index: roundIndex
+                        }
+                    });
 
                     // 发送消息
                     await window.AIChat.sendMessage(
                         message,
                         // onChunk - 接收消息片段
                         (chunk) => {
+                            if (!firstTokenTracked) {
+                                firstTokenTracked = true;
+                                this.sendAIAnalytics('ai_chat_first_token', {
+                                    target_type: 'ai_conversation',
+                                    target_id: this.resolveConversationId(null, requestConversationId),
+                                    target_object: {
+                                        first_token_ms: Date.now() - requestStartedAt,
+                                        round_index: roundIndex
+                                    }
+                                });
+                            }
                             fullAnswer += chunk;
                             this.updateAIMessage(this.currentAIBubble, fullAnswer, true);
                         },
@@ -3066,6 +3312,16 @@
                             this.updateAIMessage(this.currentAIBubble, fullAnswer, false);
                             // 保存AI消息到历史
                             window.AIChat.saveAssistantMessage(fullAnswer);
+                            this.sendAIAnalytics('ai_chat_reply_done', {
+                                target_type: 'ai_conversation',
+                                target_id: this.resolveConversationId(conversationId, requestConversationId),
+                                target_object: {
+                                    assistant_message: fullAnswer,
+                                    reply_length: fullAnswer.length,
+                                    total_latency_ms: Date.now() - requestStartedAt,
+                                    round_index: roundIndex
+                                }
+                            });
                             this.currentAIBubble = null;
                             // 重新启用输入
                             this.setInputEnabled(true);
@@ -3074,6 +3330,16 @@
                         // onError - 错误
                         (error) => {
                             console.error('[AI Chat UI] 发送消息失败:', error);
+                            const errorInfo = this.inferAIError(error);
+                            this.sendAIAnalytics('ai_chat_reply_error', {
+                                target_type: 'ai_conversation',
+                                target_id: this.resolveConversationId(null, requestConversationId === 'new' ? 'unknown' : requestConversationId),
+                                target_object: {
+                                    error_stage: errorInfo.stage,
+                                    error_code: errorInfo.message.slice(0, 200),
+                                    http_status: errorInfo.httpStatus
+                                }
+                            });
                             const errorMessage = '抱歉，我遇到了一些问题。请稍后再试或联系管理员。';
                             this.updateAIMessage(this.currentAIBubble, errorMessage, false);
                             this.currentAIBubble = null;
@@ -3084,6 +3350,16 @@
 
                 } catch (error) {
                     console.error('[AI Chat UI] 发送消息异常:', error);
+                    const errorInfo = this.inferAIError(error);
+                    this.sendAIAnalytics('ai_chat_reply_error', {
+                        target_type: 'ai_conversation',
+                        target_id: this.resolveConversationId(null, 'unknown'),
+                        target_object: {
+                            error_stage: errorInfo.stage,
+                            error_code: errorInfo.message.slice(0, 200),
+                            http_status: errorInfo.httpStatus
+                        }
+                    });
                     const errorMessage = '抱歉，发送消息时出现错误。请检查网络连接后重试。';
                     if (this.currentAIBubble) {
                         this.updateAIMessage(this.currentAIBubble, errorMessage, false);

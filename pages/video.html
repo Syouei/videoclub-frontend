@@ -1298,6 +1298,25 @@
         let uploadedVideoId = null; // 新增：保存上传后的视频ID
         let uploadedPdfId = null;   // 新增：保存上传后的PDF ID
         let uploadedExplainVideoId = null; // 新增：保存上传后的说课视频ID
+        let currentEditTaskId = null;
+        let currentEditVideoId = null;
+        let currentEditPdfId = null;
+
+        function buildTaskTargetObject(taskId) {
+            if (taskId === undefined || taskId === null) return undefined;
+            return { task_id: taskId };
+        }
+
+        function sendFileAnalytics(eventName, fileType, fileId, taskId) {
+            if (!window.Utils || !Utils.sendAnalyticsEvent) return;
+            if (fileId === undefined || fileId === null) return;
+            Utils.sendAnalyticsEvent(eventName, {
+                category: 'teaching',
+                target_type: fileType,
+                target_id: fileId,
+                target_object: buildTaskTargetObject(taskId)
+            });
+        }
 
         // ========== 用户下拉菜单功能（与home.html相同） ==========
         let userDropdownOpen = false;
@@ -1787,6 +1806,7 @@
                 if (fastUploadResult && fastUploadResult.code === 0) {
                     if (fastUploadResult.data && fastUploadResult.data.videoId) {
                         uploadedVideoId = fastUploadResult.data.videoId;
+                        sendFileAnalytics('file_upload_video', 'video', uploadedVideoId, null);
                         console.log('秒传成功，videoId:', uploadedVideoId);
                         showUploadComplete(fileType);
                         Utils.showNotification('秒传成功！视频已存在', 'success');
@@ -1823,6 +1843,7 @@
 
                 if (saveResult && saveResult.code === 0) {
                     uploadedVideoId = saveResult.data?.videoId; // 后端数据库的Video主键ID
+                    sendFileAnalytics('file_upload_video', 'video', uploadedVideoId, null);
                     console.log('视频保存成功，DB videoId:', uploadedVideoId);
                     showUploadComplete(fileType);
                     Utils.showNotification('视频上传成功！', 'success');
@@ -2056,6 +2077,7 @@
                 if (fastUploadResult && fastUploadResult.code === 0) {
                     if (fastUploadResult.data && fastUploadResult.data.resourceId) {
                         uploadedPdfId = fastUploadResult.data.resourceId;
+                        sendFileAnalytics('file_upload_pdf', 'pdf', uploadedPdfId, null);
                         console.log('PDF秒传成功，resourceId:', uploadedPdfId);
                         showUploadComplete('pdf');
                         Utils.showNotification('秒传成功！PDF已存在', 'success');
@@ -2124,6 +2146,7 @@
 
                 if (saveResult && saveResult.code === 0) {
                     uploadedPdfId = saveResult.data?.resourceId;
+                    sendFileAnalytics('file_upload_pdf', 'pdf', uploadedPdfId, null);
                     console.log('资源保存成功，resourceId:', uploadedPdfId);
                     showUploadComplete('pdf');
                     Utils.showNotification('PDF上传成功！', 'success');
@@ -2205,6 +2228,17 @@
                     editUploadedPdfId = fastResult.data.resourceId;
                 }
                 showEditUploadComplete(fileType, file.name);
+                const uploadedId = (fileType === 'video'
+                    ? editUploadedVideoId
+                    : (fileType === 'pdf' ? editUploadedPdfId : null));
+                if (uploadedId) {
+                    sendFileAnalytics(
+                        fileType === 'video' ? 'file_upload_video' : 'file_upload_pdf',
+                        fileType === 'video' ? 'video' : 'pdf',
+                        uploadedId,
+                        currentEditTaskId
+                    );
+                }
                 Utils.showNotification('秒传成功！', 'success');
                 return;
             }
@@ -2273,6 +2307,17 @@
                     editUploadedPdfId = saveResult.data?.resourceId;
                 }
                 showEditUploadComplete(fileType, file.name);
+                const uploadedId = (fileType === 'video'
+                    ? editUploadedVideoId
+                    : (fileType === 'pdf' ? editUploadedPdfId : null));
+                if (uploadedId) {
+                    sendFileAnalytics(
+                        fileType === 'video' ? 'file_upload_video' : 'file_upload_pdf',
+                        fileType === 'video' ? 'video' : 'pdf',
+                        uploadedId,
+                        currentEditTaskId
+                    );
+                }
                 const fileTypeName = fileType === 'video' ? '视频' : fileType === 'explain-video' ? '说课视频' : 'PDF';
                 Utils.showNotification(`${fileTypeName}上传成功！`, 'success');
             } else {
@@ -2562,6 +2607,13 @@
                 const modal = document.getElementById('create-task-modal');
                 if (modal) {
                     modal.style.display = 'flex';
+
+                    if (window.Utils && Utils.sendAnalyticsEvent) {
+                        Utils.sendAnalyticsEvent('task_open_create_modal', {
+                            category: 'teaching',
+                            club_id: currentClub ? (currentClub.id || currentClub.clubId) : null
+                        });
+                    }
 
                     // 清空输入
                     const nameInput = document.getElementById('new-task-name');
@@ -3089,6 +3141,14 @@
                 if (result && result.code === 0) {
                     Utils.showNotification(`任务"${task.title}"已${action}！`, 'success');
 
+                    if (window.Utils && Utils.sendAnalyticsEvent) {
+                        Utils.sendAnalyticsEvent(unlockStatus ? 'task_unlock' : 'task_lock', {
+                            category: 'teaching',
+                            target_type: 'task',
+                            target_id: taskId
+                        });
+                    }
+
                     // 更新本地任务状态
                     videoTasks[taskIndex].isUnlocked = unlockStatus;
 
@@ -3300,6 +3360,14 @@
                 });
 
                 Utils.showNotification('任务及所有资源创建成功！', 'success');
+                if (window.Utils && Utils.sendAnalyticsEvent) {
+                    Utils.sendAnalyticsEvent('task_create', {
+                        category: 'teaching',
+                        target_type: 'task',
+                        target_id: taskId,
+                        club_id: clubId
+                    });
+                }
                 closeCreateTaskModal();
 
                 // 刷新列表
@@ -3373,6 +3441,10 @@
 
             // 重置对应的上传ID
             if (fileType === 'video') {
+                const removedId = uploadedVideoId;
+                if (removedId) {
+                    sendFileAnalytics('file_remove_video', 'video', removedId, null);
+                }
                 uploadedVideoId = null;
                 const previewContainer = document.getElementById('upload-preview');
                 if (previewContainer) previewContainer.style.display = 'none';
@@ -3383,6 +3455,10 @@
                 if (previewContainer) previewContainer.style.display = 'none';
             }
             if (fileType === 'pdf') {
+                const removedId = uploadedPdfId;
+                if (removedId) {
+                    sendFileAnalytics('file_remove_pdf', 'pdf', removedId, null);
+                }
                 uploadedPdfId = null;
                 const previewContainer = document.getElementById('pdf-upload-preview');
                 if (previewContainer) previewContainer.style.display = 'none';
@@ -3535,6 +3611,17 @@
                     Utils.showNotification('找不到该任务', 'error');
                     return;
                 }
+
+                if (window.Utils && Utils.sendAnalyticsEvent) {
+                    Utils.sendAnalyticsEvent('task_open_edit_modal', {
+                        category: 'teaching',
+                        target_type: 'task',
+                        target_id: taskId
+                    });
+                }
+                currentEditTaskId = taskId;
+                currentEditVideoId = task.videoId || null;
+                currentEditPdfId = task.pdfId || null;
 
                 // 创建编辑模态框（简化版，只保留基本编辑功能）
                 createEditTaskModal(task);
@@ -3848,6 +3935,19 @@
 
                 if (result && result.code === 0) {
                     Utils.showNotification(`任务"${taskName}"修改成功！`, 'success');
+                    if (window.Utils && Utils.sendAnalyticsEvent) {
+                        Utils.sendAnalyticsEvent('task_save_edit', {
+                            category: 'teaching',
+                            target_type: 'task',
+                            target_id: taskId
+                        });
+                    }
+                    if (window._editRemoveVideo && currentEditVideoId) {
+                        sendFileAnalytics('file_remove_video', 'video', currentEditVideoId, taskId);
+                    }
+                    if (window._editRemovePdf && currentEditPdfId) {
+                        sendFileAnalytics('file_remove_pdf', 'pdf', currentEditPdfId, taskId);
+                    }
                     closeEditTaskModal();
 
                     // 刷新任务列表
@@ -3913,6 +4013,13 @@
 
                 if (result && result.code === 0) {
                     Utils.showNotification('任务删除成功！', 'success');
+                    if (window.Utils && Utils.sendAnalyticsEvent) {
+                        Utils.sendAnalyticsEvent('task_delete', {
+                            category: 'teaching',
+                            target_type: 'task',
+                            target_id: taskId
+                        });
+                    }
 
                     // 刷新任务列表
                     await loadVideoTasks();

@@ -352,7 +352,14 @@ window.Profile = {
             fieldCount: this.currentProfile ? Object.keys(this.currentProfile).length : 0
         };
         
-        Utils.sendPrivacyEvent('profile_updated', eventData);
+        const user = window.Auth && window.Auth.getUser ? window.Auth.getUser() : null;
+        Utils.sendAnalyticsEvent('generic_interaction', {
+            category: 'session',
+            sub_event: 'profile_updated',
+            target_type: 'user',
+            target_id: user ? (user.userId || user.id) : undefined,
+            target_object: eventData
+        });
         
         console.log('[埋点] 个人资料更新:', eventData);
     },

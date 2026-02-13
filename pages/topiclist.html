@@ -1325,10 +1325,18 @@ async function loadTopics() {
         showMessage('正在删除...', 'info');
 
         const result = await Topics.deleteTopic(topicId);
-        
+
         console.log('[DEBUG] 📥 删除请求返回结果:', result);
-        
+
         if (result.success) {
+            if (window.Utils && Utils.sendAnalyticsEvent) {
+                Utils.sendAnalyticsEvent('topic_delete', {
+                    category: 'interaction',
+                    target_type: 'topic',
+                    target_id: topicId,
+                    club_id: currentClubId
+                });
+            }
             showMessage('话题删除成功', 'success');
             
             console.log('[DEBUG] ✅ 删除成功，开始重新加载话题列表');

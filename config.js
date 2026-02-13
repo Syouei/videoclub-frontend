@@ -207,9 +207,18 @@ window.AppConfig = {
     // 分析功能开关
     ANALYTICS_ENABLED: true,
     
-    // 分析服务器端点（可根据需要配置）
-    ANALYTICS_ENDPOINT: 'https://analytics.teachervideoclub.com/events',
-    
+    // 分析服务器端点（对接后端 analytics API）
+    ANALYTICS_ENDPOINT: '/analytics/events',
+
+    // 分析分类开关（可按需禁用某类事件）
+    ANALYTICS_CATEGORY: {
+        LEARNING: true,
+        TEACHING: true,
+        INTERACTION: true,
+        SESSION: true,
+        SYSTEM: false
+    },
+
     // 隐私政策版本
     PRIVACY_VERSION: '2026-01',
     

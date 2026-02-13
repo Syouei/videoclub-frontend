@@ -582,7 +582,16 @@
                 showToast('话题ID不存在');
                 return;
             }
-            
+
+            if (window.Utils && Utils.sendAnalyticsEvent) {
+                Utils.sendAnalyticsEvent('topic_open_detail', {
+                    category: 'interaction',
+                    target_type: 'topic',
+                    target_id: currentTopicId,
+                    club_id: currentClubId
+                });
+            }
+
             // 2. 加载用户信息
             try {
                 const userInfo = Utils.getFromStorage(window.AppConfig.STORAGE_KEYS.USER_INFO);
@@ -961,6 +970,19 @@ if (comment.parentId) {
 
 
                 if (result.success) {
+                    if (window.Utils && Utils.sendAnalyticsEvent) {
+                        Utils.sendAnalyticsEvent('reflection_submit', {
+                            category: 'interaction',
+                            target_type: 'topic',
+                            target_id: currentTopicId,
+                            target_object: {
+                                content: content,
+                                content_length: content.length,
+                                scaffold_type: currentScaffold || null,
+                                parent_id: null
+                            }
+                        });
+                    }
                     showToast('发布成功！');
                     
                     // 清空表单
@@ -1024,7 +1046,7 @@ if (comment.parentId) {
                     if (window.Utils && Utils.sendAnalyticsEvent) {
                         Utils.sendAnalyticsEvent('reflection_like', {
                             category: 'interaction',
-                            target_type: 'reflection',
+                            target_type: 'comment',
                             target_id: commentId
                         });
                     }
@@ -1204,7 +1226,7 @@ async function submitReply(parentCommentId, button) {
             if (window.Utils && Utils.sendAnalyticsEvent) {
                 Utils.sendAnalyticsEvent('reflection_reply_submit', {
                     category: 'interaction',
-                    target_type: 'reflection',
+                    target_type: 'comment',
                     target_id: parentCommentId,
                     target_object: {
                         content: content,

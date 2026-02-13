@@ -41,6 +41,8 @@
     let taskPageInitialized = false;
     let currentClubId = null;
     let currentClubName = '';
+    let currentPreviewPdfId = null;
+    let currentPreviewTaskId = null;
 
     // ========== 1. 页面加载后获取任务详情 ==========
     async function initTaskPage() {
@@ -155,6 +157,15 @@
                 return;
             }
 
+            if (window.Utils && Utils.sendAnalyticsEvent) {
+                Utils.sendAnalyticsEvent('task_enter', {
+                    category: 'learning',
+                    target_type: 'task',
+                    target_id: taskId,
+                    club_id: clubId
+                });
+            }
+
             await loadTaskDetail(taskId);
         } catch (error) {
             console.error('加载任务列表或详情失败:', error);
@@ -190,6 +201,15 @@
                 ...taskInfo,
                 subTasks: Array.isArray(taskInfo.subTasks) ? taskInfo.subTasks : []
             };
+
+            if (window.Utils && Utils.sendAnalyticsEvent) {
+                Utils.sendAnalyticsEvent('view_task', {
+                    category: 'learning',
+                    target_type: 'task',
+                    target_id: taskInfo.taskId || taskId,
+                    club_id: currentClubId
+                });
+            }
             
             displayTaskDetail(mergedTask);
             
@@ -476,6 +496,18 @@ function displaySubTasks(taskInfo) {
                 return;
             }
 
+            if (window.Utils && Utils.sendAnalyticsEvent) {
+                Utils.sendAnalyticsEvent('video_open_player', {
+                    category: 'learning',
+                    target_type: 'video',
+                    target_id: videoId,
+                    target_object: {
+                        task_id: parseInt(taskId, 10),
+                        subtask_type: taskType || 'watch'
+                    }
+                });
+            }
+
             const params = new URLSearchParams({
                 videoId: videoId.toString(),
                 taskId: taskId.toString()
@@ -514,6 +546,18 @@ function displaySubTasks(taskInfo) {
             if (!videoId) {
                 showMessage('该任务暂无说课视频资源', 'error');
                 return;
+            }
+
+            if (window.Utils && Utils.sendAnalyticsEvent) {
+                Utils.sendAnalyticsEvent('video_open_player', {
+                    category: 'learning',
+                    target_type: 'video',
+                    target_id: videoId,
+                    target_object: {
+                        task_id: parseInt(taskId, 10),
+                        subtask_type: 'lecture'
+                    }
+                });
             }
 
             const params = new URLSearchParams({
@@ -598,6 +642,18 @@ async function completeSubTask(taskId, subtaskId, taskType) {
         
         if (result.success) {
             showMessage('任务提交成功！', 'success');
+
+            if (window.Utils && Utils.sendAnalyticsEvent) {
+                Utils.sendAnalyticsEvent('subtask_complete', {
+                    category: 'learning',
+                    target_type: 'subtask',
+                    target_id: subtaskId,
+                    target_object: {
+                        subtask_type: taskType
+                    },
+                    club_id: currentClubId
+                });
+            }
             
             setTimeout(async () => {
                 await loadTaskDetail(taskId);
@@ -694,6 +750,9 @@ async function previewTeachingDesign(taskId) {
             showMessage('该任务暂无教学设计文档', 'info');
             return;
         }
+
+        currentPreviewPdfId = resourceId;
+        currentPreviewTaskId = taskId;
         
         const config = window.AppConfig;
         const token = Utils.getFromStorage(config.STORAGE_KEYS.USER_TOKEN);
@@ -725,6 +784,17 @@ async function previewTeachingDesign(taskId) {
         if (!pdfUrl) {
             showMessage('未找到PDF下载地址', 'error');
             return;
+        }
+
+        if (window.Utils && Utils.sendAnalyticsEvent) {
+            Utils.sendAnalyticsEvent('pdf_preview_open', {
+                category: 'learning',
+                target_type: 'pdf',
+                target_id: resourceId,
+                target_object: {
+                    task_id: taskId
+                }
+            });
         }
         
         const modalHTML = `
@@ -839,6 +909,19 @@ function closeDesignPreview() {
             modal.remove();
         }, 300);
     }
+
+    if (window.Utils && Utils.sendAnalyticsEvent && currentPreviewPdfId) {
+        Utils.sendAnalyticsEvent('pdf_preview_close', {
+            category: 'learning',
+            target_type: 'pdf',
+            target_id: currentPreviewPdfId,
+            target_object: {
+                task_id: currentPreviewTaskId
+            }
+        });
+    }
+    currentPreviewPdfId = null;
+    currentPreviewTaskId = null;
     
     document.body.style.overflow = 'auto';
 }
@@ -863,6 +946,18 @@ async function completeReadDesignTask(taskId, subtaskId) {
         
         if (result.success) {
             showMessage('教学设计阅读任务提交成功！', 'success');
+
+            if (window.Utils && Utils.sendAnalyticsEvent) {
+                Utils.sendAnalyticsEvent('subtask_complete', {
+                    category: 'learning',
+                    target_type: 'subtask',
+                    target_id: subtaskId,
+                    target_object: {
+                        subtask_type: 'read_design'
+                    },
+                    club_id: currentClubId
+                });
+            }
             
             setTimeout(async () => {
                 await loadTaskDetail(taskId);
