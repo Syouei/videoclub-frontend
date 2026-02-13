@@ -1,0 +1,1195 @@
+// API调用模块
+window.API = {
+    /**
+     * 基础请求方法（处理所有API调用）
+     * @param {string} endpoint - API端点路径
+     * @param {string} method - HTTP方法
+     * @param {object} data - 请求数据
+     * @param {object} headers - 额外请求头
+     * @returns {Promise} 返回Promise，解析为 {code, msg, data}
+     */
+    async request(endpoint, method = 'GET', data = null, headers = {}) {
+        const config = window.AppConfig;
+
+        // 替换路径中的占位符 {id}
+        let url = endpoint;
+        if (data && data._pathParams) {
+            Object.keys(data._pathParams).forEach(key => {
+                url = url.replace(`{${key}}`, data._pathParams[key]);
+            });
+            // 删除路径参数，不发送到body
+            delete data._pathParams;
+        }
+
+        // 构建完整URL
+        const fullUrl = config.API_BASE_URL + url;
+
+        // 设置请求头
+        const defaultHeaders = {
+            'Content-Type': 'application/json',
+        };
+
+        // 添加认证token（除了登录和注册）
+        if (!endpoint.includes('/auth/')) {
+            const token = Utils.getFromStorage(config.STORAGE_KEYS.USER_TOKEN);
+            if (token) {
+                defaultHeaders['Authorization'] = `Bearer ${token}`;
+            }
+        }
+
+        // 合并headers
+        const requestHeaders = { ...defaultHeaders, ...headers };
+
+        // 请求配置
+        const requestOptions = {
+            method: method,
+            headers: requestHeaders,
+            signal: AbortSignal.timeout ? AbortSignal.timeout(config.REQUEST_TIMEOUT) : null
+        };
+
+        // 添加请求体
+        if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+            requestOptions.body = JSON.stringify(data);
+        }
+
+        try {
+            if (config.DEBUG_MODE) {
+                console.log(`[API请求] ${method} ${fullUrl}`, data || '');
+            }
+
+            const response = await fetch(fullUrl, requestOptions);
+
+            // 解析响应
+            let result;
+            const contentType = response.headers.get('content-type');
+
+            if (contentType && contentType.includes('application/json')) {
+                result = await response.json();
+            } else {
+                const text = await response.text();
+                throw new Error(`非JSON响应: ${text}`);
+            }
+
+            if (config.DEBUG_MODE) {
+                console.log(`[API响应] ${response.status} ${fullUrl}:`, result);
+            }
+
+            // 检查HTTP状态码
+            if (!response.ok) {
+                // HTTP错误
+                throw new Error(result.msg || `HTTP错误: ${response.status}`);
+            }
+
+            // API文档格式：所有接口都返回 {code, msg, data}
+            if (result.code !== undefined && result.msg !== undefined) {
+                // 业务错误（code !== 0）
+                if (result.code !== 0) {
+                    throw new Error(result.msg || '业务逻辑错误');
+                }
+
+                return result; // 返回完整的 {code, msg, data}
+            } else {
+                // 响应格式不符合API文档
+                console.warn('API响应格式不符合文档:', result);
+                // 尝试适配旧格式
+                return {
+                    code: 0,
+                    msg: 'success',
+                    data: result
+                };
+            }
+
+        } catch (error) {
+            console.error(`[API错误] ${method} ${fullUrl}:`, error);
+
+            // 如果是网络错误或超时，返回离线数据（开发用）
+            if (error.name === 'TypeError' ||
+                error.name === 'AbortError' ||
+                error.message.includes('Network') ||
+                error.message.includes('timeout')) {
+
+                if (config.DEBUG_MODE) {
+                    console.warn('使用离线数据');
+                }
+                return this.getOfflineData(endpoint, method, data);
+            }
+
+            // 其他错误，包装后抛出
+            throw new Error(error.message || 'API请求失败');
+        }
+    },
+
+
+
+    /**
+     * 获取离线数据（开发/测试用）
+     * 所有数据都按照 {code: 0, msg: 'success', data: ...} 格式
+     */
+    getOfflineData(endpoint, method, data) {
+        const config = window.AppConfig;
+
+        if (!config.DEBUG_MODE) {
+            return {
+                code: 10001,
+                msg: '网络连接失败，请检查网络设置',
+                data: null
+            };
+        }
+
+        console.warn(`[离线模式] ${endpoint}`);
+
+        // 离线数据响应（模拟API格式）
+        const mockResponses = {
+            // 认证模块
+            '/auth/login': {
+                code: 0,
+                msg: '登录成功',
+                data: {
+                    accessToken: 'mock_jwt_token_' + Date.now(),
+                    userInfo: {
+                        userId: 1001,
+                        username: data?.username || '王老师',
+                        role: 'user',
+                        avatarUrl: null
+                    }
+                }
+            },
+            '/auth/register': {
+                code: 0,
+                msg: '注册成功',
+                data: {
+                    userId: Date.now(),
+                    username: data?.username || '新用户',
+                    role: data?.role || 'user',
+                    createdAt: new Date().toISOString()
+                }
+            },
+
+            // 用户模块
+            '/users/me': {
+                code: 0,
+                msg: 'success',
+                data: {
+                    userId: 1001,
+                    username: '王老师',
+                    role: 'user',
+                    avatarUrl: null
+                }
+            },
+            '/users/me/clubs': {
+                code: 0,
+                msg: 'success',
+                data: [
+                    {
+                        clubId: 101,
+                        clubName: "初中数学教研组",
+                        memberRole: "manager",
+                        joinTime: "2026-01-10T12:00:00Z"
+                    },
+                    {
+                        clubId: 102,
+                        clubName: "PBL项目式学习",
+                        memberRole: "member",
+                        joinTime: "2026-01-12T10:00:00Z"
+                    }
+                ]
+            },
+
+            // 俱乐部模块
+            '/clubs': {
+                code: 0,
+                msg: 'success',
+                data: [
+                    {
+                        clubId: 101,
+                        clubName: "初中数学教研组",
+                        creator: {
+                            userId: 1001,
+                            username: "math_teacher"
+                        },
+                        tag: "数学",
+                        description: "初中数学教学研讨",
+                        memberCount: 12,
+                        status: "active",
+                        joinPolicy: "free",
+                        joinConditions: null,
+                        createdAt: "2026-01-01T10:00:00Z"
+                    },
+                    {
+                        clubId: 102,
+                        clubName: "PBL项目式学习",
+                        creator: {
+                            userId: 1002,
+                            username: "pbl_teacher"
+                        },
+                        tag: "综合",
+                        description: "项目式学习方法研讨",
+                        memberCount: 8,
+                        status: "active",
+                        joinPolicy: "approval",
+                        joinConditions: "仅限在职教师",
+                        createdAt: "2026-01-02T10:00:00Z"
+                    }
+                ]
+            },
+
+            // 任务模块
+            '/tasks': {
+                code: 0,
+                msg: 'success',
+                data: [
+                    {
+                        taskId: 1,
+                        type: "watch",
+                        title: "观看教学视频",
+                        description: "前往教学视频平台观看教学视频",
+                        status: "incomplete"
+                    },
+                    {
+                        taskId: 2,
+                        type: "research",
+                        title: "教学研讨笔记",
+                        description: "前往研讨区完成教学研讨",
+                        status: "incomplete"
+                    }
+                ]
+            },
+
+            // 通知模块 - 新增离线数据
+            '/notifications': {
+                code: 0,
+                msg: 'success',
+                data: {
+                    list: [
+                        {
+                            notificationId: 1,
+                            userId: 1001,
+                            type: "club_join_request",
+                            title: "新的入会申请",
+                            content: "用户ID 1002 申请加入 PBL项目式学习",
+                            payload: {
+                                clubId: 102,
+                                requestId: 1,
+                                applicantId: 1002,
+                                clubName: "PBL项目式学习",
+                                applyMessage: "我是数学老师，希望加入学习"
+                            },
+                            isRead: false,
+                            readAt: null,
+                            createdAt: "2026-01-25T10:00:00Z"
+                        }
+                    ],
+                    total: 1,
+                    page: 1,
+                    pageSize: 20
+                }
+            },
+
+            '/notifications/unread-count': {
+                code: 0,
+                msg: 'success',
+                data: {
+                    total: 1
+                }
+            },
+
+            // 视频评论模块 - 新增离线数据
+            '/videos/1/comments': {
+                code: 0,
+                msg: 'success',
+                data: {
+                    list: [
+                        {
+                            id: 1,
+                            userId: 1001,
+                            username: '王老师',
+                            avatar: '王',
+                            content: '这个知识点讲解非常清晰，特别是关于勾股定理的证明部分。',
+                            timestamp: 120,
+                            createdAt: '2026-01-20T10:30:00Z',
+                            likes: 5,
+                            replies: 2
+                        },
+                        {
+                            id: 2,
+                            userId: 1002,
+                            username: '李老师',
+                            avatar: '李',
+                            content: '视频中提到的教学方法可以借鉴到我的课堂中。',
+                            timestamp: 240,
+                            createdAt: '2026-01-20T11:15:00Z',
+                            likes: 3,
+                            replies: 1
+                        }
+                    ],
+                    total: 2,
+                    page: 1,
+                    pageSize: 20
+                }
+            },
+
+            '/videos/1/hot-timestamps': {
+                code: 0,
+                msg: 'success',
+                data: [
+                    {
+                        timestamp: 120,
+                        count: 3,
+                        likes: 15
+                    },
+                    {
+                        timestamp: 240,
+                        count: 2,
+                        likes: 8
+                    }
+                ]
+            }
+        };
+
+        // 查找匹配的模拟数据
+        for (const [key, value] of Object.entries(mockResponses)) {
+            if (endpoint.includes(key)) {
+                return value;
+            }
+        }
+
+        // 默认返回成功（但不包含数据）
+        return {
+            code: 0,
+            msg: 'success (离线模式)',
+            data: null
+        };
+    },
+
+    /**
+     * 构建查询字符串
+     * @param {object} params - 查询参数对象
+     * @returns {string} 查询字符串
+     */
+    buildQueryString(params) {
+        if (!params || Object.keys(params).length === 0) {
+            return '';
+        }
+
+        const validParams = {};
+        Object.keys(params).forEach(key => {
+            if (params[key] !== undefined && params[key] !== null && params[key] !== '') {
+                validParams[key] = params[key];
+            }
+        });
+
+        if (Object.keys(validParams).length === 0) {
+            return '';
+        }
+
+        return '?' + new URLSearchParams(validParams).toString();
+    },
+
+    // ================ 认证模块（无需Token） ================
+
+    /**
+     * 2.2 用户登录
+     * @param {object} credentials - 登录凭证
+     * @returns {Promise} {code, msg, data: {accessToken, userInfo}}
+     */
+    async login(credentials) {
+        const endpoint = window.AppConfig.API_ENDPOINTS.LOGIN;
+        return await this.request(endpoint, 'POST', credentials);
+    },
+
+    /**
+     * 2.1 用户注册
+     * @param {object} userData - 用户注册数据
+     * @returns {Promise} {code, msg, data: {userId, username, role, createdAt}}
+     */
+    async register(userData) {
+        const endpoint = window.AppConfig.API_ENDPOINTS.REGISTER;
+        return await this.request(endpoint, 'POST', userData);
+    },
+
+    // ================ 用户模块（需Token） ================
+
+    /**
+     * 3.1 获取我的个人资料
+     * @returns {Promise} {code, msg, data: {userId, username, role, avatarUrl}}
+     */
+    async getMyInfo() {
+        const endpoint = window.AppConfig.API_ENDPOINTS.GET_USER_INFO;
+        return await this.request(endpoint, 'GET');
+    },
+
+    /**
+     * 3.2 修改个人资料
+     * @param {object} userData - 更新的用户数据
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async updateMyInfo(userData) {
+        const endpoint = window.AppConfig.API_ENDPOINTS.UPDATE_USER_INFO;
+        return await this.request(endpoint, 'PATCH', userData);
+    },
+
+    /**
+     * 3.3 修改密码
+     * @param {object} passwordData - 密码数据 {oldPassword, newPassword}
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async changePassword(passwordData) {
+        const endpoint = window.AppConfig.API_ENDPOINTS.CHANGE_PASSWORD;
+        return await this.request(endpoint, 'POST', passwordData);
+    },
+
+    /**
+     * 3.4 获取我加入的俱乐部
+     * @returns {Promise} {code, msg, data: Array<{clubId, clubName, memberRole, joinTime}>}
+     */
+    async getMyClubs() {
+        const endpoint = window.AppConfig.API_ENDPOINTS.GET_MY_CLUBS;
+        return await this.request(endpoint, 'GET');
+    },
+
+    async getUserDetail(userId) {
+        const endpoint = window.AppConfig.API_ENDPOINTS.GET_USER_DETAIL;
+        return await this.request(endpoint, 'GET', { _pathParams: { id: userId } });
+    },
+
+    // ================ 俱乐部模块（需Token） ================
+
+    /**
+     * 4.1 创建俱乐部
+     * @param {object} clubData - 俱乐部数据 {name, tag, description, joinPolicy, joinConditions}
+     * @returns {Promise} {code, msg, data: {clubId}}
+     */
+    async createClub(clubData) {
+        const endpoint = window.AppConfig.API_ENDPOINTS.CREATE_CLUB;
+        return await this.request(endpoint, 'POST', clubData);
+    },
+
+    /**
+     * 4.2 查询俱乐部列表
+     * @param {object} params - 查询参数 {keyword, type, page, pageSize}
+     * @returns {Promise} {code, msg, data: Array<俱乐部信息>}
+     */
+    async getAllClubs(params = {}) {
+        const endpoint = window.AppConfig.API_ENDPOINTS.GET_ALL_CLUBS;
+        const queryString = this.buildQueryString(params);
+        return await this.request(endpoint + queryString, 'GET');
+    },
+
+    /**
+     * 4.3 查询俱乐部详情
+     * @param {number} clubId - 俱乐部ID
+     * @returns {Promise} {code, msg, data: 俱乐部详细信息}
+     */
+    async getClubDetail(clubId) {
+        const endpoint = window.AppConfig.API_ENDPOINTS.GET_CLUB_DETAIL;
+        // 使用_pathParams传递路径参数
+        return await this.request(endpoint, 'GET', { _pathParams: { id: clubId } });
+    },
+
+    /**
+     * 4.4 加入俱乐部
+     * @param {number} clubId - 俱乐部ID
+     * @param {object} joinData - 加入数据 {applyMessage}
+     * @returns {Promise} {code, msg, data: {clubId, status, requestId}}
+     */
+    async joinClub(clubId, joinData = {}) {
+        const endpoint = window.AppConfig.API_ENDPOINTS.JOIN_CLUB;
+        const data = { ...joinData, _pathParams: { id: clubId } };
+        return await this.request(endpoint, 'POST', data);
+    },
+
+    /**
+     * 4.5 退出俱乐部
+     * @param {number} clubId - 俱乐部ID
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async quitClub(clubId) {
+        const endpoint = window.AppConfig.API_ENDPOINTS.QUIT_CLUB;
+        return await this.request(endpoint, 'POST', { _pathParams: { id: clubId } });
+    },
+
+    /**
+     * 4.6 编辑俱乐部
+     * @param {number} clubId - 俱乐部ID
+     * @param {object} clubData - 更新的俱乐部数据 {name, tag, description, joinPolicy, joinConditions}
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async updateClub(clubId, clubData) {
+        const endpoint = window.AppConfig.API_ENDPOINTS.UPDATE_CLUB;
+        const data = { ...clubData, _pathParams: { id: clubId } };
+        return await this.request(endpoint, 'PATCH', data);
+    },
+
+    /**
+     * 4.7 解散俱乐部
+     * @param {number} clubId - 俱乐部ID
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async deleteClub(clubId) {
+        const endpoint = window.AppConfig.API_ENDPOINTS.DELETE_CLUB;
+        return await this.request(endpoint, 'DELETE', { _pathParams: { id: clubId } });
+    },
+
+    /**
+     * 4.8 归档俱乐部
+     * @param {number} clubId - 俱乐部ID
+     * @param {object} data - 归档数据 {status}
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async archiveClub(clubId, data = { status: 'archived' }) {
+        const endpoint = window.AppConfig.API_ENDPOINTS.ARCHIVE_CLUB;
+        const requestData = { ...data, _pathParams: { id: clubId } };
+        return await this.request(endpoint, 'PATCH', requestData);
+    },
+
+    /**
+     * 4.9 入会申请列表
+     * @param {number} clubId - 俱乐部ID
+     * @param {object} params - 查询参数 {status}
+     * @returns {Promise} {code, msg, data: {list}}
+     */
+    async getJoinRequests(clubId, params = {}) {
+        const endpoint = window.AppConfig.API_ENDPOINTS.GET_JOIN_REQUESTS;
+        const queryString = this.buildQueryString(params);
+        const fullEndpoint = endpoint.replace('{id}', clubId) + queryString;
+        return await this.request(fullEndpoint, 'GET');
+    },
+
+    /**
+     * 4.10 通过入会申请
+     * @param {number} clubId - 俱乐部ID
+     * @param {number} requestId - 申请ID
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async approveJoinRequest(clubId, requestId) {
+        const endpoint = window.AppConfig.API_ENDPOINTS.APPROVE_JOIN_REQUEST;
+        const fullEndpoint = endpoint.replace('{id}', clubId).replace('{requestId}', requestId);
+        return await this.request(fullEndpoint, 'POST');
+    },
+
+    /**
+     * 4.11 驳回入会申请
+     * @param {number} clubId - 俱乐部ID
+     * @param {number} requestId - 申请ID
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async rejectJoinRequest(clubId, requestId) {
+        const endpoint = window.AppConfig.API_ENDPOINTS.REJECT_JOIN_REQUEST;
+        const fullEndpoint = endpoint.replace('{id}', clubId).replace('{requestId}', requestId);
+        return await this.request(fullEndpoint, 'POST');
+    },
+
+    // ================ 通知模块（需Token） ================
+
+    /**
+     * 9.1 站内信列表
+     * @param {object} params - 查询参数 {isRead, page, pageSize}
+     * @returns {Promise} {code, msg, data: {list}}
+     */
+    async getNotifications(params = {}) {
+        const queryString = this.buildQueryString(params);
+        return await this.request('/notifications' + queryString, 'GET');
+    },
+
+    /**
+     * 9.2 未读数量
+     * @returns {Promise} {code, msg, data: {total}}
+     */
+    async getUnreadCount() {
+        return await this.request('/notifications/unread-count', 'GET');
+    },
+
+    /**
+     * 9.3 标记已读
+     * @param {number} notificationId - 通知ID
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async markNotificationAsRead(notificationId) {
+        return await this.request(`/notifications/${notificationId}/read`, 'POST');
+    },
+
+    /**
+     * 9.4 全部已读
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async markAllNotificationsAsRead() {
+        return await this.request('/notifications/read-all', 'POST');
+    },
+
+    // ================ 任务模块（需Token） ================
+
+    /**
+         * 7.1 发布任务
+         * @param {object} taskData - 任务数据
+         * @returns {Promise} {code, msg, data: {taskId}}
+         */
+    async createTask(taskData) {
+        const endpoint = window.AppConfig.API_ENDPOINTS.CREATE_TASK;
+
+        // 构建请求数据
+        const requestData = {
+            clubId: parseInt(taskData.clubId),
+            title: taskData.title,
+            description: taskData.description || '',
+            type: taskData.type || 'all' // 允许传入 type
+        };
+
+        // 添加 subtasks (如果有) [关键修改]
+        if (taskData.subtasks && Array.isArray(taskData.subtasks)) {
+            requestData.subtasks = taskData.subtasks;
+        }
+
+        // 添加 unlockAt（如果有）
+        if (taskData.unlockAt) {
+            requestData.unlockAt = taskData.unlockAt;
+        }
+
+        // 添加 videoId（如果有）
+        if (taskData.videoId !== undefined && taskData.videoId !== null) {
+            requestData.videoId = parseInt(taskData.videoId);
+        }
+
+        // 添加 pdfId（如果有）
+        if (taskData.pdfId !== undefined && taskData.pdfId !== null) {
+            requestData.pdfId = parseInt(taskData.pdfId);
+        }
+
+        // 添加 explainVideoId（如果有）
+        if (taskData.explainVideoId !== undefined && taskData.explainVideoId !== null) {
+            requestData.explainVideoId = parseInt(taskData.explainVideoId);
+        }
+
+        // 添加 isUnlocked（如果有）
+        if (taskData.isUnlocked !== undefined) {
+            requestData.isUnlocked = taskData.isUnlocked;
+        }
+
+        console.log('发送到后端的最终数据:', requestData);
+
+        return await this.request(endpoint, 'POST', requestData);
+    },
+
+    /**
+     * 7.3 任务列表
+     * @param {number} clubId - 俱乐部ID
+     * @returns {Promise} {code, msg, data: Array<任务信息>}
+     */
+    async getTasks(clubId) {
+        const endpoint = window.AppConfig.API_ENDPOINTS.GET_TASKS;
+        const queryString = this.buildQueryString({ clubId });
+        return await this.request(endpoint + queryString, 'GET');
+    },
+
+    /**
+     * 7.4 任务详情
+     * @param {number} taskId - 任务ID
+     * @returns {Promise} {code, msg, data: {taskInfo}}
+     */
+    async getTaskDetail(taskId) {
+        const endpoint = '/tasks/{id}';
+        return await this.request(endpoint, 'GET', { _pathParams: { id: taskId } });
+    },
+
+    /**
+     * 7.2 提交子任务
+     * @param {number} taskId - 任务ID
+     * @param {number} subtaskId - 子任务ID (1:看视频, 2:研视频)
+     * @param {object} completionData - 完成数据 {researchNotes, attachmentUrl}
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async completeSubTask(taskId, subtaskId, completionData = {}) {
+        const endpoint = `/tasks/${taskId}/subtasks/${subtaskId}/complete`;
+        return await this.request(endpoint, 'POST', completionData);
+    },
+
+    /**
+     * 7.5 修改任务
+     * @param {number} taskId - 任务ID
+     * @param {object} taskData - 更新的任务数据 {title, description, videoId, explainVideoId, pdfId}
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async updateTask(taskId, taskData) {
+        // 获取配置中的端点
+        const baseEndpoint = window.AppConfig.API_ENDPOINTS.UPDATE_TASK;
+
+        // 手动替换 :id 为实际taskId
+        const endpoint = baseEndpoint.replace(':id', taskId);
+
+        // 构建请求数据，只传递有变化的字段
+        const requestData = {};
+
+        // 处理title和description
+        if (taskData.title !== undefined) {
+            requestData.title = taskData.title;
+        }
+        if (taskData.description !== undefined) {
+            requestData.description = taskData.description;
+        }
+
+        // 处理videoId - 支持null（移除关联）
+        if (taskData.videoId !== undefined) {
+            requestData.videoId = taskData.videoId === null ? null : parseInt(taskData.videoId);
+        }
+
+        // 【关键修复】处理explainVideoId - 支持null（移除关联）
+        if (taskData.explainVideoId !== undefined) {
+            requestData.explainVideoId = taskData.explainVideoId === null ? null : parseInt(taskData.explainVideoId);
+        }
+
+        // 处理pdfId - 支持null（移除关联）
+        if (taskData.pdfId !== undefined) {
+            requestData.pdfId = taskData.pdfId === null ? null : parseInt(taskData.pdfId);
+        }
+
+        // 处理解锁状态
+        if (taskData.isUnlocked !== undefined) {
+            requestData.isUnlocked = taskData.isUnlocked;
+        }
+
+        console.log('修改任务请求:', { endpoint, requestData });
+        return await this.request(endpoint, 'PATCH', requestData);
+    },
+    /**
+     * 7.6 删除任务
+     * @param {number} taskId - 任务ID
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async deleteTask(taskId) {
+        // 获取配置中的端点
+        const baseEndpoint = window.AppConfig.API_ENDPOINTS.DELETE_TASK;
+
+        // 手动替换 :id 为实际taskId
+        const endpoint = baseEndpoint.replace(':id', taskId);
+
+        console.log('删除任务请求:', endpoint);
+        return await this.request(endpoint, 'DELETE');
+    },
+
+    /**
+     * 7.7 发布子任务
+     * @param {number} taskId - 任务ID
+     * @param {object} subtaskData - {type, title, description, videoId, pdfId}
+     * @returns {Promise} {code, msg, data: {subtaskId}}
+     */
+    async createSubtask(taskId, subtaskData) {
+        const endpoint = `/tasks/${taskId}/subtasks`;
+        return await this.request(endpoint, 'POST', subtaskData);
+    },
+
+    // ================ 视频评论模块（需Token） ================
+
+    /**
+     * 获取视频信息 (元数据)
+     * @param {number} videoId - 视频ID
+     */
+    async getVideoInfo(videoId) {
+        const endpoint = `/videos/${videoId}`;
+        return await this.request(endpoint, 'GET');
+    },
+
+    // ========== 新增：获取播放地址接口 ==========
+    /**
+     * 获取视频播放信息 (包含动态播放地址)
+     * @param {number} videoId - 视频ID
+     */
+    async getVideoPlayInfo(videoId) {
+        const endpoint = `/videos/${videoId}/play`;
+        return await this.request(endpoint, 'GET');
+    },
+
+    /**
+     * 获取视频评论列表
+     * @param {number} videoId - 视频ID
+     * @param {object} params - 查询参数 {page, pageSize, sortBy}
+     * @returns {Promise} {code, msg, data: {list, total, page, pageSize}}
+     */
+    async getVideoComments(videoId, params = {}) {
+        const endpoint = '/comments';
+        // 添加 videoId 作为查询参数
+        const queryParams = {
+            videoId: videoId,
+            ...params
+        };
+        const queryString = this.buildQueryString(queryParams);
+        return await this.request(endpoint + queryString, 'GET');
+    },
+
+    /**
+     * 提交视频评论
+     * @param {object} commentData - 评论数据 {videoId, content, timestamp}
+     * @returns {Promise} {code, msg, data: {commentId}}
+     */
+    async submitVideoComment(commentData) {
+        const endpoint = '/comments';
+        // 转换参数名：timestamp -> videoTime
+        const requestData = {
+            videoId: parseInt(commentData.videoId),
+            content: commentData.content,
+            videoTime: commentData.timestamp || 0
+        };
+        // 如果有 parentId（回复），也添加进去
+        if (commentData.parentId) {
+            requestData.parentId = parseInt(commentData.parentId);
+        }
+        return await this.request(endpoint, 'POST', requestData);
+    },
+
+    /**
+     * 点赞评论
+     * @param {number} commentId - 评论ID
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async likeComment(commentId) {
+        const endpoint = `/comments/${commentId}/like`;
+        return await this.request(endpoint, 'POST');
+    },
+
+    /**
+     * 删除评论
+     * @param {number} commentId - 评论ID
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async deleteComment(commentId) {
+        const endpoint = `/comments/${commentId}`;
+        return await this.request(endpoint, 'DELETE');
+    },
+
+    /**
+     * 获取热门评论时间点
+     * @param {number} videoId - 视频ID
+     * @returns {Promise} {code, msg, data: Array<{timestamp, count, likes}>}
+     */
+    async getHotTimestamps(videoId) {
+        const endpoint = `/videos/${videoId}/hot-timestamps`;
+        return await this.request(endpoint, 'GET');
+    },
+
+    /**
+     * 获取视频信息
+     * @param {number} videoId - 视频ID
+     * @returns {Promise} {code, msg, data: {videoInfo}}
+     */
+    async getVideoInfo(videoId) {
+        const endpoint = `/videos/${videoId}`;
+        return await this.request(endpoint, 'GET');
+    },
+
+    /**
+     * 秒传检测
+     * @param {object} data - 检测数据 {clubId, title, etag, duration}
+     * @returns {Promise} {code, msg, data: {videoId}}
+     */
+    async fastUpload(data) {
+        const endpoint = '/videos/fast-upload';
+        return await this.request(endpoint, 'POST', data);
+    },
+
+    /**
+     * 获取上传凭证
+     * @returns {Promise} {code, msg, data: {uploadToken, key, bucket, region}}
+     */
+    async getUploadToken() {
+        const endpoint = '/videos/token';
+        return await this.request(endpoint, 'GET');
+    },
+
+    /**
+     * 保存视频信息
+     * @param {object} data - 视频数据 {clubId, title, objectKey, etag, duration, bucket, region, fileSize, mimeType}
+     * @returns {Promise} {code, msg, data: {videoId}}
+     */
+    async saveVideoInfo(data) {
+        const endpoint = '/videos';
+        return await this.request(endpoint, 'POST', data);
+    },
+
+    /**
+     * 删除视频
+     * @param {number} videoId - 视频ID
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async deleteVideo(videoId) {
+        const endpoint = `/videos/${videoId}`;
+        return await this.request(endpoint, 'DELETE');
+    },
+
+    /**
+     * 删除资源
+     * @param {number} resourceId - 资源ID
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async deleteResource(resourceId) {
+        const endpoint = `/resources/${resourceId}`;
+        return await this.request(endpoint, 'DELETE');
+    },
+
+
+
+
+    // ================ 话题模块（需Token） ================
+
+    /**
+         * 11.1 创建话题
+         * @param {object} topicData - {taskId, title, content}
+         * @returns {Promise} {code, msg, data: {topicId, taskId, creatorId, title, content, createdAt}}
+         */
+    async createTopic(topicData) {
+        const endpoint = AppConfig.API_ENDPOINTS.CREATE_TOPIC;
+        // API文档要求的字段: taskId, title, content, scaffold(可选)
+        const requestData = {
+            taskId: parseInt(topicData.taskId),
+            title: topicData.title,
+            content: topicData.content || topicData.description || '' // 兼容description字段
+        };
+        if (topicData.scaffold !== undefined && topicData.scaffold !== null) {
+            requestData.scaffold = topicData.scaffold;
+        }
+        console.log('[API] 创建话题请求:', requestData);
+        return await this.request(endpoint, 'POST', requestData);
+    },
+
+    /**
+     * 11.2 获取话题列表
+     * @param {number} taskId - 任务ID
+     * @param {object} params - {page?, pageSize?}
+     * @returns {Promise} {code, msg, data: {list, total, page, pageSize}}
+     */
+    async getTopics(taskId, params = {}) {
+        const endpoint = AppConfig.API_ENDPOINTS.GET_TOPICS;
+        const queryParams = {
+            taskId: parseInt(taskId),
+            ...params
+        };
+        const queryString = this.buildQueryString(queryParams);
+        console.log('[API] 获取话题列表请求:', endpoint + queryString);
+        return await this.request(endpoint + queryString, 'GET');
+    },
+
+    /**
+     * 11.3 获取话题详情
+     * @param {number} topicId - 话题ID
+     * @returns {Promise} {code, msg, data: {topicId, taskId, creatorId, title, content, createdAt}}
+     */
+    async getTopicDetail(topicId) {
+        const endpoint = AppConfig.API_ENDPOINTS.GET_TOPIC_DETAIL.replace('{id}', topicId);
+        console.log('[API] 获取话题详情请求:', endpoint);
+        return await this.request(endpoint, 'GET');
+    },
+
+    /**
+     * 11.4 编辑话题
+     * @param {number} topicId - 话题ID
+     * @param {object} topicData - {title?, content?, scaffold?}
+     * @returns {Promise} {code, msg, data: {topicId, taskId, creatorId, title, content, createdAt}}
+     */
+    async updateTopic(topicId, topicData) {
+        const endpoint = AppConfig.API_ENDPOINTS.UPDATE_TOPIC.replace('{id}', topicId);
+        // API文档要求的字段: title, content, scaffold (都是可选的)
+        const requestData = {};
+        if (topicData.title !== undefined) {
+            requestData.title = topicData.title;
+        }
+        if (topicData.content !== undefined || topicData.description !== undefined) {
+            requestData.content = topicData.content || topicData.description || '';
+        }
+        if (topicData.scaffold !== undefined && topicData.scaffold !== null) {
+            requestData.scaffold = topicData.scaffold;
+        }
+        console.log('[API] 编辑话题请求:', endpoint, requestData);
+        return await this.request(endpoint, 'PATCH', requestData);
+    },
+
+    /**
+     * 11.5 删除话题
+     * @param {number} topicId - 话题ID
+     * @returns {Promise} {code, msg, data: null}
+     */
+    async deleteTopic(topicId) {
+        const endpoint = AppConfig.API_ENDPOINTS.DELETE_TOPIC.replace('{id}', topicId);
+        console.log('[API] 删除话题请求:', endpoint);
+        return await this.request(endpoint, 'DELETE');
+    },
+
+    /**
+     * 11.6 获取评论列表
+     * @param {number} topicId - 话题ID
+     * @param {object} params - {page?, pageSize?}
+     * @returns {Promise} {code, msg, data: {list, total, page, pageSize}}
+     */
+    async getTopicComments(topicId, params = {}) {
+        const endpoint = AppConfig.API_ENDPOINTS.GET_TOPIC_COMMENTS.replace('{topicId}', topicId);
+        const queryString = this.buildQueryString(params);
+        console.log('[API] 获取评论列表请求:', endpoint + queryString);
+        return await this.request(endpoint + queryString, 'GET');
+    },
+
+    /**
+     * 11.7 发表评论
+     * @param {number} topicId - 话题ID
+     * @param {object} commentData - {content, parentId?}
+     * @returns {Promise} {code, msg, data: {commentId, topicId, userId, content, parentId, likeCount, createdAt}}
+     */
+    async createTopicComment(topicId, commentData) {
+        const endpoint = AppConfig.API_ENDPOINTS.CREATE_TOPIC_COMMENT.replace('{topicId}', topicId);
+        // API文档要求的字段: content, parentId (可选)
+        const requestData = {
+            content: commentData.content
+        };
+        if (commentData.parentId) {
+            requestData.parentId = parseInt(commentData.parentId);
+        }
+        console.log('[API] 发表评论请求:', endpoint, requestData);
+        return await this.request(endpoint, 'POST', requestData);
+    },
+
+    /**
+     * 11.8 点赞/取消点赞
+     * @param {number} commentId - 评论ID
+     * @returns {Promise} {code, msg, data: {liked: boolean}}
+     */
+    async likeTopicComment(commentId) {
+        const endpoint = `/topic-comments/${commentId}/like`;
+        console.log('[API] 点赞评论请求:', endpoint);
+        return await this.request(endpoint, 'POST');
+    },
+
+    /**
+     * 11.10 删除话题评论
+     * @param {number} commentId - 评论ID
+     * @returns {Promise<Object>} 删除结果
+     */
+    async deleteTopicComment(commentId) {
+        const endpoint = `/topic-comments/${commentId}`;
+        console.log('[API] 删除话题评论请求:', endpoint);
+        return await this.request(endpoint, 'DELETE');
+    },
+
+    // ================ AI 聊天模块 ================
+
+    /**
+     * 12.1 AI聊天 - 发送消息到Dify Agent（SSE流式）
+     * @param {string} message - 用户消息
+     * @param {string} conversationId - 对话ID（可选，续接上下文时传入）
+     * @param {number} taskId - 任务ID（可选）
+     * @param {number} clubId - 俱乐部ID（可选）
+     * @param {function} onMessage - 接收消息片段的回调函数
+     * @param {function} onDone - 完成时的回调函数
+     */
+    async sendAIMessage(message, conversationId, taskId, clubId, onMessage, onDone) {
+        const config = window.AppConfig;
+        const token = Utils.getFromStorage(config.STORAGE_KEYS.USER_TOKEN);
+
+        // 构建请求体
+        const payload = {
+            message: message
+        };
+
+        // 添加可选参数
+        if (conversationId) {
+            payload.conversationId = conversationId;
+        }
+        if (taskId) {
+            payload.taskId = taskId;
+        }
+        if (clubId) {
+            payload.clubId = clubId;
+        }
+
+        const fullUrl = config.API_BASE_URL + config.API_ENDPOINTS.AI_CHAT;
+
+        console.log('[API] AI聊天请求:', fullUrl, payload);
+
+        try {
+            const response = await fetch(fullUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('[API] AI聊天HTTP错误:', response.status, errorText);
+                throw new Error(`HTTP错误: ${response.status}`);
+            }
+
+            // 处理SSE流式响应
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            let fullAnswer = '';
+            let finalConversationId = conversationId;
+
+            while (true) {
+                const { done, value } = await reader.read();
+
+                if (done) {
+                    console.log('[API] SSE流结束');
+                    if (onDone) {
+                        onDone(finalConversationId);
+                    }
+                    break;
+                }
+
+                // 解码数据
+                buffer += decoder.decode(value, { stream: true });
+
+                // 按行分割
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || ''; // 保留最后一个不完整的行
+
+                for (const line of lines) {
+                    if (!line.trim()) continue;
+
+                    if (line.startsWith('event: ')) {
+                        const event = line.substring(7).trim();
+                        console.log('[API] SSE事件:', event);
+
+                    } else if (line.startsWith('data: ')) {
+                        const data = line.substring(6).trim();
+
+                        try {
+                            const parsed = JSON.parse(data);
+                            console.log('[API] SSE数据:', parsed);
+
+                            // 根据event类型处理
+                            if (parsed.event === 'agent_message') {
+                                // AI返回的消息片段
+                                if (parsed.answer) {
+                                    fullAnswer += parsed.answer;
+                                    if (onMessage) {
+                                        onMessage(parsed.answer);
+                                    }
+                                }
+                            } else if (parsed.event === 'message_end') {
+                                // 消息结束，保存conversation_id
+                                if (parsed.conversation_id) {
+                                    finalConversationId = parsed.conversation_id;
+                                    console.log('[API] 收到conversation_id:', finalConversationId);
+                                }
+                            }
+                        } catch (e) {
+                            console.error('[API] 解析SSE数据失败:', e, data);
+                        }
+                    }
+                }
+            }
+
+            console.log('[API] AI聊天完成，完整回复:', fullAnswer);
+            return {
+                code: 0,
+                msg: 'success',
+                data: {
+                    answer: fullAnswer,
+                    conversationId: finalConversationId
+                }
+            };
+
+        } catch (error) {
+            console.error('[API] AI聊天请求失败:', error);
+            throw error;
+        }
+    }
+};

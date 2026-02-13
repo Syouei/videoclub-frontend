@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>通知中心 - 教师视频俱乐部</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+      <style>
+    /* 导航栏样式 */
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 32px;
+        height: 64px;
+        background: white;
+        border-bottom: 1px solid #f0f0f0;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    
+    .header-left {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex: 1;
+    }
+    
+    .header-center {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+    }
+    
+    .header-right {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 16px;
+        flex: 1;
+    }
+    
+    .platform-name {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        border-radius: 20px;
+        background: #f5f5f5;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .user-info:hover {
+        background: #e8e8e8;
+    }
+    
+    .avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #4b58a2 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 14px;
+    }
+    
+    /* 导航栏通知统计 */
+    .notification-stats {
+        background: #f5f5f5;
+        padding: 6px 16px;
+        border-radius: 20px;
+        border: 1px solid #e8e8e8;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: #666;
+    }
+    
+    .notification-stats i {
+        color: #1890ff;
+    }
+    
+    /* 导航栏按钮容器 */
+    .notification-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-right: 1px solid #e8e8e8;
+        padding-right: 16px;
+        margin-right: 8px;
+    }
+    
+    /* 导航栏按钮样式 */
+    .notification-header-actions .nav-btn {
+        padding: 4px 12px;
+        font-size: 12px;
+        height: 28px;
+        border: 1px solid #d9d9d9;
+        color: #666;
+        background: white;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        transition: all 0.3s;
+    }
+    
+    .notification-header-actions .nav-btn:hover {
+        border-color: #1890ff;
+        color: #1890ff;
+        background: rgba(24, 144, 255, 0.04);
+    }
+    
+    .notification-header-actions .nav-btn i {
+        font-size: 11px;
+    }
+    
+    /* 通知容器样式 */
+    .notifications-container {
+        max-width: 1400px;
+        width: 100%;
+        margin: 0 auto;
+        padding: 40px 60px;
+        padding-top: 30px;
+    }
+    
+    .notifications-header {
+    margin: 0 auto 32px auto; /* 改为 auto 居中 */
+    max-width: 1200px; /* 添加最大宽度 */
+    padding: 16px 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    text-align: center;
+}
+    
+    .notifications-header h2 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        color: white;
+    }
+    
+    .notifications-header h2 i {
+        font-size: 26px;
+    }
+    
+    /* 移除原来页面中的按钮容器样式 */
+    .notifications-actions {
+        display: none; /* 隐藏原来的按钮容器 */
+    }
+    
+    /* 通知区域样式 */
+    .notification-section {
+        margin-bottom: 40px;
+        padding: 0;
+    }
+    
+    .notification-section h3 {
+        font-size: 18px;
+        margin-bottom: 20px;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+    
+    .notification-section h3 i {
+        color: #1890ff;
+    }
+    
+    .notification-section p {
+        color: #666;
+        font-size: 14px;
+        margin-top: -10px;
+        margin-bottom: 20px;
+        padding-left: 32px;
+    }
+    
+    .notification-card {
+        background: white;
+        border: 1px solid #f0f0f0;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    
+    .notification-card:hover {
+        border-color: #1890ff;
+        box-shadow: 0 8px 25px rgba(24, 144, 255, 0.15);
+        transform: translateY(-2px);
+    }
+    
+    .notification-card.unread {
+        background: linear-gradient(to right, rgba(24, 144, 255, 0.02), rgba(24, 144, 255, 0.05));
+        border-left: 4px solid #1890ff;
+        position: relative;
+    }
+    
+    .notification-card.unread::before {
+        content: '';
+        position: absolute;
+        left: -4px;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: linear-gradient(to bottom, #1890ff, #69c0ff);
+        border-radius: 4px 0 0 4px;
+    }
+    
+    .notification-card.read {
+        opacity: 0.85;
+    }
+    
+    .notification-type-tag {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+        margin-right: 8px;
+    }
+    
+    .join-request-tag {
+        background: linear-gradient(135deg, #1890ff, #69c0ff);
+        color: white;
+        box-shadow: 0 2px 4px rgba(24, 144, 255, 0.2);
+    }
+    
+    .task-tag {
+        background: linear-gradient(135deg, #52c41a, #95de64);
+        color: white;
+        box-shadow: 0 2px 4px rgba(82, 196, 26, 0.2);
+    }
+    
+    .system-tag {
+        background: linear-gradient(135deg, #722ed1, #b37feb);
+        color: white;
+        box-shadow: 0 2px 4px rgba(114, 46, 209, 0.2);
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 12px;
+        margin-top: 20px;
+        justify-content: flex-end;
+    }
+    
+    .action-buttons .btn {
+        padding: 10px 24px;
+        font-size: 14px;
+        font-weight: 500;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+        min-width: 120px;
+        justify-content: center;
+    }
+    
+    .action-buttons .btn-primary {
+        background: linear-gradient(135deg, #52c41a, #73d13d);
+        border: none;
+        color: white;
+    }
+    
+    .action-buttons .btn-primary:hover {
+        background: linear-gradient(135deg, #389e0d, #52c41a);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(82, 196, 26, 0.3);
+    }
+    
+    .action-buttons .btn-danger {
+        background: linear-gradient(135deg, #ff4d4f, #ff7875);
+        border: none;
+        color: white;
+    }
+    
+    .action-buttons .btn-danger:hover {
+        background: linear-gradient(135deg, #cf1322, #ff4d4f);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);
+    }
+    
+    .notification-content {
+        margin: 16px 0;
+        padding: 16px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border-left: 3px solid #d9d9d9;
+    }
+    
+    .notification-info {
+        display: flex;
+        gap: 24px;
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid #f0f0f0;
+    }
+    
+    .notification-info span {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: #666;
+    }
+    
+    .notification-info i {
+        color: #999;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 80px 20px;
+        color: #999;
+    }
+    
+    .empty-state i {
+        font-size: 64px;
+        margin-bottom: 24px;
+        opacity: 0.3;
+        color: #1890ff;
+    }
+    
+    .empty-state h3 {
+        font-size: 20px;
+        margin-bottom: 12px;
+        color: #666;
+    }
+    
+    .empty-state p {
+        font-size: 14px;
+        color: #999;
+        margin-bottom: 24px;
+    }
+    
+    .loading-spinner {
+        display: inline-block;
+        width: 60px;
+        height: 60px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #1890ff;
+        border-radius: 50%;
+        animation: spin 1.2s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .notification-header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 16px;
+    }
+    
+    .notification-title-row {
+        flex: 1;
+    }
+    
+    .notification-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 4px;
+    }
+    
+    .notification-time {
+        font-size: 12px;
+        color: #999;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .notification-status {
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        background: #f6ffed;
+        color: #52c41a;
+    }
+    
+    .notification-status.unread {
+        background: #e6f7ff;
+        color: #1890ff;
+    }
+    
+    .notification-apply-message {
+        margin-top: 12px;
+        padding: 12px;
+        background: white;
+        border-radius: 6px;
+        border: 1px solid #e8e8e8;
+        font-size: 13px;
+        color: #666;
+    }
+    
+    .notification-apply-message strong {
+        color: #333;
+    }
+    
+    /* 响应式设计 */
+    @media (max-width: 768px) {
+        .header {
+            padding: 0 16px;
+            height: 56px;
+        }
+        
+        .header-center {
+            display: none;
+        }
+        
+        .notification-header-actions {
+            border-right: none;
+            padding-right: 0;
+            margin-right: 0;
+        }
+        
+        .notification-header-actions .nav-btn {
+            padding: 3px 8px;
+            font-size: 11px;
+            height: 26px;
+        }
+        
+        .user-info span {
+            display: none;
+        }
+        
+        .notifications-container {
+            padding: 20px 16px;
+        }
+        
+        .notification-header-row {
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        .action-buttons .btn {
+            width: 100%;
+        }
+        
+        .notification-info {
+            flex-direction: column;
+            gap: 8px;
+        }
+    }
+    
+    /* 模态框样式 */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 2000;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .modal {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        min-width: 400px;
+        max-width: 500px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+    </style>
+</head>
+<body>
+    <div id="page-notifications" class="page active">
+        <!-- 导航栏 -->
+        <div class="header">
+            <div class="header-left">
+                <button class="btn btn-outline btn-sm" onclick="goBack()" style="margin-right: 15px;">
+                    <i class="fas fa-arrow-left"></i> 返回
+                </button>
+                <span class="platform-name">通知中心</span>
+            </div>
+            
+            <!-- 右侧：按钮和用户信息 -->
+            <div class="header-right">
+                <!-- 导航栏按钮 -->
+                <div class="notification-header-actions">
+                    <button class="nav-btn" onclick="markAllAsRead()">
+                        <i class="fas fa-check-double"></i> 全部已读
+                    </button>
+                    <button class="nav-btn" onclick="refreshNotifications()">
+                        <i class="fas fa-sync-alt"></i> 刷新
+                    </button>
+                </div>
+                
+                <!-- 用户信息 -->
+                <div class="user-info" onclick="goToHome()" style="cursor: pointer;">
+                    <div class="avatar" id="task-user-avatar">王</div>
+                    <span id="task-user-name">王老师</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 页面内容 -->
+        <div class="notifications-container">
+            <div class="notifications-header" style="margin-left: 40px; margin-right: auto; max-width: 645px; padding: 16px 24px;">
+    <h2 style="font-size: 20px; margin: 0; display: flex; align-items: center; gap: 10px; justify-content: flex-start;">
+        <i class="fas fa-bell" style="font-size: 22px;"></i> 我的通知
+    </h2>
+</div>
+            
+            <div id="notification-list">
+                <!-- 通知列表将由JS动态生成 -->
+                <div style="text-align: center; padding: 60px 20px;">
+                    <div class="loading-spinner"></div>
+                    <p style="margin-top: 24px; color: #999; font-size: 15px;">正在加载通知...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 审核确认模态框 -->
+    <div id="approval-modal" class="modal-overlay" style="display: none;">
+        <div class="modal">
+            <h3 id="approval-title" style="margin-bottom: 20px;"></h3>
+            <div id="approval-content" style="margin-bottom: 24px;"></div>
+            <div style="text-align: right; margin-top: 24px;">
+                <button class="btn btn-outline" onclick="closeApprovalModal()">取消</button>
+                <button class="btn btn-primary" id="confirm-approval-btn">确认</button>
+            </div>
+        </div>
+    </div>
+<script>
+// 添加到 notifications.html 的 JavaScript 中
+function updateUserDisplay() {
+    if (window.Auth && window.Auth.getUser()) {
+        const user = window.Auth.getUser();
+        const avatarElements = document.querySelectorAll('#task-user-avatar');
+        const nameElements = document.querySelectorAll('#task-user-name');
+        
+        avatarElements.forEach(element => {
+            if (element) element.textContent = user.name.charAt(0);
+        });
+        nameElements.forEach(element => {
+            if (element) element.textContent = user.name;
+        });
+    }
+}
+
+// ========== 通知页面功能 ==========
+
+let currentRequestId = null;
+let currentClubId = null;
+let currentNotificationId = null;
+let isApproving = true; // true:批准, false:驳回
+
+// 页面初始化 - 修改：等待 Notifications 模块初始化完成
+function initNotificationsPage() {
+    console.log('通知页面初始化');
+    
+    // 更新用户信息
+    if (window.Auth && window.Auth.getUser()) {
+        const user = window.Auth.getUser();
+        const avatar = document.getElementById('task-user-avatar');
+        const name = document.getElementById('task-user-name');
+        
+        if (avatar) {
+            const firstName = user.name ? user.name.charAt(0) : user.username ? user.username.charAt(0) : '?';
+            avatar.textContent = firstName;
+        }
+        
+        if (name) {
+            name.textContent = user.name || user.username || '用户';
+        }
+    }
+    
+    // 确保 Notifications 模块已初始化
+    if (window.Notifications && window.Notifications.init) {
+        // 初始化 Notifications 模块
+        window.Notifications.init();
+        
+        // 立即加载通知列表（移除 setTimeout）
+        loadNotifications();
+    } else {
+        // 如果 Notifications 模块还未加载，等待一下
+        console.warn('Notifications 模块未加载，等待初始化');
+        setTimeout(() => {
+            if (window.Notifications && window.Notifications.init) {
+                window.Notifications.init();
+                loadNotifications();
+            } else {
+                // 如果仍然没有，显示错误信息
+                showError('通知模块加载失败，请刷新页面');
+            }
+        }, 500);
+    }
+}
+
+// 加载通知列表 - 修改：优化加载逻辑
+async function loadNotifications() {
+    try {
+        const container = document.getElementById('notification-list');
+        if (!container) return;
+        
+        // 先显示加载状态
+        container.innerHTML = `
+            <div style="text-align: center; padding: 40px 20px;">
+                <div class="loading-spinner"></div>
+                <p style="margin-top: 16px; color: #999;">加载通知中...</p>
+            </div>
+        `;
+        
+        // 确保 Notifications 模块存在
+        if (!window.Notifications) {
+            throw new Error('通知模块未加载');
+        }
+        
+        // 检查是否有 getNotifications 方法
+        if (!window.Notifications.getNotifications) {
+            throw new Error('通知模块方法不可用');
+        }
+        
+        // 获取通知列表
+        const notifications = await window.Notifications.getNotifications();
+        
+        if (!notifications || notifications.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-bell"></i>
+                    <h3>暂无通知</h3>
+                    <p>您还没有收到任何通知</p>
+                </div>
+            `;
+        } else {
+            // 直接渲染通知列表
+            if (window.Notifications.renderNotificationList) {
+                window.Notifications.renderNotificationList();
+            }
+        }
+    } catch (error) {
+        console.error('加载通知失败:', error);
+        showError('加载通知失败: ' + error.message);
+    }
+}
+
+// 显示错误信息
+function showError(message) {
+    const container = document.getElementById('notification-list');
+    if (container) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>加载失败</h3>
+                <p>${message}</p>
+                <button class="btn btn-primary" onclick="loadNotifications()" style="margin-top: 16px;">
+                    重试
+                </button>
+            </div>
+        `;
+    }
+}
+
+// 刷新通知
+function refreshNotifications() {
+    loadNotifications();
+    
+    // 同时更新未读数量
+    if (window.App && window.App.updateUnreadCount) {
+        window.App.updateUnreadCount();
+    }
+    
+    Utils.showNotification('通知列表已刷新', 'success');
+}
+
+// 全部标记为已读
+async function markAllAsRead() {
+    try {
+        if (window.Notifications && window.Notifications.markAllAsRead) {
+            const success = await window.Notifications.markAllAsRead();
+            
+            if (success) {
+                Utils.showNotification('所有通知已标记为已读', 'success');
+                
+                // 刷新通知列表
+                loadNotifications();
+                
+                // 更新未读数量
+                if (window.App && window.App.updateUnreadCount) {
+                    window.App.updateUnreadCount();
+                }
+            } else {
+                Utils.showNotification('操作失败', 'error');
+            }
+        }
+    } catch (error) {
+        console.error('全部标记为已读失败:', error);
+        Utils.showNotification('操作失败: ' + error.message, 'error');
+    }
+}
+
+// 查看通知详情
+async function viewNotification(notificationId) {
+    try {
+        // 标记为已读
+        if (window.Notifications && window.Notifications.markAsRead) {
+            await window.Notifications.markAsRead(notificationId);
+            
+            // 更新未读数量
+            if (window.App && window.App.updateUnreadCount) {
+                window.App.updateUnreadCount();
+            }
+        }
+        
+        // 这里可以扩展为显示通知详情页面
+        // 暂时只显示一个提示
+        const notification = window.Notifications.notifications.find(n => n.id === notificationId);
+        if (notification) {
+            Utils.showNotification(`查看通知: ${notification.title}`, 'info');
+        }
+    } catch (error) {
+        console.error('查看通知失败:', error);
+    }
+}
+
+// ========== 审核功能 ==========
+
+// 处理批准请求
+async function handleApproveRequest(requestId, clubId, notificationId) {
+    currentRequestId = requestId;
+    currentClubId = clubId;
+    currentNotificationId = notificationId;
+    isApproving = true;
+    
+    // 获取申请人信息
+    let applicantName = '未知用户';
+    if (window.Notifications && window.Notifications.getApplicantName) {
+        const notification = window.Notifications.notifications.find(n => n.id === notificationId);
+        if (notification && notification.payload && notification.payload.applicantId) {
+            applicantName = await window.Notifications.getApplicantName(notification.payload.applicantId);
+        }
+    }
+    
+    // 显示确认模态框
+    const modal = document.getElementById('approval-modal');
+    const title = document.getElementById('approval-title');
+    const content = document.getElementById('approval-content');
+    const confirmBtn = document.getElementById('confirm-approval-btn');
+    
+    if (modal && title && content && confirmBtn) {
+        title.innerHTML = '<i class="fas fa-check-circle" style="color: #52c41a;"></i> 批准入会申请';
+        content.innerHTML = `
+            <div style="padding: 16px; background: #f6ffed; border-radius: 6px; border: 1px solid #b7eb8f; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                    <i class="fas fa-user-check" style="color: #52c41a; font-size: 20px; margin-right: 10px;"></i>
+                    <div>
+                        <strong style="color: #389e0d;">确认批准申请</strong>
+                        <div style="font-size: 13px; color: #666;">此操作将通过用户的入会申请</div>
+                    </div>
+                </div>
+            </div>
+            <p style="color: #666;">批准后，用户将立即成为俱乐部成员，可以查看和参与俱乐部活动。</p>
+        `;
+        confirmBtn.innerHTML = '<i class="fas fa-check"></i> 确认批准';
+        confirmBtn.className = 'btn btn-primary';
+        confirmBtn.onclick = approveRequest;
+        modal.style.display = 'flex';
+    }
+}
+
+// 处理驳回请求
+async function handleRejectRequest(requestId, clubId, notificationId) {
+    currentRequestId = requestId;
+    currentClubId = clubId;
+    currentNotificationId = notificationId;
+    isApproving = false;
+    
+    // 获取申请人信息
+    let applicantName = '未知用户';
+    if (window.Notifications && window.Notifications.getApplicantName) {
+        const notification = window.Notifications.notifications.find(n => n.id === notificationId);
+        if (notification && notification.payload && notification.payload.applicantId) {
+            applicantName = await window.Notifications.getApplicantName(notification.payload.applicantId);
+        }
+    }
+    
+    // 显示确认模态框
+    const modal = document.getElementById('approval-modal');
+    const title = document.getElementById('approval-title');
+    const content = document.getElementById('approval-content');
+    const confirmBtn = document.getElementById('confirm-approval-btn');
+    
+    if (modal && title && content && confirmBtn) {
+        title.innerHTML = '<i class="fas fa-times-circle" style="color: #ff4d4f;"></i> 驳回入会申请';
+        content.innerHTML = `
+            <div style="padding: 16px; background: #fff2f0; border-radius: 6px; border: 1px solid #ffccc7; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                    <i class="fas fa-user-times" style="color: #ff4d4f; font-size: 20px; margin-right: 10px;"></i>
+                    <div>
+                        <strong style="color: #cf1322;">确认驳回申请</strong>
+                        <div style="font-size: 13px; color: #666;">此操作将拒绝用户的入会申请</div>
+                    </div>
+                </div>
+            </div>
+            <p style="color: #666;">驳回后，用户将收到申请被拒的通知，可以重新申请或选择其他俱乐部。</p>
+        `;
+        confirmBtn.innerHTML = '<i class="fas fa-times"></i> 确认驳回';
+        confirmBtn.className = 'btn btn-danger';
+        confirmBtn.onclick = rejectRequest;
+        modal.style.display = 'flex';
+    }
+}
+
+// 批准请求
+async function approveRequest() {
+    try {
+        if (!currentRequestId || !currentClubId) return;
+        
+        Utils.showNotification('正在处理批准请求...', 'info');
+        
+        // 调用API批准请求
+        if (window.Clubs && window.Clubs.approveJoinRequest) {
+            const result = await window.Clubs.approveJoinRequest(currentClubId, currentRequestId);
+            
+            if (result.success) {
+                Utils.showNotification('已批准入会申请', 'success');
+                
+                // 标记通知为已读
+                if (currentNotificationId && window.Notifications && window.Notifications.markAsRead) {
+                    await window.Notifications.markAsRead(currentNotificationId);
+                }
+                
+                // 标记通知为已处理（批准）
+                if (currentNotificationId && window.Notifications && window.Notifications.markAsProcessed) {
+                    window.Notifications.markAsProcessed(currentNotificationId, 'approved');
+                }
+                
+                // 关闭模态框
+                closeApprovalModal();
+                
+                // 刷新通知列表
+                setTimeout(() => {
+                    loadNotifications();
+                    
+                    // 更新未读数量
+                    if (window.App && window.App.updateUnreadCount) {
+                        window.App.updateUnreadCount();
+                    }
+                }, 500);
+            } else {
+                Utils.showNotification(result.message || '批准失败', 'error');
+            }
+        }
+    } catch (error) {
+        console.error('批准请求失败:', error);
+        Utils.showNotification('操作失败: ' + error.message, 'error');
+    }
+}
+
+// 驳回请求
+async function rejectRequest() {
+    try {
+        if (!currentRequestId || !currentClubId) return;
+        
+        Utils.showNotification('正在处理驳回请求...', 'info');
+        
+        // 调用API驳回请求
+        if (window.Clubs && window.Clubs.rejectJoinRequest) {
+            const result = await window.Clubs.rejectJoinRequest(currentClubId, currentRequestId);
+            
+            if (result.success) {
+                Utils.showNotification('已驳回入会申请', 'success');
+                
+                // 标记通知为已读
+                if (currentNotificationId && window.Notifications && window.Notifications.markAsRead) {
+                    await window.Notifications.markAsRead(currentNotificationId);
+                }
+                
+                // 标记通知为已处理（驳回）
+                if (currentNotificationId && window.Notifications && window.Notifications.markAsProcessed) {
+                    window.Notifications.markAsProcessed(currentNotificationId, 'rejected');
+                }
+                
+                // 关闭模态框
+                closeApprovalModal();
+                
+                // 刷新通知列表
+                setTimeout(() => {
+                    loadNotifications();
+                    
+                    // 更新未读数量
+                    if (window.App && window.App.updateUnreadCount) {
+                        window.App.updateUnreadCount();
+                    }
+                }, 500);
+            } else {
+                Utils.showNotification(result.message || '驳回失败', 'error');
+            }
+        }
+    } catch (error) {
+        console.error('驳回请求失败:', error);
+        Utils.showNotification('操作失败: ' + error.message, 'error');
+    }
+}
+
+// 关闭审核模态框
+function closeApprovalModal() {
+    const modal = document.getElementById('approval-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    currentRequestId = null;
+    currentClubId = null;
+    currentNotificationId = null;
+}
+
+// ========== 页面导航 ==========
+
+function goBack() {
+    if (window.App && window.App.navigateTo) {
+        window.App.navigateTo('home');
+    } else {
+        window.history.back();
+    }
+}
+
+function goToHome() {
+    if (window.App && window.App.navigateTo) {
+        window.App.navigateTo('home');
+    } else {
+        window.location.hash = 'home';
+    }
+}
+
+// ========== 页面加载初始化 ==========
+
+function onNotificationsPageReady() {
+    console.log('通知页面DOM加载完成');
+    initNotificationsPage();
+    
+    // 绑定点击外部关闭模态框事件
+    const modal = document.getElementById('approval-modal');
+    if (modal) {
+        modal.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                closeApprovalModal();
+            }
+        });
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', onNotificationsPageReady);
+} else {
+    onNotificationsPageReady();
+}
+
+// 确保全局函数可用
+window.initNotificationsPage = initNotificationsPage;
+window.loadNotifications = loadNotifications;
+window.refreshNotifications = refreshNotifications;
+window.markAllAsRead = markAllAsRead;
+window.viewNotification = viewNotification;
+window.handleApproveRequest = handleApproveRequest;
+window.handleRejectRequest = handleRejectRequest;
+window.closeApprovalModal = closeApprovalModal;
+window.goBack = goBack;
+window.goToHome = goToHome;
+
+// 确保Utils对象存在
+if (typeof Utils === 'undefined') {
+    window.Utils = {
+        showNotification: function(message, type = 'info') {
+            console.log(`${type}: ${message}`);
+            alert(`${type.toUpperCase()}: ${message}`);
+        }
+    };
+}
+</script>
+</body>
+</html>
